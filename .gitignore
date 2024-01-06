@@ -6,3 +6,4 @@
 /fuzz/target/
 /dudect/Cargo.lock
 /dudect/target/
+/ct_cm4/target/
