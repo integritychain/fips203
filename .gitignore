@@ -1,0 +1,8 @@
+/target
+/Cargo.lock
+/.idea
+/fuzz/corpus/
+/fuzz/Cargo.lock
+/fuzz/target/
+/dudect/Cargo.lock
+/dudect/target/
