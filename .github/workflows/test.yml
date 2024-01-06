@@ -1,12 +1,6 @@
 name: test
 
-on:
-  pull_request:
-    paths:
-      - ".github/workflows/integration.yml"
-      - "Cargo.*"
-  push:
-    branches: master
+on: [ push ]
 
 
 env:
@@ -16,7 +10,6 @@ env:
 
 
 jobs:
-
 
   build:
     runs-on: ubuntu-latest
