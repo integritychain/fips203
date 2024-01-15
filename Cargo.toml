@@ -11,13 +11,13 @@ documentation = "https://docs.rs/fips203"
 categories = ["cryptography", "no-std"]
 repository = "https://github.com/integritychain/fips203"
 keywords = ["FIPS", "203", "lattice", "kem", "ml"]
-rust-version = "1.72"
+rust-version = "1.70"
 
 
 [dependencies]
 zeroize = { version = "1.6.0", features = ["zeroize_derive"] }
 rand_core = { version = "0.6.4", default-features = false }
-sha3 = { version = "0.10.8", default-features = false }
+sha3 = { version = "0.10.2", default-features = false }
 
 
 [features]
@@ -34,7 +34,7 @@ regex = "1.10.2"
 hex = "0.4.3"
 rand_chacha = "0.3.1"
 criterion = "0.5.1"
-flate2 = "1.0.28"
+flate2 = "1.0.27"
 
 [[bench]]
 name = "benchmark"
