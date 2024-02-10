@@ -1,6 +1,6 @@
 name: test
 
-on: [ push ]
+on: [ push, pull_request ]
 
 
 env:
@@ -11,12 +11,18 @@ env:
 
 jobs:
 
+  cargo-deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: EmbarkStudios/cargo-deny-action@v1
+
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         rust:
-          - 1.72.0 # MSRV
+          - 1.74.0 # MSRV
           - stable
         target:
           - thumbv7em-none-eabi
@@ -42,7 +48,7 @@ jobs:
         include:
           # 32-bit Linux
           - target: i686-unknown-linux-gnu
-            rust: 1.72.0 # MSRV
+            rust: 1.74.0 # MSRV
             deps: sudo apt update && sudo apt install gcc-multilib
           - target: i686-unknown-linux-gnu
             rust: stable
@@ -50,7 +56,7 @@ jobs:
 
           # 64-bit Linux
           - target: x86_64-unknown-linux-gnu
-            rust: 1.72.0 # MSRV
+            rust: 1.74.0 # MSRV
           - target: x86_64-unknown-linux-gnu
             rust: stable
 
@@ -71,17 +77,17 @@ jobs:
         include:
           # ARM32
           - target: armv7-unknown-linux-gnueabihf
-            rust: 1.72.0 # MSRV (cross)
+            rust: 1.74.0 # MSRV (cross)
           - target: armv7-unknown-linux-gnueabihf
             rust: stable
           # ARM64
           - target: aarch64-unknown-linux-gnu
-            rust: 1.72.0 # MSRV (cross)
+            rust: 1.74.0 # MSRV (cross)
           - target: aarch64-unknown-linux-gnu
             rust: stable
           # PPC32
           - target: powerpc-unknown-linux-gnu
-            rust: 1.72.0 # MSRV (cross)
+            rust: 1.74.0 # MSRV (cross)
           - target: powerpc-unknown-linux-gnu
             rust: stable
     runs-on: ubuntu-latest
@@ -95,6 +101,7 @@ jobs:
       - uses: RustCrypto/actions/cross-install@master
       - run: cross test --release --target ${{ matrix.target }} --no-default-features --features "ml-kem-512 ml-kem-768 ml-kem-1024"
 
+
   doc:
     runs-on: ubuntu-latest
     steps:
@@ -105,9 +112,11 @@ jobs:
           toolchain: stable
       - run: cargo doc --all-features
 
+
   clippy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Run Clippy
         run: cargo clippy --all-targets --all-features
+
