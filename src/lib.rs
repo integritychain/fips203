@@ -56,7 +56,9 @@ pub mod traits;
 const _N: u32 = 256;
 const Q: u32 = 3329;
 const ZETA: u32 = 17;
-const SSK_LEN: usize = 32;
+
+/// Shared Secret Key Length for all ML-KEM variants (in bytes)
+pub const SSK_LEN: usize = 32;
 
 /// The (opaque) secret key that can be de/serialized by each party.
 #[derive(Clone, Debug, Zeroize, ZeroizeOnDrop)]
@@ -223,9 +225,13 @@ pub mod ml_kem_512 {
     const ETA2: usize = 2;
     const DU: usize = 10;
     const DV: usize = 4;
-    const EK_LEN: usize = 800;
-    const DK_LEN: usize = 1632;
-    const CT_LEN: usize = 768;
+
+    /// Serialized Encapsulation Key Length (in bytes)
+    pub const EK_LEN: usize = 800;
+    /// Serialized Decapsulation Key Length (in bytes)
+    pub const DK_LEN: usize = 1632;
+    /// Serialized Ciphertext Key Length (in bytes)
+    pub const CT_LEN: usize = 768;
 
     functionality!();
 }
@@ -253,9 +259,13 @@ pub mod ml_kem_768 {
     const ETA2: usize = 2;
     const DU: usize = 10;
     const DV: usize = 4;
-    const EK_LEN: usize = 1184;
-    const DK_LEN: usize = 2400;
-    const CT_LEN: usize = 1088;
+
+    /// Serialized Encapsulation Key Length (in bytes)
+    pub const EK_LEN: usize = 1184;
+    /// Serialized Decapsulation Key Length (in bytes)
+    pub const DK_LEN: usize = 2400;
+    /// Serialized Ciphertext Key Length (in bytes)
+    pub const CT_LEN: usize = 1088;
 
     functionality!();
 }
@@ -282,9 +292,13 @@ pub mod ml_kem_1024 {
     const ETA2: usize = 2;
     const DU: usize = 11;
     const DV: usize = 5;
-    const EK_LEN: usize = 1568;
-    const DK_LEN: usize = 3168;
-    const CT_LEN: usize = 1568;
+
+    /// Serialized Encapsulation Key Length (in bytes)
+    pub const EK_LEN: usize = 1568;
+    /// Serialized Decapsulation Key Length (in bytes)
+    pub const DK_LEN: usize = 3168;
+    /// Serialized Ciphertext Key Length (in bytes)
+    pub const CT_LEN: usize = 1568;
 
     functionality!();
 }
