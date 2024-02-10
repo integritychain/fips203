@@ -22,38 +22,36 @@
 
 
 // Embedded heap allocator (since no_std)
-extern crate alloc;
+//extern crate alloc;
 
 // CPU support
-use core::fmt::Write;
-use core::mem::MaybeUninit;
+//use core::fmt::Write;
+//use core::mem::MaybeUninit;
 
 // for hio
 //use cortex_m::peripheral::DWT;
 use cortex_m_rt::entry;
-use cortex_m_semihosting::hio;
+//use embedded_alloc::Heap;
+use fips203::ml_kem_512;
+// Could also be ml_kem_768 or ml_kem_1024.
+use fips203::traits::{Decaps, Encaps, KeyGen};
+//use cortex_m_semihosting::hio;
 use rand_core::{CryptoRng, RngCore};
 // Board support
 use stm32f3_discovery::leds::Leds;
 use stm32f3_discovery::stm32f3xx_hal::{pac, prelude::*};
 use stm32f3_discovery::switch_hal::OutputSwitch;
 
-use embedded_alloc::Heap;
-use fips203::ml_kem_512;
-// Could also be ml_kem_768 or ml_kem_1024.
-use fips203::traits::{Decaps, Encaps, KeyGen};
-
-
-#[global_allocator]
-static HEAP: Heap = Heap::empty();
-
-// This function prints to semihosting
-fn print_semi(msg: &str, delta: u32) {
-    let mut stdout = hio::hstdout()
-        .map_err(|_| core::fmt::Error)
-        .expect("hio fail");
-    write!(stdout, "{} delta is #{}\n", msg, delta).expect("write fail");
-}
+// #[global_allocator]
+// static HEAP: Heap = Heap::empty();
+//
+// // This function prints to semihosting
+// fn print_semi(msg: &str, delta: u32) {
+//     let mut stdout = hio::hstdout()
+//         .map_err(|_| core::fmt::Error)
+//         .expect("hio fail");
+//     write!(stdout, "{} delta is #{}\n", msg, delta).expect("write fail");
+// }
 
 // Dummy RNG
 struct MyRng();
@@ -77,9 +75,9 @@ impl CryptoRng for MyRng {}
 #[entry]
 fn main() -> ! {
     // Configure heap
-    const HEAP_SIZE: usize = 10 * 1024;
-    static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
-    unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
+    // const HEAP_SIZE: usize = 10 * 1024;
+    // static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
+    // unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
 
     // Configure MCU
     let device_periphs = pac::Peripherals::take().expect("device_periphs fail");
