@@ -33,7 +33,7 @@ rand = "0.8.5"
 regex = "1.10.2"
 hex = "0.4.3"
 rand_chacha = "0.3.1"
-criterion = "0.5.1"
+criterion = "0.4" # Needed for MSRV 1.70; ideally 0.5.1
 flate2 = "1.0.27"
 
 
