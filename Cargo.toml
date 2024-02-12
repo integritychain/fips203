@@ -11,7 +11,7 @@ documentation = "https://docs.rs/fips203"
 categories = ["cryptography", "no-std"]
 repository = "https://github.com/integritychain/fips203"
 keywords = ["FIPS", "FIPS203", "lattice", "key", "encapsulation"]
-rust-version = "1.74"
+rust-version = "1.72"
 
 
 [dependencies]
@@ -33,7 +33,7 @@ rand = "0.8.5"
 regex = "1.10.2"
 hex = "0.4.3"
 rand_chacha = "0.3.1"
-criterion = "0.5.1"
+criterion = "0.4.0" #"0.5.1"
 flate2 = "1.0.27"
 
 

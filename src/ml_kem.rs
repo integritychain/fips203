@@ -137,14 +137,14 @@ pub(crate) fn ml_kem_decaps<
     // let mut g_input = [0u8; 32 + 32];
     // g_input[0..32].copy_from_slice(&m_prime);
     // g_input[32..64].copy_from_slice(h);
-    let (mut k_prime, r_prime) = g(&[&m_prime, &h]);
+    let (mut k_prime, r_prime) = g(&[&m_prime, h]);
 
     // 7: K̄ ← J(z∥c, 32)
     let mut j_input = [0u8; J_LEN];
     debug_assert_eq!(j_input.len(), 32 + ct.len());
     j_input[0..32].copy_from_slice(z);
     j_input[32..32 + ct.len()].copy_from_slice(ct);
-    let k_bar = j(&[&z, &ct]);
+    let k_bar = j(&[z, ct]);
 
     // 8: c′ ← K-PKE.Encrypt(ekPKE , m′ , r′ )      ▷ re-encrypt using the derived randomness r′
     let mut c_prime = [0u8; CT_LEN];
