@@ -4,9 +4,9 @@
 #![deny(missing_docs)]
 #![allow(clippy::cast_lossless)] // TODO
 #![allow(clippy::cast_possible_truncation)] // TODO
-
 #![doc = include_str!("../README.md")]
 
+///
 /// Implements FIPS 203 draft Module-Lattice-based Key-Encapsulation Mechanism Standard.
 /// See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
 //
@@ -70,6 +70,7 @@ impl SerDes for SharedSecretKey {
     fn into_bytes(self) -> Self::ByteArray { self.0 }
 
     fn try_from_bytes(skk: Self::ByteArray) -> Result<Self, &'static str> {
+        // TODO: Opportunity for additional validation here (?)
         Ok(SharedSecretKey(skk))
     }
 }
@@ -90,14 +91,14 @@ impl PartialEq for SharedSecretKey {
 // This common functionality is injected into each parameter set module
 macro_rules! functionality {
     () => {
-        const ETA1_64: usize = ETA1 * 64;  // Currently, Rust does not allow expressions involving constants...
-        const ETA2_64: usize = ETA2 * 64;  // ...so these are handled manually.
+        const ETA1_64: usize = ETA1 * 64; // Currently, Rust does not allow expressions involving constants...
+        const ETA2_64: usize = ETA2 * 64; // ...in generics, so these are handled manually.
         const J_LEN: usize = 32 + 32 * (DU * K + DV);
 
         use crate::byte_fns::byte_decode;
         use crate::ml_kem::{ml_kem_decaps, ml_kem_encaps, ml_kem_key_gen};
         use crate::traits::{Decaps, Encaps, KeyGen, SerDes};
-        use crate::types::Z256;
+        use crate::types::Z;
         use crate::SharedSecretKey;
         use rand_core::CryptoRngCore;
         use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -166,38 +167,39 @@ macro_rules! functionality {
         impl SerDes for EncapsKey {
             type ByteArray = [u8; EK_LEN];
 
+            fn into_bytes(self) -> Self::ByteArray { self.0 }
+
             fn try_from_bytes(ek: Self::ByteArray) -> Result<Self, &'static str> {
-                let mut ek_hat = [Z256(0); 256];
+                // TODO: Opportunity for additional validation here (?)
+                let mut ek_hat = [Z::default(); 256];
                 for i in 0..K {
                     byte_decode(12, &ek[384 * i..384 * (i + 1)], &mut ek_hat)?;
                 }
                 Ok(EncapsKey(ek))
             }
-
-            fn into_bytes(self) -> Self::ByteArray { self.0 }
         }
 
 
         impl SerDes for DecapsKey {
             type ByteArray = [u8; DK_LEN];
 
+            fn into_bytes(self) -> Self::ByteArray { self.0 }
+
             fn try_from_bytes(dk: Self::ByteArray) -> Result<Self, &'static str> {
-                // TODO: additional validation here
+                // TODO: Opportunity for additional validation here (?)
                 Ok(DecapsKey(dk))
             }
-
-            fn into_bytes(self) -> Self::ByteArray { self.0 }
         }
 
         impl SerDes for CipherText {
             type ByteArray = [u8; CT_LEN];
 
+            fn into_bytes(self) -> Self::ByteArray { self.0 }
+
             fn try_from_bytes(ct: Self::ByteArray) -> Result<Self, &'static str> {
-                // TODO: additional validation here
+                // TODO: Opportunity for additional validation here (?)
                 Ok(CipherText(ct))
             }
-
-            fn into_bytes(self) -> Self::ByteArray { self.0 }
         }
     };
 }
@@ -302,26 +304,3 @@ pub mod ml_kem_1024 {
 
     functionality!();
 }
-
-/*
-Notes
-
-Flamegraph
-https://github.com/flamegraph-rs/flamegraph
-  echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
-  cargo flamegraph --test integration
-
-Fuzzing
-https://rust-fuzz.github.io/book/cargo-fuzz.html
-  cd fuzz
-  rustup default nightly
-  head -c 3200 </dev/urandom > corpus/seed1
-  cargo fuzz run fuzz_all -j 4
-
-Dudect
-https://docs.rs/dudect-bencher/latest/dudect_bencher/
-  cd dudect
-  cargo run --release -- --continuous encaps
-  cargo run --release -- --continuous decaps
-
-*/

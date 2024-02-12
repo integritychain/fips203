@@ -6,7 +6,7 @@ use crate::helpers::{
 };
 use crate::ntt::{ntt, ntt_inv};
 use crate::sampling::{sample_ntt, sample_poly_cbd};
-use crate::types::Z256;
+use crate::types::Z;
 
 /// Algorithm 12 `K-PKE.KeyGen()` on page 26.
 /// Generates an encryption key and a corresponding decryption key.
@@ -30,7 +30,7 @@ pub fn k_pke_key_gen<const K: usize, const ETA1: usize, const ETA1_64: usize>(
 
     // 3: 3: N ← 0
     let mut n = 0;
-    let mut a_hat = [[[Z256(0); 256]; K]; K];
+    let mut a_hat = [[[Z::default(); 256]; K]; K];
 
     // 4: for (i ← 0; i < k; i++)        ▷ generate matrix A ∈ (Z^{256}_q)^{k×k}
     #[allow(clippy::needless_range_loop)]
@@ -47,7 +47,7 @@ pub fn k_pke_key_gen<const K: usize, const ETA1: usize, const ETA1_64: usize>(
         } // 7: end for
     } // 8: end for
 
-    let mut s = [[Z256(0); 256]; K];
+    let mut s = [[Z::default(); 256]; K];
 
     // 9: for (i ← 0; i < k; i ++)          ▷ generate s ∈ (Z_q^{256})^k
     #[allow(clippy::needless_range_loop)]
@@ -61,7 +61,7 @@ pub fn k_pke_key_gen<const K: usize, const ETA1: usize, const ETA1_64: usize>(
         //
     } // 12: end for
 
-    let mut e = [[Z256(0); 256]; K];
+    let mut e = [[Z::default(); 256]; K];
 
     // 13: for (i ← 0; i < k; i++)                     ▷ generate e ∈ (Z_q^{256})^k
     #[allow(clippy::needless_range_loop)]
@@ -75,14 +75,14 @@ pub fn k_pke_key_gen<const K: usize, const ETA1: usize, const ETA1_64: usize>(
         //
     } // 16: end for
 
-    let mut s_hat = [[Z256(0); 256]; K];
+    let mut s_hat = [[Z::default(); 256]; K];
 
     // 17: s_hat ← NTT(s)       ▷ NTT is run k times (once for each coordinate of s)
     #[allow(clippy::needless_range_loop)]
     for i in 0..K {
         s_hat[i] = ntt(&s[i]);
     }
-    let mut e_hat = [[Z256(0); 256]; K];
+    let mut e_hat = [[Z::default(); 256]; K];
 
     // 18: ê ← NTT(e)           ▷ NTT is run k times
     for i in 0..K {
@@ -138,7 +138,7 @@ pub(crate) fn k_pke_encrypt<
     let mut n = 0;
 
     // 2: t̂ ← ByteDecode12 (ekPKE [0 : 384k])
-    let mut t_hat = [[Z256(0); 256]; K];
+    let mut t_hat = [[Z::default(); 256]; K];
     for i in 0..K {
         byte_decode(12, &ek[384 * i..384 * (i + 1)], &mut t_hat[i])?;
     }
@@ -146,7 +146,7 @@ pub(crate) fn k_pke_encrypt<
     // 3: 3: ρ ← ekPKE [384k : 384k + 32]           ▷ extract 32-byte seed from ekPKE
     let mut rho = [0u8; 32];
     rho.copy_from_slice(&ek[384 * K..(384 * K + 32)]);
-    let mut a_hat = [[[Z256(0); 256]; K]; K];
+    let mut a_hat = [[[Z::default(); 256]; K]; K];
 
     // 4: for (i ← 0; i < k; i++)      ▷ re-generate matrix A_hat(Z_q{256})^{k×k}
     #[allow(clippy::needless_range_loop)]
@@ -163,7 +163,7 @@ pub(crate) fn k_pke_encrypt<
         } // 7: end for
     } // 8: end for
 
-    let mut r = [[Z256(0); 256]; K];
+    let mut r = [[Z::default(); 256]; K];
 
     // 9: for (i ← 0; i < k; i ++)
     #[allow(clippy::needless_range_loop)]
@@ -177,7 +177,7 @@ pub(crate) fn k_pke_encrypt<
         //
     } // 12: end for
 
-    let mut e1 = [[Z256(0); 256]; K];
+    let mut e1 = [[Z::default(); 256]; K];
 
     // 13: for (i ← 0; i < k; i ++)         ▷ generate e1 ∈ (Z_q^{256})^k
     #[allow(clippy::needless_range_loop)]
@@ -195,7 +195,7 @@ pub(crate) fn k_pke_encrypt<
     let e2 = sample_poly_cbd(ETA2 as u32, &prf::<ETA2_64>(randomness, n))?;
 
     // 18: 18: r̂ ← NTT(r)              ▷ NTT is run k times
-    let mut r_hat = [[Z256(0); 256]; K];
+    let mut r_hat = [[Z::default(); 256]; K];
     for i in 0..K {
         r_hat[i] = ntt(&r[i]);
     }
@@ -209,7 +209,7 @@ pub(crate) fn k_pke_encrypt<
     u = vec_add(&u, &e1);
 
     // 20: µ ← Decompress1(ByteDecode1(m)))
-    let mut mu = [Z256(0); 256];
+    let mut mu = [Z::default(); 256];
     byte_decode(1, m, &mut mu)?;
     decompress(1, &mut mu);
 
@@ -251,26 +251,26 @@ pub(crate) fn k_pke_decrypt<const K: usize, const DU: usize, const DV: usize>(
     let c2 = &ct[32 * DU * K..32 * (DU * K + DV)];
 
     // 3: 3: u ← Decompress_{du}(ByteDecode_{du}(c_1))      ▷ ByteDecode_{du} invoked k times
-    let mut u = [[Z256(0); 256]; K];
+    let mut u = [[Z::default(); 256]; K];
     for i in 0..K {
         byte_decode(DU as u32, &c1[32 * DU * i..32 * DU * (i + 1)], &mut u[i])?;
         decompress(DU as u32, &mut u[i]);
     }
 
     // 4: v ← Decompress_{dv}(ByteDecode_{dv}(c_2))
-    let mut v = [Z256(0); 256];
+    let mut v = [Z::default(); 256];
     byte_decode(DV as u32, c2, &mut v)?;
     decompress(DV as u32, &mut v);
 
     // 5: s_hat ← ByteDecode_{12}(dk_{PKE{)
-    let mut s_hat = [[Z256(0); 256]; K];
+    let mut s_hat = [[Z::default(); 256]; K];
     for i in 0..K {
         byte_decode(12, &dk[384 * i..384 * (i + 1)], &mut s_hat[i])?;
     }
 
     // 6: w ← v − NTT−1 (ŝ⊺ ◦ NTT(u))           ▷ NTT−1 and NTT invoked k times
-    let mut w = [Z256(0); 256];
-    let mut ntt_u = [[Z256(0); 256]; K];
+    let mut w = [Z::default(); 256];
+    let mut ntt_u = [[Z::default(); 256]; K];
     #[allow(clippy::needless_range_loop)]
     for i in 0..K {
         ntt_u[i] = ntt(&u[i]);

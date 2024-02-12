@@ -1,15 +1,15 @@
-use crate::types::Z256;
 use crate::{Q, ZETA};
+use crate::types::Z;
 
 /// Algorithm 8 `NTT(f)` on page 22.
 /// Computes the NTT representation `f_hat` of the given polynomial f ∈ `R_q`.
 #[must_use]
 #[allow(clippy::module_name_repetitions)]
-pub fn ntt(array_f: &[Z256; 256]) -> [Z256; 256] {
+pub fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
     // Input: array f ∈ Z^{256}_q           ▷ the coeffcients of the input polynomial
     // Output: array f_hat ∈ Z^{256}_q      ▷ the coeffcients of the NTT of the input polynomial
     // 1: f_hat ← f                         ▷ will compute NTT in-place on a copy of input array
-    let mut f_hat = [Z256(0); 256];
+    let mut f_hat = [Z::default(); 256];
     f_hat.copy_from_slice(array_f);
 
     // 2: k ← 1
@@ -22,8 +22,8 @@ pub fn ntt(array_f: &[Z256; 256]) -> [Z256; 256] {
         for start in (0..256).step_by(2 * len) {
             //
             // 5: zeta ← ζ^{BitRev7 (k)} mod q
-            let zeta = Z256(ZETA_TABLE[k << 1]);
-
+            let mut zeta = Z::default();
+            zeta.set_u16(ZETA_TABLE[k << 1]);
 
             // 6: k ← k+1
             k += 1;
@@ -52,12 +52,12 @@ pub fn ntt(array_f: &[Z256; 256]) -> [Z256; 256] {
 /// Computes the polynomial f ∈ `R_q` corresponding to the given NTT representation `f_hat` ∈ `T_q`.
 #[must_use]
 #[allow(clippy::module_name_repetitions)]
-pub fn ntt_inv(f_hat: &[Z256; 256]) -> [Z256; 256] {
+pub fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
     // Input: array f_hat ∈ Z^{256}     ▷ the coeffcients of input NTT representation
     // Output: array f ∈ Z^{256}        ▷ the coeffcients of the inverse-NTT of the input
 
     // 1: f ← f_hat                     ▷ will compute in-place on a copy of input array
-    let mut f: [Z256; 256] = [Z256(0); 256];
+    let mut f: [Z; 256] = [Z::default(); 256];
     f.copy_from_slice(f_hat);
 
     // 2: k ← 127
@@ -70,7 +70,8 @@ pub fn ntt_inv(f_hat: &[Z256; 256]) -> [Z256; 256] {
         for start in (0..256).step_by(2 * len) {
             //
             // 5: zeta ← ζ^{BitRev7(k)} mod q
-            let zeta = Z256(ZETA_TABLE[k << 1]);
+            let mut zeta = Z::default();
+            zeta.set_u16(ZETA_TABLE[k << 1]);
 
             // 6: k ← k − 1
             k -= 1;
@@ -92,7 +93,9 @@ pub fn ntt_inv(f_hat: &[Z256; 256]) -> [Z256; 256] {
     } // 13: end for
 
     // 14: f ← f · 3303 mod q                   ▷ multiply every entry by 3303 ≡ 128^{−1} mod q
-    f.iter_mut().for_each(|item| *item = item.mul(Z256(3303)));
+    let mut z3303 = Z::default();
+    z3303.set_u16(3303);
+    f.iter_mut().for_each(|item| *item = item.mul(z3303));
 
     // 15: return f
     f
@@ -103,21 +106,23 @@ pub fn ntt_inv(f_hat: &[Z256; 256]) -> [Z256; 256] {
 /// Computes the product (in the ring Tq ) of two NTT representations.
 #[must_use]
 #[allow(clippy::cast_possible_truncation)]
-pub fn multiply_ntts(f_hat: &[Z256; 256], g_hat: &[Z256; 256]) -> [Z256; 256] {
+pub fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
     // Input: Two arrays f_hat ∈ Z^{256}_q and g_hat ∈ Z^{256}_q        ▷ the coeffcients of two NTT representations
     // Output: An array h_hat ∈ Z^{256}_q                               ▷ the coeffcients of the product of the inputs
-    let mut h_hat: [Z256; 256] = [Z256(0); 256];
+    let mut h_hat: [Z; 256] = [Z::default(); 256];
 
     // for (i ← 0; i < 128; i ++)
     for i in 0..128 {
         //
         // 2: (h_hat[2i], h_hat[2i + 1]) ← BaseCaseMultiply( f_hat[2i], f_hat[2i + 1], g_hat[2i], g_hat[2i + 1], ζ^{2BitRev7(i) + 1})
+        let mut zt = Z::default();
+        zt.set_u16(ZETA_TABLE[i ^ 0x80]);
         let (h_hat_2i, h_hat_2ip1) = base_case_multiply(
             f_hat[2 * i],
             f_hat[2 * i + 1],
             g_hat[2 * i],
             g_hat[2 * i + 1],
-            Z256(ZETA_TABLE[i ^ 0x80]),
+            zt,
         );
         h_hat[2 * i] = h_hat_2i;
         h_hat[2 * i + 1] = h_hat_2ip1;
@@ -130,7 +135,7 @@ pub fn multiply_ntts(f_hat: &[Z256; 256], g_hat: &[Z256; 256]) -> [Z256; 256] {
 /// Algorithm 11 `BaseCaseMultiply(a0, a1, b0, b1, gamma)` on page 24.
 /// Computes the product of two degree-one polynomials with respect to a quadratic modulus.
 #[must_use]
-pub fn base_case_multiply(a0: Z256, a1: Z256, b0: Z256, b1: Z256, gamma: Z256) -> (Z256, Z256) {
+pub fn base_case_multiply(a0: Z, a1: Z, b0: Z, b1: Z, gamma: Z) -> (Z, Z) {
     // Input: a0 , a1 , b0 , b1 ∈ Z_q               ▷ the coefficients of a0 + a1 X and b0 + b1 X
     // Input: γ ∈ Z_q                               ▷ the modulus is X^2 − γ
     // Output: c0 , c1 ∈ Z_q                        ▷ the coeffcients of the product of the two polynomials

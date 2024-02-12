@@ -1,10 +1,10 @@
-use sha3::digest::Update;
-use sha3::digest::{ExtendableOutput, XofReader};
 use sha3::{Digest, Sha3_256, Sha3_512, Shake128, Shake256};
+use sha3::digest::{ExtendableOutput, XofReader};
+use sha3::digest::Update;
 
 use crate::ntt::multiply_ntts;
-use crate::types::Z256;
 use crate::Q;
+use crate::types::Z;
 
 /// If the condition is not met, return an error message. Borrowed from the `anyhow` crate.
 macro_rules! ensure {
@@ -17,12 +17,13 @@ macro_rules! ensure {
 
 pub(crate) use ensure; // make available throughout crate
 
+
 /// Vector addition; See bottom of page 9, second row: `z_hat` = `u_hat` + `v_hat`
 #[must_use]
 pub(crate) fn vec_add<const K: usize>(
-    vec_a: &[[Z256; 256]; K], vec_b: &[[Z256; 256]; K],
-) -> [[Z256; 256]; K] {
-    let mut result = [[Z256(0); 256]; K];
+    vec_a: &[[Z; 256]; K], vec_b: &[[Z; 256]; K],
+) -> [[Z; 256]; K] {
+    let mut result = [[Z::default(); 256]; K];
     for i in 0..vec_a.len() {
         for j in 0..vec_a[i].len() {
             result[i][j] = vec_a[i][j].add(vec_b[i][j]);
@@ -35,9 +36,9 @@ pub(crate) fn vec_add<const K: usize>(
 /// Matrix by vector multiplication; See top of page 10, first row: `w_hat` = `A_hat` mul `u_hat`
 #[must_use]
 pub(crate) fn mat_vec_mul<const K: usize>(
-    a_hat: &[[[Z256; 256]; K]; K], u_hat: &[[Z256; 256]; K],
-) -> [[Z256; 256]; K] {
-    let mut w_hat = [[Z256(0); 256]; K];
+    a_hat: &[[[Z; 256]; K]; K], u_hat: &[[Z; 256]; K],
+) -> [[Z; 256]; K] {
+    let mut w_hat = [[Z::default(); 256]; K];
     #[allow(clippy::needless_range_loop)]
     for i in 0..K {
         #[allow(clippy::needless_range_loop)]
@@ -55,9 +56,9 @@ pub(crate) fn mat_vec_mul<const K: usize>(
 /// Matrix transpose by vector multiplication; See top of page 10, second row: `y_hat` = `A_hat^T` mul `u_hat`
 #[must_use]
 pub(crate) fn mat_t_vec_mul<const K: usize>(
-    a_hat: &[[[Z256; 256]; K]; K], u_hat: &[[Z256; 256]; K],
-) -> [[Z256; 256]; K] {
-    let mut y_hat = [[Z256(0); 256]; K];
+    a_hat: &[[[Z; 256]; K]; K], u_hat: &[[Z; 256]; K],
+) -> [[Z; 256]; K] {
+    let mut y_hat = [[Z::default(); 256]; K];
     #[allow(clippy::needless_range_loop)]
     for i in 0..K {
         #[allow(clippy::needless_range_loop)]
@@ -75,9 +76,9 @@ pub(crate) fn mat_t_vec_mul<const K: usize>(
 /// Vector dot product; See top of page 10, third row: `z_hat` = `u_hat^T` mul `v_hat`
 #[must_use]
 pub(crate) fn dot_t_prod<const K: usize>(
-    u_hat: &[[Z256; 256]; K], v_hat: &[[Z256; 256]; K],
-) -> [Z256; 256] {
-    let mut result = [Z256(0); 256];
+    u_hat: &[[Z; 256]; K], v_hat: &[[Z; 256]; K],
+) -> [Z; 256] {
+    let mut result = [Z::default(); 256];
     for j in 0..K {
         let tmp = multiply_ntts(&u_hat[j], &v_hat[j]);
         for k in 0..256 {
@@ -167,17 +168,17 @@ fn nearest(numerator: u32, denominator: u32) -> u16 {
 
 /// Compress<d> from page 18 (4.5).
 /// x → ⌈(2^d/q) · x⌋
-pub(crate) fn compress(d: u32, inout: &mut [Z256]) {
+pub(crate) fn compress(d: u32, inout: &mut [Z]) {
     for x_ref in &mut *inout {
-        x_ref.0 = nearest(2u32.pow(d) * u32::from(x_ref.0), Q);
+        x_ref.set_u16(nearest(2u32.pow(d) * x_ref.get_u32(), Q));
     }
 }
 
 
 /// Decompress<d> from page 18 (4.6).
 /// y → ⌈(q/2^d) · y⌋ .
-pub(crate) fn decompress(d: u32, inout: &mut [Z256]) {
+pub(crate) fn decompress(d: u32, inout: &mut [Z]) {
     for y_ref in &mut *inout {
-        y_ref.0 = nearest(Q * u32::from(y_ref.0), 2u32.pow(d));
+        y_ref.set_u16(nearest(Q * y_ref.get_u32(), 2u32.pow(d)));
     }
 }

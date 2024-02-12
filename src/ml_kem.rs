@@ -3,8 +3,8 @@ use rand_core::CryptoRngCore;
 use crate::byte_fns::{byte_decode, byte_encode};
 use crate::helpers::{ensure, g, h, j};
 use crate::k_pke::k_pke_decrypt;
-use crate::types::Z256;
 use crate::SharedSecretKey;
+use crate::types::Z;
 
 use super::k_pke::{k_pke_encrypt, k_pke_key_gen};
 
@@ -60,7 +60,7 @@ pub(crate) fn ml_kem_encaps<
 
     // modulus check: perform the computation ek ← ByteEncode12 (ByteDecode12(ek_tidle)
     // note: after checking, we run with the original input (due to const array allocation); the last 32 bytes is rho  // TODO: revisit
-    let mut ek_hat = [Z256(0); 256];
+    let mut ek_hat = [Z::default(); 256];
     for i in 0..K {
         let mut ek_tilde = [0u8; 384];
         byte_decode(12, &ek[384 * i..384 * (i + 1)], &mut ek_hat)?;

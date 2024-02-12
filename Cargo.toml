@@ -10,8 +10,8 @@ authors = ["Eric Schorn <eschorn@integritychain.com>"]
 documentation = "https://docs.rs/fips203"
 categories = ["cryptography", "no-std"]
 repository = "https://github.com/integritychain/fips203"
-keywords = ["FIPS", "203", "lattice", "kem", "ml"]
-rust-version = "1.70"
+keywords = ["FIPS", "FIPS203", "lattice", "key", "encapsulation"]
+rust-version = "1.74"
 
 
 [dependencies]
@@ -33,7 +33,7 @@ rand = "0.8.5"
 regex = "1.10.2"
 hex = "0.4.3"
 rand_chacha = "0.3.1"
-criterion = "0.4" # Needed for MSRV 1.70; ideally 0.5.1
+criterion = "0.5.1"
 flate2 = "1.0.27"
 
 

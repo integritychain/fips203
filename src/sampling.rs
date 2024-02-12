@@ -3,15 +3,15 @@ use sha3::digest::XofReader;
 use crate::Q;
 //use crate::byte_fns::bytes_to_bits;
 //use crate::helpers::ensure;
-use crate::types::Z256;
+use crate::types::Z;
 
 /// Algorithm 6 `SampleNTT(B)` on page 20.
 /// If the input is a stream of uniformly random bytes, the output is a uniformly random element of `T_q`.
 #[must_use]
-pub fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z256; 256] {
+pub fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
     // Input: byte stream B ∈ B^{∗}
     // Output: array a_hat ∈ Z^{256}_q              ▷ the coeffcients of the NTT of a polynomial
-    let mut array_a_hat = [Z256(0); 256];
+    let mut array_a_hat = [Z::default(); 256];
     let mut bbb = [0u8; 3]; // Space for 3 random (byte) draws
 
     // 1: i ← 0 (not needed as three bytes are repeatedly drawn from the rng bytestream via bbb)
@@ -34,7 +34,9 @@ pub fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z256; 256] {
         if d1 < Q {
             //
             // 7: a_hat[j] ← d1         ▷ a_hat ∈ Z256
-            array_a_hat[j] = Z256(u16::try_from(d1).unwrap());
+            let mut ah = Z::default();
+            ah.set_u16(u16::try_from(d1).unwrap());
+            array_a_hat[j] = ah;
 
             // 8: j ← j+1
             j += 1;
@@ -45,7 +47,9 @@ pub fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z256; 256] {
         if (d2 < Q) & (j < 256) {
             //
             // 11: a_hat[j] ← d2
-            array_a_hat[j] = Z256(u16::try_from(d2).unwrap());
+            let mut ah = Z::default();
+            ah.set_u16(u16::try_from(d2).unwrap());
+            array_a_hat[j] = ah;
 
             // 12: j ← j+1
             j += 1;
@@ -61,9 +65,9 @@ pub fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z256; 256] {
 
 /// Algorithm 7 `SamplePolyCBDη(B)` on page 20.
 /// If the input is a stream of uniformly random bytes, outputs a sample from the distribution Dη (Rq ).
-#[allow(clippy::unnecessary_wraps)]  // TODO: revisit
-pub fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> Result<[Z256; 256], &'static str> {
-    let mut array_f: [Z256; 256] = [Z256(0); 256];
+#[allow(clippy::unnecessary_wraps)] // TODO: revisit
+pub fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> Result<[Z; 256], &'static str> {
+    let mut array_f: [Z; 256] = [Z::default(); 256];
     let mut temp = 0;
     let mut int_index = 0;
     let mut bit_index = 0;
@@ -75,7 +79,10 @@ pub fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> Result<[Z256; 256], &'s
             let x = (tmask_x as u8).count_ones();
             let tmask_y = (temp >> eta) & (2u64.pow(eta) - 1);
             let y = (tmask_y as u8).count_ones();
-            array_f[int_index] = Z256(x as u16).sub(Z256(y as u16));
+            let (mut xx, mut yy) = (Z::default(), Z::default());
+            xx.set_u16(x as u16);
+            yy.set_u16(y as u16);
+            array_f[int_index] = xx.sub(yy);
             bit_index -= 2 * (eta as usize);
             temp >>= 2 * (eta as usize);
             int_index += 1;

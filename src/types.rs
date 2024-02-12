@@ -1,20 +1,23 @@
 use crate::Q;
 
-// While Z256 is nice, simple and correct, the performance is atrocious.
+// While Z is nice, simple and correct, the performance is suboptimal.
 // This will be addressed (particularly in matrix operations etc).
 
 /// Stored as u16, but arithmetic as u32 (so we can multiply/reduce/etc)
-#[derive(Clone, Copy)]
-pub struct Z256(pub u16);
+#[derive(Clone, Copy, Default)]
+pub struct Z(u16);
 
 #[allow(clippy::inline_always)]
-impl Z256 {
+impl Z {
     const M: u64 = 2u64.pow(32) / (Self::Q64);
     #[allow(clippy::cast_possible_truncation)]
     const Q16: u16 = Q as u16;
     const Q64: u64 = Q as u64;
 
     pub fn get_u16(self) -> u16 { self.0 }
+    pub fn get_u32(self) -> u32 { self.0 as u32 }
+
+    pub fn set_u16(&mut self, a: u16) { self.0 = a }
 
     #[inline(always)]
     pub fn add(self, other: Self) -> Self {
