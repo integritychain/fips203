@@ -7,6 +7,7 @@ use crate::Q;
 #[derive(Clone, Copy, Default)]
 pub struct Z(u16);
 
+
 #[allow(clippy::inline_always)]
 impl Z {
     const M: u64 = 2u64.pow(32) / (Self::Q64);
@@ -23,7 +24,7 @@ impl Z {
     pub fn add(self, other: Self) -> Self {
         let sum = self.0.wrapping_add(other.0);
         let (trial, borrow) = sum.overflowing_sub(Self::Q16);
-        let result = if borrow { sum } else { trial }; // Not quite CT
+        let result = if borrow { sum } else { trial }; // TODO Not quite CT
         Self(result)
     }
 
@@ -31,7 +32,7 @@ impl Z {
     pub fn sub(self, other: Self) -> Self {
         let (diff, borrow) = self.0.overflowing_sub(other.0);
         let trial = diff.wrapping_add(Self::Q16);
-        let result = if borrow { trial } else { diff }; // Not quite CT
+        let result = if borrow { trial } else { diff }; // TODO Not quite CT
         Self(result)
     }
 
@@ -42,7 +43,7 @@ impl Z {
         let quot = quot >> (32);
         let rem = prod - quot * Self::Q64;
         let (diff, borrow) = rem.overflowing_sub(Self::Q64);
-        let result = if borrow { rem } else { diff }; // Not quite CT
+        let result = if borrow { rem } else { diff }; // TODO Not quite CT
         Self(u16::try_from(result).unwrap())
     }
 }

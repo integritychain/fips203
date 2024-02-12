@@ -88,7 +88,6 @@ pub(crate) fn dot_t_prod<const K: usize>(
     result
 }
 
-// TODO: update hashers to take list of byte-strings to hash (to save assembly)
 
 /// Function PRF on page 16 (4.1).
 #[must_use]
@@ -151,26 +150,19 @@ pub(crate) fn j(bytes: &[&[u8]]) -> [u8; 32] {
 }
 
 
-// BitRev7(i) from page 21 line 839-840 -- REMOVED DUE TO ZETA_TABLE IN ntt.rs
-
-
-/// Round to nearest  TODO: refine/optimize
-fn nearest(numerator: u32, denominator: u32) -> u16 {
-    let remainder = numerator % denominator;
-    let quotient = u16::try_from(numerator / denominator).unwrap();
-    if (2 * remainder) >= denominator {
-        quotient + 1
-    } else {
-        quotient
-    }
-}
-
-
 /// Compress<d> from page 18 (4.5).
 /// x → ⌈(2^d/q) · x⌋
 pub(crate) fn compress(d: u32, inout: &mut [Z]) {
     for x_ref in &mut *inout {
-        x_ref.set_u16(nearest(2u32.pow(d) * x_ref.get_u32(), Q));
+        let q64 = Q as u64;
+        let k = 32;
+        let m = 2u64.pow(k) / q64;
+        let top = (x_ref.get_u32() as u64) << d;
+        let quot = (top * m) >> k;  // Barrett quotient may be too small by 1...
+        let quot = if (top - quot * q64) > q64 { quot + 1 } else { quot }; // ...so adjust if needed TODO: CT
+        let rem = top - quot * q64;
+        let x = if rem > (q64 >> 1) { quot + 1 } else { quot };
+        x_ref.set_u16(x as u16);
     }
 }
 
@@ -179,6 +171,7 @@ pub(crate) fn compress(d: u32, inout: &mut [Z]) {
 /// y → ⌈(q/2^d) · y⌋ .
 pub(crate) fn decompress(d: u32, inout: &mut [Z]) {
     for y_ref in &mut *inout {
-        y_ref.set_u16(nearest(Q * y_ref.get_u32(), 2u32.pow(d)));
+        let qy = Q * y_ref.get_u32() + 2u32.pow(d) - 1;
+        y_ref.set_u16((qy >> d) as u16);
     }
 }

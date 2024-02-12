@@ -1,8 +1,6 @@
 use sha3::digest::XofReader;
 
 use crate::Q;
-//use crate::byte_fns::bytes_to_bits;
-//use crate::helpers::ensure;
 use crate::types::Z;
 
 /// Algorithm 6 `SampleNTT(B)` on page 20.
@@ -28,7 +26,7 @@ pub fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
         let d1 = u32::from(bbb[0]) + 256 * (u32::from(bbb[1]) & 0x0F);
 
         // 5: d2 ← ⌊B[i + 1]/16⌋ + 16 · B[i + 2]
-        let d2 = u32::from(bbb[1]) / 16 + 16 * u32::from(bbb[2]);
+        let d2 = (u32::from(bbb[1]) >> 4) + 16 * u32::from(bbb[2]);
 
         // 6: if d1 < q then
         if d1 < Q {

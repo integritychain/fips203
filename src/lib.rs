@@ -38,7 +38,7 @@ use crate::traits::SerDes;
 // Compress and Decompress on page 18                       --> helpers.rs
 //
 // The three parameter sets are modules in this file with injected macro code
-// that connects them into the functionality in ml_kem.rs. Some of the strange
+// that connects them into the functionality in ml_kem.rs. Some of the 'obtuse'
 // coding style is driven by clippy pedantic.
 
 mod byte_fns;

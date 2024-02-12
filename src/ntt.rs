@@ -150,6 +150,10 @@ pub fn base_case_multiply(a0: Z, a1: Z, b0: Z, b1: Z, gamma: Z) -> (Z, Z) {
 }
 
 
+// ----------
+// The functionality below calculates the Zeta array at compile-time. Thus, not particularly optimum or CT.
+
+
 /// HAC Algorithm 14.76 Right-to-left binary exponentiation mod Q.
 #[must_use]
 #[allow(clippy::cast_possible_truncation)]
@@ -167,11 +171,10 @@ const fn pow_mod_q(g: u32, e: u8) -> u16 {
             s = (s * s).rem_euclid(Q as u64);
         };
     }
-    //reduce_q64(result)
     result as u16
 }
 
-#[allow(dead_code)]
+
 #[allow(clippy::cast_possible_truncation)]
 const fn gen_zeta_table() -> [u16; 256] {
     let mut result = [0u16; 256];
@@ -183,5 +186,5 @@ const fn gen_zeta_table() -> [u16; 256] {
     result
 }
 
-#[allow(dead_code)]
+
 pub(crate) static ZETA_TABLE: [u16; 256] = gen_zeta_table();
