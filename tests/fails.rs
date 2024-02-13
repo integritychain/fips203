@@ -1,0 +1,30 @@
+use rand_chacha::rand_core::SeedableRng;
+use rand_core::RngCore;
+
+use fips203::ml_kem_512;
+use fips203::traits::{Decaps, SerDes};
+
+// Highlights potential validation opportunities
+#[test]
+fn fails_512() {
+    let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
+    for _i in 0..100 {
+        let mut bad_ek_bytes = [0u8; ml_kem_512::EK_LEN];
+        rng.fill_bytes(&mut bad_ek_bytes);
+        let bad_ek = ml_kem_512::EncapsKey::try_from_bytes(bad_ek_bytes);
+        assert!(bad_ek.is_err());
+
+        let mut bad_ct_bytes = [0u8; ml_kem_512::CT_LEN];
+        rng.fill_bytes(&mut bad_ct_bytes);
+        let bad_ct = ml_kem_512::CipherText::try_from_bytes(bad_ct_bytes);
+        // TODO --> assert!(bad_ct.is_err());
+
+        let mut bad_dk_bytes = [0u8; ml_kem_512::DK_LEN];
+        rng.fill_bytes(&mut bad_dk_bytes);
+        let bad_dk = ml_kem_512::DecapsKey::try_from_bytes(bad_dk_bytes);
+        // TODO --> assert!(bad_dk.is_err());
+
+        let bad_ssk_bytes = bad_dk.unwrap().try_decaps_vt(&bad_ct.unwrap());
+        assert!(bad_ssk_bytes.is_err());
+    }
+}

@@ -62,7 +62,11 @@ pub fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
 
 
 /// Algorithm 7 `SamplePolyCBDη(B)` on page 20.
-/// If the input is a stream of uniformly random bytes, outputs a sample from the distribution Dη (Rq ).
+/// If the input is a stream of uniformly random bytes, outputs a sample from the distribution Dη (Rq ). <br>
+/// This function is an optimized version that avoids the `BytesToBits` function (algorithm 3).
+///
+/// Input: byte array B ∈ B^{64η} <br>
+/// Output: array f ∈ `Z^{256}_q`
 #[allow(clippy::unnecessary_wraps)] // TODO: revisit
 pub fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> Result<[Z; 256], &'static str> {
     let mut array_f: [Z; 256] = [Z::default(); 256];
@@ -89,37 +93,17 @@ pub fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> Result<[Z; 256], &'stat
     Ok(array_f)
 }
 
-// /// Algorithm 7 `SamplePolyCBDη(B)` on page 20.
-// /// If the input is a stream of uniformly random bytes, outputs a sample from the distribution Dη (Rq ).
-// #[allow(dead_code)]
-// pub fn sample_poly_cbd2<const ETA: usize, const ETA_512: usize>(
-//     byte_array_b: &[u8],
-// ) -> Result<[Z256; 256], &'static str> {
-//     // Input: byte array B ∈ B^{64η}
-//     // Output: array f ∈ Z^{256}_q
-//     ensure!(ETA * 512 == ETA_512, "Alg7: const probs");
-//     ensure!(byte_array_b.len() == ETA * 64, "Alg7: bytes len not ETA * 64");
+// The original pseudocode for Algorithm 7 follows...
+// Algorithm 7 `SamplePolyCBDη(B)` on page 20.
+// If the input is a stream of uniformly random bytes, outputs a sample from the distribution Dη (Rq ).
 //
-//     let mut array_f: [Z256; 256] = [Z256(0); 256];
-//     let mut bit_array = [0u8; ETA_512];
-//
-//     // 1: b ← BytesToBits(B)
-//     bytes_to_bits(byte_array_b, &mut bit_array)?;
-//
-//     // 2: for (i ← 0; i < 256; i ++)
-//     for i in 0..256 {
-//         //
-//         // 3: x ← ∑_{j=0}^{η-1} b[2iη + j]
-//         let x = (0..ETA).fold(0, |acc: u32, j| acc + u32::from(bit_array[2 * i * ETA + j]));
-//
-//         // 4: y ← ∑_{j=0}^{η-1} b[2iη + η + j]
-//         let y = (0..ETA).fold(0, |acc: u32, j| acc + u32::from(bit_array[2 * i * ETA + ETA + j]));
-//
-//         // 5: f [i] ← x − y mod q
-//         array_f[i] = Z256(u16::try_from(x).unwrap()).sub(Z256(u16::try_from(y).unwrap()));
-//
-//         //
-//     } // 6: end for
-//
-//     Ok(array_f) // 7: return f
+// Input: byte array B ∈ B^{64η}
+// Output: array f ∈ Z^{256}_q
+// 1: b ← BytesToBits(B)
+// 2: for (i ← 0; i < 256; i ++)
+// 3:   x ← ∑_{j=0}^{η-1} b[2iη + j] //
+// 4:   y ← ∑_{j=0}^{η-1} b[2iη + η + j]
+// 5:   f [i] ← x − y mod q
+// 6: end for
+// 7: return f
 // }
