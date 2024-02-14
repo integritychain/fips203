@@ -36,13 +36,13 @@ pub(crate) fn byte_encode(
     let mut bit_index = 0;
     let mut byte_index = 0;
     // Choose m per spec
-    let m = if d < 12 { 2u64.pow(d) } else { Q as u64 };
+    let m = if d < 12 { 2u64.pow(d) } else { u64::from(Q) };
 
     // Work through each of the input integers
     for coeff in integers_f {
         //
         // Get coeff as u64, check magnitude, and clean off top bits
-        let coeff = coeff.get_u16() as u64;
+        let coeff = u64::from(coeff.get_u16());
         ensure!(coeff <= m, "Alg4: Coeff out of range");
         let coeff = coeff & (2u64.pow(d) - 1);
 
@@ -51,6 +51,7 @@ pub(crate) fn byte_encode(
         bit_index += d as usize;
 
         // While we have enough bits to drop a byte, do so
+        #[allow(clippy::cast_possible_truncation)]
         while bit_index > 7 {
             //
             // Drop the byte
@@ -86,10 +87,11 @@ pub(crate) fn byte_decode(
     for byte in bytes_b {
         //
         // Drop the byte into the upper/empty portion of temp; update bit index
-        temp |= (*byte as u64) << bit_index;
+        temp |= u64::from(*byte) << bit_index;
         bit_index += 8;
 
         // If we have enough bits to drop an int, do so
+        #[allow(clippy::cast_possible_truncation)]
         while bit_index >= d {
             //
             // Mask off the upport portion and drop it in
@@ -104,7 +106,11 @@ pub(crate) fn byte_decode(
         }
     }
 
-    let m = if d < 12 { 2u16.pow(d) } else { Q as u16 };
+    let m = if d < 12 {
+        2u16.pow(d)
+    } else {
+        u16::try_from(Q).unwrap()
+    };
     ensure!(integers_f.iter().all(|e| e.get_u16() < m), "Alg5: integers out of range");
     Ok(())
 }

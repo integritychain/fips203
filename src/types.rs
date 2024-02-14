@@ -1,7 +1,8 @@
 use crate::Q;
 
 // While Z is nice, simple and correct, the performance is suboptimal.
-// This will be addressed (particularly in matrix operations etc).
+// This will be addressed (particularly in matrix operations etc) 'soon',
+// potentially as a 256-entry row.
 
 /// Stored as u16, but arithmetic as u32 (so we can multiply/reduce/etc)
 #[derive(Clone, Copy, Default)]
@@ -16,7 +17,8 @@ impl Z {
     const Q64: u64 = Q as u64;
 
     pub fn get_u16(self) -> u16 { self.0 }
-    pub fn get_u32(self) -> u32 { self.0 as u32 }
+
+    pub fn get_u32(self) -> u32 { u32::from(self.0) }
 
     pub fn set_u16(&mut self, a: u16) { self.0 = a }
 

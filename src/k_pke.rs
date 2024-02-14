@@ -14,7 +14,7 @@ use crate::types::Z;
 /// Output: encryption key `ekPKE ∈ B^{384*k+32}` <br>
 /// Output: decryption key `dkPKE ∈ B^{384*k}`
 #[allow(clippy::similar_names, clippy::module_name_repetitions)]
-pub fn k_pke_key_gen<const K: usize, const ETA1: usize, const ETA1_64: usize>(
+pub fn k_pke_key_gen<const K: usize, const ETA1: u32, const ETA1_64: usize>(
     rng: &mut impl CryptoRngCore, ek_pke: &mut [u8], dk_pke: &mut [u8],
 ) -> Result<(), &'static str> {
     ensure!(ek_pke.len() == 384 * K + 32, "Alg12: ek_pke not 384 * K + 32");
@@ -43,9 +43,11 @@ pub fn k_pke_key_gen<const K: usize, const ETA1: usize, const ETA1_64: usize>(
             // 6: A_hat[i, j] ← SampleNTT(XOF(ρ, i, j))     ▷ each entry of Â uniform in NTT domain
             // See page 21 regarding transpose of i, j -? j, i in XOF() https://csrc.nist.gov/files/pubs/fips/203/ipd/docs/fips-203-initial-public-comments-2023.pdf
             a_hat[i][j] = sample_ntt(xof(&rho, u8::try_from(j).unwrap(), u8::try_from(i).unwrap()));
-            //
-        } // 7: end for
-    } // 8: end for
+
+            // 7: end for
+        }
+        // 8: end for
+    }
 
     let mut s = [[Z::default(); 256]; K];
 
@@ -54,12 +56,13 @@ pub fn k_pke_key_gen<const K: usize, const ETA1: usize, const ETA1_64: usize>(
     for i in 0..K {
         //
         // 10: s[i] ← SamplePolyCBDη1(PRFη1(σ, N))     ▷ s[i] ∈ Z^{256}_q sampled from CBD
-        s[i] = sample_poly_cbd(ETA1 as u32, &prf::<ETA1_64>(&sigma, n))?;
+        s[i] = sample_poly_cbd(ETA1, &prf::<ETA1_64>(&sigma, n))?;
 
         // 11: N ← N +1
         n += 1;
-        //
-    } // 12: end for
+
+        // 12: end for
+    }
 
     let mut e = [[Z::default(); 256]; K];
 
@@ -68,12 +71,13 @@ pub fn k_pke_key_gen<const K: usize, const ETA1: usize, const ETA1_64: usize>(
     for i in 0..K {
         //
         // 14: e[i] ← SamplePolyCBDη1(PRFη1(σ, N))     ▷ e[i] ∈ Z^{256}_q sampled from CBD
-        e[i] = sample_poly_cbd(ETA1 as u32, &prf::<ETA1_64>(&sigma, n))?;
+        e[i] = sample_poly_cbd(ETA1, &prf::<ETA1_64>(&sigma, n))?;
 
         // 15: N ← N +1
         n += 1;
-        //
-    } // 16: end for
+
+        // 16: end for
+    }
 
     let mut s_hat = [[Z::default(); 256]; K];
 
@@ -88,7 +92,6 @@ pub fn k_pke_key_gen<const K: usize, const ETA1: usize, const ETA1_64: usize>(
     for i in 0..K {
         e_hat[i] = ntt(&e[i]);
     }
-
 
     // 19: t̂ ← Â ◦ ŝ + ê
     let as_hat = mat_vec_mul(&a_hat, &s_hat);
@@ -115,12 +118,12 @@ pub fn k_pke_key_gen<const K: usize, const ETA1: usize, const ETA1_64: usize>(
 #[allow(clippy::many_single_char_names)]
 pub(crate) fn k_pke_encrypt<
     const K: usize,
-    const ETA1: usize,
+    const ETA1: u32,
     const ETA1_64: usize,
-    const ETA2: usize,
+    const ETA2: u32,
     const ETA2_64: usize,
-    const DU: usize,
-    const DV: usize,
+    const DU: u32,
+    const DV: u32,
 >(
     ek: &[u8], m: &[u8], randomness: &[u8; 32], ct: &mut [u8],
 ) -> Result<(), &'static str> {
@@ -131,8 +134,8 @@ pub(crate) fn k_pke_encrypt<
     ensure!(ek.len() == 384 * K + 32, "Alg13: ek len not 384 * K + 32");
     ensure!(m.len() == 32, "Alg13: m len not 32");
     ensure!(randomness.len() == 32, "Alg13: randomness len not 32");
-    ensure!(ETA1 * 64 == ETA1_64, "Alg13: const probs");
-    ensure!(ETA2 * 64 == ETA2_64, "Alg13: const probs");
+    ensure!(ETA1 as usize * 64 == ETA1_64, "Alg13: const probs");
+    ensure!(ETA2 as usize * 64 == ETA2_64, "Alg13: const probs");
 
     // 1: N ← 0
     let mut n = 0;
@@ -157,11 +160,12 @@ pub(crate) fn k_pke_encrypt<
         for j in 0..K {
             //
             // 6: Â[i, j] ← SampleNTT(XOF(ρ, i, j))
-
             a_hat[i][j] = sample_ntt(xof(&rho, u8::try_from(j).unwrap(), u8::try_from(i).unwrap()));
-            //
-        } // 7: end for
-    } // 8: end for
+
+            // 7: end for
+        }
+        // 8: end for
+    }
 
     let mut r = [[Z::default(); 256]; K];
 
@@ -170,12 +174,13 @@ pub(crate) fn k_pke_encrypt<
     for i in 0..K {
         //
         // 10: r[i] ← SamplePolyCBDη 1 (PRFη 1 (r, N))      ▷ r[i] ∈ Z^{256}_q sampled from CBD
-        r[i] = sample_poly_cbd(ETA1 as u32, &prf::<ETA1_64>(randomness, n))?;
+        r[i] = sample_poly_cbd(ETA1, &prf::<ETA1_64>(randomness, n))?;
 
         // 11: N ← N +1
         n += 1;
-        //
-    } // 12: end for
+
+        // 12: end for
+    }
 
     let mut e1 = [[Z::default(); 256]; K];
 
@@ -184,15 +189,16 @@ pub(crate) fn k_pke_encrypt<
     for i in 0..K {
         //
         // 14: e1 [i] ← SamplePolyCBDη2(PRFη2(r, N))        ▷ e1 [i] ∈ Z^{256}_q sampled from CBD
-        e1[i] = sample_poly_cbd(ETA2 as u32, &prf::<ETA2_64>(randomness, n))?;
+        e1[i] = sample_poly_cbd(ETA2, &prf::<ETA2_64>(randomness, n))?;
 
         // 15: N ← N +1
         n += 1;
-        //
-    } // 16: end for
+
+        // 16: end for
+    }
 
     // 17: 17: e2 ← SamplePolyCBDη(PRFη2(r, N))     ▷ sample e2 ∈ Z^{256}_q from CBD
-    let e2 = sample_poly_cbd(ETA2 as u32, &prf::<ETA2_64>(randomness, n))?;
+    let e2 = sample_poly_cbd(ETA2, &prf::<ETA2_64>(randomness, n))?;
 
     // 18: 18: r̂ ← NTT(r)              ▷ NTT is run k times
     let mut r_hat = [[Z::default(); 256]; K];
@@ -218,15 +224,15 @@ pub(crate) fn k_pke_encrypt<
     v = vec_add(&vec_add(&[v], &[e2]), &[mu])[0];
 
     // 22: c1 ← ByteEncode_{du}(Compress_{du}(u))       ▷ ByteEncodedu is run k times
-    let step = 32 * DU;
+    let step = 32 * DU as usize;
     for i in 0..K {
-        compress(DU as u32, &mut u[i]);
-        byte_encode(DU as u32, &u[i], &mut ct[i * step..(i + 1) * step])?;
+        compress(DU, &mut u[i]);
+        byte_encode(DU, &u[i], &mut ct[i * step..(i + 1) * step])?;
     }
 
     // 23: c2 ← ByteEncode_{dv}(Compress_{dv}(v))
-    compress(DV as u32, &mut v);
-    byte_encode(DV as u32, &v, &mut ct[K * step..(K * step + 32 * DV)])?;
+    compress(DV, &mut v);
+    byte_encode(DV, &v, &mut ct[K * step..(K * step + 32 * DV as usize)])?;
 
     // 24: return c ← (c1 ∥ c2 )
     Ok(())
@@ -235,32 +241,32 @@ pub(crate) fn k_pke_encrypt<
 
 /// Algorithm 14 `K-PKE.Decrypt(dkPKE, c)` on page 28.
 /// Uses the decryption key to decrypt a ciphertext.
-pub(crate) fn k_pke_decrypt<const K: usize, const DU: usize, const DV: usize>(
+pub(crate) fn k_pke_decrypt<const K: usize, const DU: u32, const DV: u32>(
     dk: &[u8], ct: &[u8],
 ) -> Result<[u8; 32], &'static str> {
     // Input: decryption key dk_{PKE} ∈ B^{384*k}
     // Input: ciphertext c ∈ B^{32(du*k+dv)}
     // Output: message m ∈ B^{32}
     ensure!(dk.len() == 384 * K, "Alg14: dk len not 384 * K");
-    ensure!(ct.len() == 32 * (DU * K + DV), "Alg14: 32 * (DU * K + DV)");
+    ensure!(ct.len() == 32 * (DU as usize * K + DV as usize), "Alg14: 32 * (DU * K + DV)");
 
     // 1: c1 ← c[0 : 32du k]
-    let c1 = &ct[0..32 * DU * K];
+    let c1 = &ct[0..32 * DU as usize * K];
 
     // 2: c2 ← c[32du k : 32(du*k + dv)]
-    let c2 = &ct[32 * DU * K..32 * (DU * K + DV)];
+    let c2 = &ct[32 * DU as usize * K..32 * (DU as usize * K + DV as usize)];
 
     // 3: 3: u ← Decompress_{du}(ByteDecode_{du}(c_1))      ▷ ByteDecode_{du} invoked k times
     let mut u = [[Z::default(); 256]; K];
     for i in 0..K {
-        byte_decode(DU as u32, &c1[32 * DU * i..32 * DU * (i + 1)], &mut u[i])?;
-        decompress(DU as u32, &mut u[i]);
+        byte_decode(DU, &c1[32 * DU as usize * i..32 * DU as usize * (i + 1)], &mut u[i])?;
+        decompress(DU, &mut u[i]);
     }
 
     // 4: v ← Decompress_{dv}(ByteDecode_{dv}(c_2))
     let mut v = [Z::default(); 256];
-    byte_decode(DV as u32, c2, &mut v)?;
-    decompress(DV as u32, &mut v);
+    byte_decode(DV, c2, &mut v)?;
+    decompress(DV, &mut v);
 
     // 5: s_hat ← ByteDecode_{12}(dk_{PKE{)
     let mut s_hat = [[Z::default(); 256]; K];

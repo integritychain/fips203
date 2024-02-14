@@ -2,7 +2,7 @@ workspace = { members = [], exclude = ["dudect", "ct_cm4"] }
 
 [package]
 name = "fips203"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "FIPS 203 (draft): Module-Lattice-Based Key-Encapsulation Mechanism"

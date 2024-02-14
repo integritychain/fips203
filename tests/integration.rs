@@ -1,7 +1,7 @@
 use rand_chacha::rand_core::SeedableRng;
 
-use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
 use fips203::{ml_kem_1024, ml_kem_512, ml_kem_768};
+use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
 
 #[test]
 fn test_expected_flow_512() {
@@ -27,9 +27,14 @@ fn test_expected_flow_512() {
         let alice_ssk_bytes = alice_dk.try_decaps_vt(&alice_ct).unwrap();
 
         // Alice and Bob now have the same shared secret key
-        assert_eq!(bob_ssk_bytes, alice_ssk_bytes)
+        assert_eq!(bob_ssk_bytes, alice_ssk_bytes);
+
+        // Double check the correspondence of the serialized keypair (we already have alice_ek)
+        let alice_dk_bytes = alice_dk.into_bytes();
+        assert!(ml_kem_512::KG::validate_keypair_vt(&alice_ek_bytes, &alice_dk_bytes));
     }
 }
+
 
 #[test]
 fn test_expected_flow_768() {
@@ -55,9 +60,14 @@ fn test_expected_flow_768() {
         let alice_ssk_bytes = alice_dk.try_decaps_vt(&alice_ct).unwrap();
 
         // Alice and Bob now have the same shared secret key
-        assert_eq!(bob_ssk_bytes, alice_ssk_bytes)
+        assert_eq!(bob_ssk_bytes, alice_ssk_bytes);
+
+        // Double check the correspondence of the serialized keypair (we already have alice_ek)
+        let alice_dk_bytes = alice_dk.into_bytes();
+        assert!(ml_kem_768::KG::validate_keypair_vt(&alice_ek_bytes, &alice_dk_bytes));
     }
 }
+
 
 #[test]
 fn test_expected_flow_1024() {
@@ -83,6 +93,10 @@ fn test_expected_flow_1024() {
         let alice_ssk_bytes = alice_dk.try_decaps_vt(&alice_ct).unwrap();
 
         // Alice and Bob now have the same shared secret key
-        assert_eq!(bob_ssk_bytes, alice_ssk_bytes)
+        assert_eq!(bob_ssk_bytes, alice_ssk_bytes);
+
+        // Double check the correspondence of the serialized keypair (we already have alice_ek)
+        let alice_dk_bytes = alice_dk.into_bytes();
+        assert!(ml_kem_1024::KG::validate_keypair_vt(&alice_ek_bytes, &alice_dk_bytes));
     }
 }

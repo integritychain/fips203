@@ -8,7 +8,7 @@ use crate::types::Z;
 
 /// Algorithm 15 `ML-KEM.KeyGen()` on page 29.
 /// Generates an encapsulation key and a corresponding decapsulation key.
-pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1: usize, const ETA1_64: usize>(
+pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1: u32, const ETA1_64: usize>(
     rng: &mut impl CryptoRngCore, ek: &mut [u8], dk: &mut [u8],
 ) -> Result<(), &'static str> {
     // Output: Encapsulation key ek ∈ B^{384k+32}
@@ -42,12 +42,12 @@ pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1: usize, const ETA1_64: u
 /// Uses the encapsulation key to generate a shared key and an associated ciphertext.
 pub(crate) fn ml_kem_encaps<
     const K: usize,
-    const ETA1: usize,
+    const ETA1: u32,
     const ETA1_64: usize,
-    const ETA2: usize,
+    const ETA2: u32,
     const ETA2_64: usize,
-    const DU: usize,
-    const DV: usize,
+    const DU: u32,
+    const DV: u32,
 >(
     rng: &mut impl CryptoRngCore, ek: &[u8], ct: &mut [u8],
 ) -> Result<SharedSecretKey, &'static str> {
@@ -72,10 +72,6 @@ pub(crate) fn ml_kem_encaps<
 
     // 2: (K, r) ← G(m∥H(ek))       ▷ derive shared secret key K and randomness r
     let h_ek = h(ek);
-    // let mut g_input = [0u8; 64];
-    // g_input[0..32].copy_from_slice(&m);
-    // g_input[32..64].copy_from_slice(&h_ek);
-    // let (k, r) = g(&g_input);
     let (k, r) = g(&[&m, &h_ek]);
 
     // 3: 3: c ← K-PKE.Encrypt(ek, m, r)        ▷ encrypt m using K-PKE with randomness r
@@ -91,12 +87,12 @@ pub(crate) fn ml_kem_encaps<
 #[allow(clippy::similar_names)]
 pub(crate) fn ml_kem_decaps<
     const K: usize,
-    const ETA1: usize,
+    const ETA1: u32,
     const ETA1_64: usize,
-    const ETA2: usize,
+    const ETA2: u32,
     const ETA2_64: usize,
-    const DU: usize,
-    const DV: usize,
+    const DU: u32,
+    const DV: u32,
     const J_LEN: usize,
     const CT_LEN: usize,
 >(
@@ -106,7 +102,7 @@ pub(crate) fn ml_kem_decaps<
     // Validated input: decapsulation key dk ∈ B^{768k+96}
     // Output: shared key K ∈ B^{32}
     // These length checks are a bit redundant...but present for completeness and paranoia
-    ensure!(ct.len() == 32 * (DU * K + DV), "Alg17: ct len not 32 * ...");
+    ensure!(ct.len() == 32 * (DU as usize * K + DV as usize), "Alg17: ct len not 32 * ...");
     // Ciphertext type check
     ensure!(dk.len() == 768 * K + 96, "Alg17: dk len not 768 ..."); // Decapsulation key type check
 
@@ -134,9 +130,6 @@ pub(crate) fn ml_kem_decaps<
     let m_prime = k_pke_decrypt::<K, DU, DV>(dk_pke, ct)?;
 
     // 6: (K′, r′) ← G(m′ ∥ h)
-    // let mut g_input = [0u8; 32 + 32];
-    // g_input[0..32].copy_from_slice(&m_prime);
-    // g_input[32..64].copy_from_slice(h);
     let (mut k_prime, r_prime) = g(&[&m_prime, h]);
 
     // 7: K̄ ← J(z∥c, 32)

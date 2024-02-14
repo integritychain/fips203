@@ -8,6 +8,7 @@ use crate::types::Z;
 pub fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
     // Input: array f ∈ Z^{256}_q           ▷ the coeffcients of the input polynomial
     // Output: array f_hat ∈ Z^{256}_q      ▷ the coeffcients of the NTT of the input polynomial
+
     // 1: f_hat ← f                         ▷ will compute NTT in-place on a copy of input array
     let mut f_hat = [Z::default(); 256];
     f_hat.copy_from_slice(array_f);
@@ -39,12 +40,18 @@ pub fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
 
                 // 10: f_hat[ j] ← f_hat[ j] + t
                 f_hat[j] = f_hat[j].add(t);
-                //
-            } // 11: end for
-        } // 12: end for
-    } // 13: end for
 
-    f_hat // 14: return f_hat
+                // 11: end for
+            }
+
+            // 12: end for
+        }
+
+        // 13: end for
+    }
+
+    // 14: return f_hat
+    f_hat
 }
 
 
@@ -87,10 +94,15 @@ pub fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
 
                 // 10: f [ j + len] ← zeta · ( f [ j + len] − t)
                 f[j + len] = zeta.mul(f[j + len].sub(t));
-                //
-            } // 11: end for
-        } // 12: end for
-    } // 13: end for
+
+                // 11: end for
+            }
+
+            // 12: end for
+        }
+
+        // 13: end for
+    }
 
     // 14: f ← f · 3303 mod q                   ▷ multiply every entry by 3303 ≡ 128^{−1} mod q
     let mut z3303 = Z::default();
@@ -117,18 +129,16 @@ pub fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
         // 2: (h_hat[2i], h_hat[2i + 1]) ← BaseCaseMultiply( f_hat[2i], f_hat[2i + 1], g_hat[2i], g_hat[2i + 1], ζ^{2BitRev7(i) + 1})
         let mut zt = Z::default();
         zt.set_u16(ZETA_TABLE[i ^ 0x80]);
-        let (h_hat_2i, h_hat_2ip1) = base_case_multiply(
-            f_hat[2 * i],
-            f_hat[2 * i + 1],
-            g_hat[2 * i],
-            g_hat[2 * i + 1],
-            zt,
-        );
+        let (h_hat_2i, h_hat_2ip1) =
+            base_case_multiply(f_hat[2 * i], f_hat[2 * i + 1], g_hat[2 * i], g_hat[2 * i + 1], zt);
         h_hat[2 * i] = h_hat_2i;
         h_hat[2 * i + 1] = h_hat_2ip1;
-    } // 3: end for
 
-    h_hat // 4: return h_hat
+        // 3: end for
+    }
+
+    // 4: return h_hat
+    h_hat
 }
 
 

@@ -8,6 +8,11 @@ pub trait KeyGen {
     type EncapsKey;
     /// The (private) decapsulation key used by the originator to generate the shared secret.
     type DecapsKey;
+    /// A serialized (public) encapsulation key byte array of the correct length
+    type EncapsByteArray;
+    /// A serialized (private) decapsulation key of the correct length
+    type DecapsByteArray;
+
 
     /// Generates an encapsulation and decapsulation key key pair specific to this security parameter set. <br>
     /// This function utilizes the OS default random number generator, and makes no (constant)
@@ -76,6 +81,26 @@ pub trait KeyGen {
     fn try_keygen_with_rng_vt(
         rng: &mut impl CryptoRngCore,
     ) -> Result<(Self::EncapsKey, Self::DecapsKey), &'static str>;
+
+
+    /// Performs validation between an encapsulation key and a decapsulation key.
+    /// # Examples
+    /// ```rust
+    /// # use std::error::Error;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// use rand_core::OsRng;
+    /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
+    /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
+    ///
+    /// let (ek, dk) = ml_kem_512::KG::try_keygen_with_rng_vt(&mut OsRng)?;
+    /// let ek_bytes = ek.into_bytes();    // Serialize and perhaps store-then-restore encaps key
+    /// let dk_bytes = dk.into_bytes();    // Serialize and perhaps store-then-restore decaps key
+    /// assert!(ml_kem_512::KG::validate_keypair_vt(&ek_bytes, &dk_bytes));  // Validate their correspondence
+    ///
+    /// # Ok(())}
+    /// ```
+
+    fn validate_keypair_vt(ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray) -> bool;
 }
 
 

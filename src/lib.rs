@@ -2,8 +2,6 @@
 #![deny(clippy::pedantic)]
 #![deny(warnings)]
 #![deny(missing_docs)]
-#![allow(clippy::cast_lossless)] // TODO
-#![allow(clippy::cast_possible_truncation)] // TODO
 #![doc = include_str!("../README.md")]
 
 ///
@@ -19,8 +17,8 @@ use crate::traits::SerDes;
 //
 // Algorithm 2 BitsToBytes(b) on page 17                    --> optimized out (byte_fns.rs)
 // Algorithm 3 BytesToBits(B) on page 18                    --> optimized out (byte_fns.rs)
-// Algorithm 4 ByteEncoded(F) on page 19                    --> byte_fns.rs
-// Algorithm 5 ByteDecoded(B) on page 19                    --> byte_fns.rs
+// Algorithm 4 ByteEncode_d(F) on page 19                   --> byte_fns.rs
+// Algorithm 5 ByteDecode_d(B) on page 19                   --> byte_fns.rs
 // Algorithm 6 SampleNTT(B) on page 20                      --> sampling.rs
 // Algorithm 7 SamplePolyCBDη(B) on page 20                 --> sampling.rs
 // Algorithm 8 NTT(f) on page 22                            --> ntt.rs
@@ -91,11 +89,12 @@ impl PartialEq for SharedSecretKey {
 // This common functionality is injected into each parameter set module
 macro_rules! functionality {
     () => {
-        const ETA1_64: usize = ETA1 * 64; // Currently, Rust does not allow expressions involving constants...
-        const ETA2_64: usize = ETA2 * 64; // ...in generics, so these are handled manually.
-        const J_LEN: usize = 32 + 32 * (DU * K + DV);
+        const ETA1_64: usize = ETA1 as usize * 64; // Currently, Rust does not allow expressions involving constants...
+        const ETA2_64: usize = ETA2 as usize * 64; // ...in generics, so these are handled manually.
+        const J_LEN: usize = 32 + 32 * (DU as usize * K + DV as usize);
 
         use crate::byte_fns::byte_decode;
+        use crate::helpers::h;
         use crate::ml_kem::{ml_kem_decaps, ml_kem_encaps, ml_kem_key_gen};
         use crate::traits::{Decaps, Encaps, KeyGen, SerDes};
         use crate::types::Z;
@@ -126,6 +125,8 @@ macro_rules! functionality {
         impl KeyGen for KG {
             type DecapsKey = DecapsKey;
             type EncapsKey = EncapsKey;
+            type EncapsByteArray = [u8; EK_LEN];
+            type DecapsByteArray = [u8; DK_LEN];
 
             fn try_keygen_with_rng_vt(
                 rng: &mut impl CryptoRngCore,
@@ -134,6 +135,16 @@ macro_rules! functionality {
                 ml_kem_key_gen::<K, ETA1, ETA1_64>(rng, &mut ek, &mut dk)?;
                 Ok((EncapsKey(ek), DecapsKey(dk)))
             }
+
+            fn validate_keypair_vt(ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray) -> bool {
+                let len_ek_pke = 384 * K + 32;
+                let len_dk_pke = 384 * K;
+                let same_ek = (*ek == dk[len_dk_pke .. (len_dk_pke + len_ek_pke)]);
+                let same_h = (h(ek) == dk[(len_dk_pke + len_ek_pke) .. ((len_dk_pke + len_ek_pke + 32))]);
+                same_ek & same_h
+            }
+
+
         }
 
         impl Encaps for EncapsKey {
@@ -170,7 +181,10 @@ macro_rules! functionality {
             fn into_bytes(self) -> Self::ByteArray { self.0 }
 
             fn try_from_bytes(ek: Self::ByteArray) -> Result<Self, &'static str> {
-                // TODO: Opportunity for additional validation here (?)
+                // Validation per pg 2 "the byte array containing the encapsulation key correctly
+                // decodes to an array of integers modulo q without any modular reductions". See
+                // also page 30. Note that accepting a byte array of fixed size, rather than a
+                // slice of varied size, addresses check #1.
                 let mut ek_hat = [Z::default(); 256];
                 for i in 0..K {
                     byte_decode(12, &ek[384 * i..384 * (i + 1)], &mut ek_hat)?;
@@ -186,7 +200,9 @@ macro_rules! functionality {
             fn into_bytes(self) -> Self::ByteArray { self.0 }
 
             fn try_from_bytes(dk: Self::ByteArray) -> Result<Self, &'static str> {
-                // TODO: Opportunity for additional validation here (?)
+                // Validation per pg 31. Note that the two checks specify fixed sizes, and these
+                // functions take only byte arrays of correct size. Nonetheless, we use a Result
+                // here in case future opportunities for validation arise.
                 Ok(DecapsKey(dk))
             }
         }
@@ -197,7 +213,9 @@ macro_rules! functionality {
             fn into_bytes(self) -> Self::ByteArray { self.0 }
 
             fn try_from_bytes(ct: Self::ByteArray) -> Result<Self, &'static str> {
-                // TODO: Opportunity for additional validation here (?)
+                // Validation per pg 31. Note that the two checks specify fixed sizes, and these
+                // functions take only byte arrays of correct size. Nonetheless, we use a Result
+                // here in case future opportunities for validation arise.
                 Ok(CipherText(ct))
             }
         }
@@ -223,10 +241,10 @@ pub mod ml_kem_512 {
     //! 6. Both the originator and remote party now have the same shared secret key `ssk`.
 
     const K: usize = 2;
-    const ETA1: usize = 3;
-    const ETA2: usize = 2;
-    const DU: usize = 10;
-    const DV: usize = 4;
+    const ETA1: u32 = 3;
+    const ETA2: u32 = 2;
+    const DU: u32 = 10;
+    const DV: u32 = 4;
 
     /// Serialized Encapsulation Key Length (in bytes)
     pub const EK_LEN: usize = 800;
@@ -257,10 +275,10 @@ pub mod ml_kem_768 {
     //! 6. Both the originator and remote party now have the same shared secret key `ssk`.
 
     const K: usize = 3;
-    const ETA1: usize = 2;
-    const ETA2: usize = 2;
-    const DU: usize = 10;
-    const DV: usize = 4;
+    const ETA1: u32 = 2;
+    const ETA2: u32 = 2;
+    const DU: u32 = 10;
+    const DV: u32 = 4;
 
     /// Serialized Encapsulation Key Length (in bytes)
     pub const EK_LEN: usize = 1184;
@@ -290,10 +308,10 @@ pub mod ml_kem_1024 {
     //! 6. Both the originator and remote party now have the same shared secret key `ssk`.
 
     const K: usize = 4;
-    const ETA1: usize = 2;
-    const ETA2: usize = 2;
-    const DU: usize = 11;
-    const DV: usize = 5;
+    const ETA1: u32 = 2;
+    const ETA2: u32 = 2;
+    const DU: u32 = 11;
+    const DV: u32 = 5;
 
     /// Serialized Encapsulation Key Length (in bytes)
     pub const EK_LEN: usize = 1568;

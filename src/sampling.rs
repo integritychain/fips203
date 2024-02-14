@@ -38,8 +38,9 @@ pub fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
 
             // 8: j ← j+1
             j += 1;
-            //
-        } // 9: end if
+
+            // 9: end if
+        }
 
         // 10: if d2 < q and j < 256 then
         if (d2 < Q) & (j < 256) {
@@ -51,13 +52,16 @@ pub fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
 
             // 12: j ← j+1
             j += 1;
-            //
-        } // 13: end if
+
+            // 13: end if
+        }
 
         // 14: i ← i+3  (not needed as we draw 3 more bytes next time
-    } // 15: end while
+        // 15: end while
+    }
 
-    array_a_hat // 16: return a_hat
+    // 16: return a_hat
+    array_a_hat
 }
 
 
@@ -74,8 +78,9 @@ pub fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> Result<[Z; 256], &'stat
     let mut int_index = 0;
     let mut bit_index = 0;
     for byte in byte_array_b {
-        temp |= (*byte as u64) << bit_index;
+        temp |= u64::from(*byte) << bit_index;
         bit_index += 8;
+        #[allow(clippy::cast_possible_truncation)]
         while bit_index >= 2 * (eta as usize) {
             let tmask_x = temp & (2u64.pow(eta) - 1);
             let x = (tmask_x as u8).count_ones();
