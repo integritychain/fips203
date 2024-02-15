@@ -167,6 +167,7 @@ pub fn base_case_multiply(a0: Z, a1: Z, b0: Z, b1: Z, gamma: Z) -> (Z, Z) {
 /// HAC Algorithm 14.76 Right-to-left binary exponentiation mod Q.
 #[must_use]
 #[allow(clippy::cast_possible_truncation)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 const fn pow_mod_q(g: u32, e: u8) -> u16 {
     let g = g as u64;
     let mut result = 1;
@@ -186,6 +187,7 @@ const fn pow_mod_q(g: u32, e: u8) -> u16 {
 
 
 #[allow(clippy::cast_possible_truncation)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 const fn gen_zeta_table() -> [u16; 256] {
     let mut result = [0u16; 256];
     let mut i = 0;

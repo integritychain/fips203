@@ -8,8 +8,8 @@ use crate::types::Z;
 
 /// Algorithm 15 `ML-KEM.KeyGen()` on page 29.
 /// Generates an encapsulation key and a corresponding decapsulation key.
-pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1: u32, const ETA1_64: usize>(
-    rng: &mut impl CryptoRngCore, ek: &mut [u8], dk: &mut [u8],
+pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
+    rng: &mut impl CryptoRngCore, eta1: u32, ek: &mut [u8], dk: &mut [u8],
 ) -> Result<(), &'static str> {
     // Output: Encapsulation key ek ∈ B^{384k+32}
     // Output: Decapsulation key dk ∈ B^{768k+96}
@@ -23,7 +23,7 @@ pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1: u32, const ETA1_64: usi
 
     // 2: (ek_{PKE}, dk_{PKE}) ← K-PKE.KeyGen()     ▷ run key generation for K-PKE
     let p1 = 384 * K;
-    k_pke_key_gen::<K, ETA1, ETA1_64>(rng, ek, &mut dk[..p1])?; // 3: ek ← ekPKE
+    k_pke_key_gen::<K, ETA1_64>(rng, eta1, ek, &mut dk[..p1])?; // 3: ek ← ekPKE
 
     // 4: dk ← (dkPKE ∥ek∥H(ek)∥z)  (first concat element is done above alongside ek)
     let h_ek = h(ek);
@@ -40,16 +40,8 @@ pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1: u32, const ETA1_64: usi
 
 /// Algorithm 16 `ML-KEM.Encaps(ek)` on page 30.
 /// Uses the encapsulation key to generate a shared key and an associated ciphertext.
-pub(crate) fn ml_kem_encaps<
-    const K: usize,
-    const ETA1: u32,
-    const ETA1_64: usize,
-    const ETA2: u32,
-    const ETA2_64: usize,
-    const DU: u32,
-    const DV: u32,
->(
-    rng: &mut impl CryptoRngCore, ek: &[u8], ct: &mut [u8],
+pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64: usize>(
+    rng: &mut impl CryptoRngCore, du: u32, dv: u32, eta1: u32, eta2: u32, ek: &[u8], ct: &mut [u8],
 ) -> Result<SharedSecretKey, &'static str> {
     // Validated input: encapsulation key ek ∈ B^{384k+32}
     // Output: shared key K ∈ B^{32}
@@ -57,7 +49,7 @@ pub(crate) fn ml_kem_encaps<
     ensure!(ek.len() == 384 * K + 32, "Alg16: ek len not 384 * K + 32"); // type check: array of length 384k + 32
 
     // modulus check: perform the computation ek ← ByteEncode12 (ByteDecode12(ek_tidle)
-    // note: after checking, we run with the original input (due to const array allocation); the last 32 bytes is rho  // TODO: revisit
+    // note: after checking, we run with the original input (due to const array allocation); the last 32 bytes is rho
     let mut ek_hat = [Z::default(); 256];
     for i in 0..K {
         let mut ek_tilde = [0u8; 384];
@@ -75,7 +67,7 @@ pub(crate) fn ml_kem_encaps<
     let (k, r) = g(&[&m, &h_ek]);
 
     // 3: 3: c ← K-PKE.Encrypt(ek, m, r)        ▷ encrypt m using K-PKE with randomness r
-    k_pke_encrypt::<K, ETA1, ETA1_64, ETA2, ETA2_64, DU, DV>(ek, &m, &r, ct)?;
+    k_pke_encrypt::<K, ETA1_64, ETA2_64>(du, dv, eta1, eta2, ek, &m, &r, ct)?;
 
     // 4: return (K, c)  (note: ct is mutable input)
     Ok(SharedSecretKey(k))
@@ -87,22 +79,20 @@ pub(crate) fn ml_kem_encaps<
 #[allow(clippy::similar_names)]
 pub(crate) fn ml_kem_decaps<
     const K: usize,
-    const ETA1: u32,
     const ETA1_64: usize,
-    const ETA2: u32,
     const ETA2_64: usize,
-    const DU: u32,
-    const DV: u32,
     const J_LEN: usize,
     const CT_LEN: usize,
 >(
-    dk: &[u8], ct: &[u8],
+    du: u32, dv: u32, eta1: u32, eta2: u32, dk: &[u8], ct: &[u8],
 ) -> Result<SharedSecretKey, &'static str> {
     // Validated input: ciphertext c ∈ B^{32(du k+dv )}
     // Validated input: decapsulation key dk ∈ B^{768k+96}
     // Output: shared key K ∈ B^{32}
     // These length checks are a bit redundant...but present for completeness and paranoia
-    ensure!(ct.len() == 32 * (DU as usize * K + DV as usize), "Alg17: ct len not 32 * ...");
+    assert_eq!(ct.len(), 32 * (du as usize * K + dv as usize), "Alg17: ct len not 32 * ...");
+
+    ensure!(ct.len() == 32 * (du as usize * K + dv as usize), "Alg17: ct len not 32 * ...");
     // Ciphertext type check
     ensure!(dk.len() == 768 * K + 96, "Alg17: dk len not 768 ..."); // Decapsulation key type check
 
@@ -127,21 +117,25 @@ pub(crate) fn ml_kem_decaps<
     let z = &dk[768 * K + 64..768 * K + 96];
 
     // 5: m′ ← K-PKE.Decrypt(dkPKE,c)
-    let m_prime = k_pke_decrypt::<K, DU, DV>(dk_pke, ct)?;
+    let m_prime = k_pke_decrypt::<K>(du, dv, dk_pke, ct)?;
 
     // 6: (K′, r′) ← G(m′ ∥ h)
     let (mut k_prime, r_prime) = g(&[&m_prime, h]);
 
     // 7: K̄ ← J(z∥c, 32)
     let mut j_input = [0u8; J_LEN];
-    debug_assert_eq!(j_input.len(), 32 + ct.len());
+    assert_eq!(j_input.len(), 32 + ct.len(), "Alg17: j_len bad");
     j_input[0..32].copy_from_slice(z);
     j_input[32..32 + ct.len()].copy_from_slice(ct);
     let k_bar = j(&[z, ct]);
 
     // 8: c′ ← K-PKE.Encrypt(ekPKE , m′ , r′ )      ▷ re-encrypt using the derived randomness r′
     let mut c_prime = [0u8; CT_LEN];
-    k_pke_encrypt::<K, ETA1, ETA1_64, ETA2, ETA2_64, DU, DV>(
+    k_pke_encrypt::<K, ETA1_64, ETA2_64>(
+        du,
+        dv,
+        eta1,
+        eta2,
         ek_pke,
         &m_prime,
         &r_prime,
@@ -152,4 +146,122 @@ pub(crate) fn ml_kem_decaps<
     };
 
     Ok(SharedSecretKey(k_prime))
+}
+
+
+#[cfg(test)]
+mod tests {
+    extern crate alloc;
+
+    use alloc::vec::Vec;
+
+    use rand_core::{CryptoRng, Error, RngCore, SeedableRng};
+
+    use crate::ml_kem::{ml_kem_encaps, ml_kem_key_gen};
+
+    struct TestRng {
+        _data: Vec<Vec<u8>>,
+    }
+
+    impl RngCore for TestRng {
+        fn next_u32(&mut self) -> u32 { unimplemented!() }
+
+        fn next_u64(&mut self) -> u64 { unimplemented!() }
+
+        fn fill_bytes(&mut self, _out: &mut [u8]) { unimplemented!() }
+
+        fn try_fill_bytes(&mut self, _out: &mut [u8]) -> Result<(), rand_core::Error> {
+            Err(Error::new("asdf"))
+        }
+    }
+
+    impl CryptoRng for TestRng {}
+
+    impl TestRng {
+        fn new() -> Self { TestRng { _data: Vec::new() } }
+    }
+
+    #[test]
+    fn test_result_errs() {
+        let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
+
+        let mut ek = [0u8; 384 * 2 + 32];
+        let mut dk = [0u8; 768 * 2 + 96];
+        let _res = ml_kem_key_gen::<2, { 3 * 64 }>(&mut rng, 3, &mut ek, &mut dk).unwrap();
+
+        let mut ek = [0u8; 384 * 2 + 99];
+        let res = ml_kem_key_gen::<2, { 3 * 64 }>(&mut rng, 3, &mut ek, &mut dk);
+        assert!(res.is_err());
+
+        let mut ek = [0u8; 384 * 2 + 32];
+        let mut dk = [0u8; 384 * 2 + 99];
+        let res = ml_kem_key_gen::<2, { 3 * 64 }>(&mut rng, 3, &mut ek, &mut dk);
+        assert!(res.is_err());
+
+        let mut ek = [0u8; 384 * 2 + 32];
+        let mut dk = [0u8; 384 * 2];
+        let mut bad_rng = TestRng::new();
+        let res = ml_kem_key_gen::<2, { 3 * 64 }>(&mut bad_rng, 3, &mut ek, &mut dk);
+        assert!(res.is_err());
+
+        let mut ct = [0u8, 1];
+        let _res = ml_kem_encaps::<2, { 3 * 64 }, { 2 * 64 }>(&mut rng,
+                                                              0,
+                                                              0,
+                                                              3,
+                                                              2,
+                                                              &[0u8; 384 * 2 + 32],
+                                                              &mut ct,
+        )
+            .unwrap();
+
+        let res = ml_kem_encaps::<2, { 3 * 64 }, { 2 * 64 }>(&mut rng,
+                                                             0,
+                                                             0,
+                                                             3,
+                                                             2,
+                                                             &[0u8; 384 * 2 + 99],
+                                                             &mut ct,
+        );
+        assert!(res.is_err());
+
+        let res = ml_kem_encaps::<2, { 3 * 64 }, { 2 * 64 }>(&mut rng,
+                                                             0,
+                                                             0,
+                                                             3,
+                                                             2,
+                                                             &[0xffu8; 384 * 2 + 32],
+                                                             &mut ct,
+        );
+        assert!(res.is_err());
+
+        let res = ml_kem_encaps::<2, { 3 * 64 }, { 2 * 64 }>(&mut rng,
+                                                             0,
+                                                             0,
+                                                             99,
+                                                             2,
+                                                             &[0u8; 384 * 2 + 32],
+                                                             &mut ct,
+        );
+        assert!(res.is_err());
+
+        let res = ml_kem_encaps::<2, { 3 * 64 }, { 2 * 64 }>(&mut rng,
+                                                             0,
+                                                             0,
+                                                             3,
+                                                             99,
+                                                             &[0u8; 384 * 2 + 32],
+                                                             &mut ct,
+        );
+        assert!(res.is_err());
+
+        // 32 + 32 * (DU as usize * K + DV as usize);
+        // let _res = ml_kem_decaps::<2, {10*64}, {4*64}, 99, 99>(10, 4, 0, 0, &[0u8; 768 * 2 + 96], &[0u8; 768]).unwrap();
+
+        // let res = ml_kem_decaps::<2>(10, 4, &[0u8; 384 * 2 + 99], &[0u8; 32 * (10 * 2 + 4)]);
+        // assert!(res.is_err());
+        //
+        // let res = ml_kem_decaps::<2>(10, 4, &[0u8; 384 * 2], &[0u8; 32 * (10 * 2 + 99)]);
+        // assert!(res.is_err());
+    }
 }

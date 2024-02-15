@@ -8,8 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 0.1.2 (2024-TK-TK)
 
 - General clean-up
-- Cargo deny
--
+- Cargo deny, code coverage,
+- Added (serialized) keypair validation functionality
 
 ## 0.1.1 (2023-10-30)
 

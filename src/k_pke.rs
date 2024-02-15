@@ -14,8 +14,8 @@ use crate::types::Z;
 /// Output: encryption key `ekPKE ∈ B^{384*k+32}` <br>
 /// Output: decryption key `dkPKE ∈ B^{384*k}`
 #[allow(clippy::similar_names, clippy::module_name_repetitions)]
-pub fn k_pke_key_gen<const K: usize, const ETA1: u32, const ETA1_64: usize>(
-    rng: &mut impl CryptoRngCore, ek_pke: &mut [u8], dk_pke: &mut [u8],
+pub fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
+    rng: &mut impl CryptoRngCore, eta1: u32, ek_pke: &mut [u8], dk_pke: &mut [u8],
 ) -> Result<(), &'static str> {
     ensure!(ek_pke.len() == 384 * K + 32, "Alg12: ek_pke not 384 * K + 32");
     ensure!(dk_pke.len() == 384 * K, "Alg12: dk_pke not 384 * K");
@@ -56,7 +56,7 @@ pub fn k_pke_key_gen<const K: usize, const ETA1: u32, const ETA1_64: usize>(
     for i in 0..K {
         //
         // 10: s[i] ← SamplePolyCBDη1(PRFη1(σ, N))     ▷ s[i] ∈ Z^{256}_q sampled from CBD
-        s[i] = sample_poly_cbd(ETA1, &prf::<ETA1_64>(&sigma, n))?;
+        s[i] = sample_poly_cbd(eta1, &prf::<ETA1_64>(&sigma, n));
 
         // 11: N ← N +1
         n += 1;
@@ -71,7 +71,7 @@ pub fn k_pke_key_gen<const K: usize, const ETA1: u32, const ETA1_64: usize>(
     for i in 0..K {
         //
         // 14: e[i] ← SamplePolyCBDη1(PRFη1(σ, N))     ▷ e[i] ∈ Z^{256}_q sampled from CBD
-        e[i] = sample_poly_cbd(ETA1, &prf::<ETA1_64>(&sigma, n))?;
+        e[i] = sample_poly_cbd(eta1, &prf::<ETA1_64>(&sigma, n));
 
         // 15: N ← N +1
         n += 1;
@@ -115,17 +115,10 @@ pub fn k_pke_key_gen<const K: usize, const ETA1: u32, const ETA1_64: usize>(
 
 /// Algorithm 13 `K-PKE.Encrypt(ekPKE , m, r)` on page 27.
 /// Uses the encryption key to encrypt a plaintext message using the randomness r.
-#[allow(clippy::many_single_char_names)]
-pub(crate) fn k_pke_encrypt<
-    const K: usize,
-    const ETA1: u32,
-    const ETA1_64: usize,
-    const ETA2: u32,
-    const ETA2_64: usize,
-    const DU: u32,
-    const DV: u32,
->(
-    ek: &[u8], m: &[u8], randomness: &[u8; 32], ct: &mut [u8],
+#[allow(clippy::many_single_char_names, clippy::too_many_arguments)]
+pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64: usize>(
+    du: u32, dv: u32, eta1: u32, eta2: u32, ek: &[u8], m: &[u8], randomness: &[u8; 32],
+    ct: &mut [u8],
 ) -> Result<(), &'static str> {
     // Input: encryption key ekPKE ∈ B^{384k+32}
     // Input: message m ∈ B^{32}
@@ -133,9 +126,8 @@ pub(crate) fn k_pke_encrypt<
     // Output: ciphertext c ∈ B^{32(du k+dv )}
     ensure!(ek.len() == 384 * K + 32, "Alg13: ek len not 384 * K + 32");
     ensure!(m.len() == 32, "Alg13: m len not 32");
-    ensure!(randomness.len() == 32, "Alg13: randomness len not 32");
-    ensure!(ETA1 as usize * 64 == ETA1_64, "Alg13: const probs");
-    ensure!(ETA2 as usize * 64 == ETA2_64, "Alg13: const probs");
+    ensure!(eta1 as usize * 64 == ETA1_64, "Alg13: const probs 1");
+    ensure!(eta2 as usize * 64 == ETA2_64, "Alg13: const probs 2");
 
     // 1: N ← 0
     let mut n = 0;
@@ -174,7 +166,7 @@ pub(crate) fn k_pke_encrypt<
     for i in 0..K {
         //
         // 10: r[i] ← SamplePolyCBDη 1 (PRFη 1 (r, N))      ▷ r[i] ∈ Z^{256}_q sampled from CBD
-        r[i] = sample_poly_cbd(ETA1, &prf::<ETA1_64>(randomness, n))?;
+        r[i] = sample_poly_cbd(eta1, &prf::<ETA1_64>(randomness, n));
 
         // 11: N ← N +1
         n += 1;
@@ -189,7 +181,7 @@ pub(crate) fn k_pke_encrypt<
     for i in 0..K {
         //
         // 14: e1 [i] ← SamplePolyCBDη2(PRFη2(r, N))        ▷ e1 [i] ∈ Z^{256}_q sampled from CBD
-        e1[i] = sample_poly_cbd(ETA2, &prf::<ETA2_64>(randomness, n))?;
+        e1[i] = sample_poly_cbd(eta2, &prf::<ETA2_64>(randomness, n));
 
         // 15: N ← N +1
         n += 1;
@@ -198,7 +190,7 @@ pub(crate) fn k_pke_encrypt<
     }
 
     // 17: 17: e2 ← SamplePolyCBDη(PRFη2(r, N))     ▷ sample e2 ∈ Z^{256}_q from CBD
-    let e2 = sample_poly_cbd(ETA2, &prf::<ETA2_64>(randomness, n))?;
+    let e2 = sample_poly_cbd(eta2, &prf::<ETA2_64>(randomness, n));
 
     // 18: 18: r̂ ← NTT(r)              ▷ NTT is run k times
     let mut r_hat = [[Z::default(); 256]; K];
@@ -224,15 +216,15 @@ pub(crate) fn k_pke_encrypt<
     v = vec_add(&vec_add(&[v], &[e2]), &[mu])[0];
 
     // 22: c1 ← ByteEncode_{du}(Compress_{du}(u))       ▷ ByteEncodedu is run k times
-    let step = 32 * DU as usize;
+    let step = 32 * du as usize;
     for i in 0..K {
-        compress(DU, &mut u[i]);
-        byte_encode(DU, &u[i], &mut ct[i * step..(i + 1) * step])?;
+        compress(du, &mut u[i]);
+        byte_encode(du, &u[i], &mut ct[i * step..(i + 1) * step])?;
     }
 
     // 23: c2 ← ByteEncode_{dv}(Compress_{dv}(v))
-    compress(DV, &mut v);
-    byte_encode(DV, &v, &mut ct[K * step..(K * step + 32 * DV as usize)])?;
+    compress(dv, &mut v);
+    byte_encode(dv, &v, &mut ct[K * step..(K * step + 32 * dv as usize)])?;
 
     // 24: return c ← (c1 ∥ c2 )
     Ok(())
@@ -241,32 +233,32 @@ pub(crate) fn k_pke_encrypt<
 
 /// Algorithm 14 `K-PKE.Decrypt(dkPKE, c)` on page 28.
 /// Uses the decryption key to decrypt a ciphertext.
-pub(crate) fn k_pke_decrypt<const K: usize, const DU: u32, const DV: u32>(
-    dk: &[u8], ct: &[u8],
+pub(crate) fn k_pke_decrypt<const K: usize>(
+    du: u32, dv: u32, dk: &[u8], ct: &[u8],
 ) -> Result<[u8; 32], &'static str> {
     // Input: decryption key dk_{PKE} ∈ B^{384*k}
     // Input: ciphertext c ∈ B^{32(du*k+dv)}
     // Output: message m ∈ B^{32}
     ensure!(dk.len() == 384 * K, "Alg14: dk len not 384 * K");
-    ensure!(ct.len() == 32 * (DU as usize * K + DV as usize), "Alg14: 32 * (DU * K + DV)");
+    ensure!(ct.len() == 32 * (du as usize * K + dv as usize), "Alg14: 32 * (DU * K + DV)");
 
     // 1: c1 ← c[0 : 32du k]
-    let c1 = &ct[0..32 * DU as usize * K];
+    let c1 = &ct[0..32 * du as usize * K];
 
     // 2: c2 ← c[32du k : 32(du*k + dv)]
-    let c2 = &ct[32 * DU as usize * K..32 * (DU as usize * K + DV as usize)];
+    let c2 = &ct[32 * du as usize * K..32 * (du as usize * K + dv as usize)];
 
     // 3: 3: u ← Decompress_{du}(ByteDecode_{du}(c_1))      ▷ ByteDecode_{du} invoked k times
     let mut u = [[Z::default(); 256]; K];
     for i in 0..K {
-        byte_decode(DU, &c1[32 * DU as usize * i..32 * DU as usize * (i + 1)], &mut u[i])?;
-        decompress(DU, &mut u[i]);
+        byte_decode(du, &c1[32 * du as usize * i..32 * du as usize * (i + 1)], &mut u[i])?;
+        decompress(du, &mut u[i]);
     }
 
     // 4: v ← Decompress_{dv}(ByteDecode_{dv}(c_2))
     let mut v = [Z::default(); 256];
-    byte_decode(DV, c2, &mut v)?;
-    decompress(DV, &mut v);
+    byte_decode(dv, c2, &mut v)?;
+    decompress(dv, &mut v);
 
     // 5: s_hat ← ByteDecode_{12}(dk_{PKE{)
     let mut s_hat = [[Z::default(); 256]; K];
@@ -296,4 +288,143 @@ pub(crate) fn k_pke_decrypt<const K: usize, const DU: u32, const DV: u32>(
 
     // 8: return m
     Ok(m)
+}
+
+
+#[cfg(test)]
+mod tests {
+    extern crate alloc;
+
+    use alloc::vec::Vec;
+
+    use rand_core::{CryptoRng, Error, RngCore, SeedableRng};
+
+    use crate::k_pke::{k_pke_decrypt, k_pke_encrypt, k_pke_key_gen};
+
+    struct TestRng {
+        _data: Vec<Vec<u8>>,
+    }
+
+    impl RngCore for TestRng {
+        fn next_u32(&mut self) -> u32 { unimplemented!() }
+
+        fn next_u64(&mut self) -> u64 { unimplemented!() }
+
+        fn fill_bytes(&mut self, _out: &mut [u8]) { unimplemented!() }
+
+        fn try_fill_bytes(&mut self, _out: &mut [u8]) -> Result<(), rand_core::Error> {
+            Err(Error::new("asdf"))
+        }
+    }
+
+    impl CryptoRng for TestRng {}
+
+    impl TestRng {
+        fn new() -> Self { TestRng { _data: Vec::new() } }
+    }
+
+    #[test]
+    fn test_result_errs() {
+        let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
+
+        let mut ek = [0u8; 384 * 2 + 32];
+        let mut dk = [0u8; 384 * 2];
+        let _res = k_pke_key_gen::<2, { 3 * 64 }>(&mut rng, 3, &mut ek, &mut dk).unwrap();
+
+        let mut ek = [0u8; 384 * 2 + 99];
+        let res = k_pke_key_gen::<2, { 3 * 64 }>(&mut rng, 3, &mut ek, &mut dk);
+        assert!(res.is_err());
+
+        let mut ek = [0u8; 384 * 2 + 32];
+        let mut dk = [0u8; 384 * 2 + 99];
+        let res = k_pke_key_gen::<2, { 3 * 64 }>(&mut rng, 3, &mut ek, &mut dk);
+        assert!(res.is_err());
+
+        let mut ek = [0u8; 384 * 2 + 32];
+        let mut dk = [0u8; 384 * 2];
+        let mut bad_rng = TestRng::new();
+        let res = k_pke_key_gen::<2, { 3 * 64 }>(&mut bad_rng, 3, &mut ek, &mut dk);
+        assert!(res.is_err());
+
+        let mut ct = [0u8, 1];
+        let _res = k_pke_encrypt::<2, { 3 * 64 }, { 2 * 64 }>(
+            0,
+            0,
+            3,
+            2,
+            &[0u8; 384 * 2 + 32],
+            &[0u8; 32],
+            &[0u8; 32],
+            &mut ct,
+        )
+            .unwrap();
+
+        let res = k_pke_encrypt::<2, { 3 * 64 }, { 2 * 64 }>(
+            0,
+            0,
+            3,
+            2,
+            &[0u8; 384 * 2 + 99],
+            &[0u8; 32],
+            &[0u8; 32],
+            &mut ct,
+        );
+        assert!(res.is_err());
+
+        let res = k_pke_encrypt::<2, { 3 * 64 }, { 2 * 64 }>(
+            0,
+            0,
+            3,
+            2,
+            &[0u8; 384 * 2 + 32],
+            &[0u8; 99],
+            &[0u8; 32],
+            &mut ct,
+        );
+        assert!(res.is_err());
+
+        let res = k_pke_encrypt::<2, { 3 * 64 }, { 2 * 64 }>(
+            0,
+            0,
+            3,
+            2,
+            &[0xffu8; 384 * 2 + 32],
+            &[0u8; 32],
+            &[0u8; 32],
+            &mut ct,
+        );
+        assert!(res.is_err());
+
+        let res = k_pke_encrypt::<2, { 3 * 64 }, { 2 * 64 }>(
+            0,
+            0,
+            99,
+            2,
+            &[0u8; 384 * 2 + 32],
+            &[0u8; 32],
+            &[0u8; 32],
+            &mut ct,
+        );
+        assert!(res.is_err());
+
+        let res = k_pke_encrypt::<2, { 3 * 64 }, { 2 * 64 }>(
+            0,
+            0,
+            3,
+            99,
+            &[0u8; 384 * 2 + 32],
+            &[0u8; 32],
+            &[0u8; 32],
+            &mut ct,
+        );
+        assert!(res.is_err());
+
+        let _res = k_pke_decrypt::<2>(10, 4, &[0u8; 384 * 2], &[0u8; 32 * (10 * 2 + 4)]).unwrap();
+
+        let res = k_pke_decrypt::<2>(10, 4, &[0u8; 384 * 2 + 99], &[0u8; 32 * (10 * 2 + 4)]);
+        assert!(res.is_err());
+
+        let res = k_pke_decrypt::<2>(10, 4, &[0u8; 384 * 2], &[0u8; 32 * (10 * 2 + 99)]);
+        assert!(res.is_err());
+    }
 }

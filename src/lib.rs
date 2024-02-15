@@ -4,6 +4,7 @@
 #![deny(missing_docs)]
 #![doc = include_str!("../README.md")]
 
+
 ///
 /// Implements FIPS 203 draft Module-Lattice-based Key-Encapsulation Mechanism Standard.
 /// See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
@@ -68,7 +69,8 @@ impl SerDes for SharedSecretKey {
     fn into_bytes(self) -> Self::ByteArray { self.0 }
 
     fn try_from_bytes(skk: Self::ByteArray) -> Result<Self, &'static str> {
-        // TODO: Opportunity for additional validation here (?)
+        // Not really needed but provided for symmetry.
+        // No opportunity for validation, but using a Result for a future possibility
         Ok(SharedSecretKey(skk))
     }
 }
@@ -123,28 +125,27 @@ macro_rules! functionality {
         pub struct KG();
 
         impl KeyGen for KG {
-            type DecapsKey = DecapsKey;
-            type EncapsKey = EncapsKey;
-            type EncapsByteArray = [u8; EK_LEN];
             type DecapsByteArray = [u8; DK_LEN];
+            type DecapsKey = DecapsKey;
+            type EncapsByteArray = [u8; EK_LEN];
+            type EncapsKey = EncapsKey;
 
             fn try_keygen_with_rng_vt(
                 rng: &mut impl CryptoRngCore,
             ) -> Result<(EncapsKey, DecapsKey), &'static str> {
                 let (mut ek, mut dk) = ([0u8; EK_LEN], [0u8; DK_LEN]);
-                ml_kem_key_gen::<K, ETA1, ETA1_64>(rng, &mut ek, &mut dk)?;
+                ml_kem_key_gen::<K, ETA1_64>(rng, ETA1, &mut ek, &mut dk)?;
                 Ok((EncapsKey(ek), DecapsKey(dk)))
             }
 
             fn validate_keypair_vt(ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray) -> bool {
                 let len_ek_pke = 384 * K + 32;
                 let len_dk_pke = 384 * K;
-                let same_ek = (*ek == dk[len_dk_pke .. (len_dk_pke + len_ek_pke)]);
-                let same_h = (h(ek) == dk[(len_dk_pke + len_ek_pke) .. ((len_dk_pke + len_ek_pke + 32))]);
+                let same_ek = (*ek == dk[len_dk_pke..(len_dk_pke + len_ek_pke)]);
+                let same_h =
+                    (h(ek) == dk[(len_dk_pke + len_ek_pke)..(len_dk_pke + len_ek_pke + 32)]);
                 same_ek & same_h
             }
-
-
         }
 
         impl Encaps for EncapsKey {
@@ -155,8 +156,8 @@ macro_rules! functionality {
                 &self, rng: &mut impl CryptoRngCore,
             ) -> Result<(Self::SharedSecretKey, Self::CipherText), &'static str> {
                 let mut ct = [0u8; CT_LEN];
-                let ssk = ml_kem_encaps::<K, ETA1, ETA1_64, ETA2, ETA2_64, DU, DV>(
-                    rng, &self.0, &mut ct,
+                let ssk = ml_kem_encaps::<K, ETA1_64, ETA2_64>(
+                    rng, DU, DV, ETA1, ETA2, &self.0, &mut ct,
                 )?;
                 Ok((ssk, CipherText(ct)))
             }
@@ -167,8 +168,8 @@ macro_rules! functionality {
             type SharedSecretKey = SharedSecretKey;
 
             fn try_decaps_vt(&self, ct: &CipherText) -> Result<SharedSecretKey, &'static str> {
-                let ssk = ml_kem_decaps::<K, ETA1, ETA1_64, ETA2, ETA2_64, DU, DV, J_LEN, CT_LEN>(
-                    &self.0, &ct.0,
+                let ssk = ml_kem_decaps::<K, ETA1_64, ETA2_64, J_LEN, CT_LEN>(
+                    DU, DV, ETA1, ETA2, &self.0, &ct.0,
                 );
                 ssk
             }

@@ -71,8 +71,7 @@ pub fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
 ///
 /// Input: byte array B ∈ B^{64η} <br>
 /// Output: array f ∈ `Z^{256}_q`
-#[allow(clippy::unnecessary_wraps)] // TODO: revisit
-pub fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> Result<[Z; 256], &'static str> {
+pub fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> [Z; 256] {
     let mut array_f: [Z; 256] = [Z::default(); 256];
     let mut temp = 0;
     let mut int_index = 0;
@@ -95,7 +94,7 @@ pub fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> Result<[Z; 256], &'stat
             int_index += 1;
         }
     }
-    Ok(array_f)
+    array_f
 }
 
 // The original pseudocode for Algorithm 7 follows...

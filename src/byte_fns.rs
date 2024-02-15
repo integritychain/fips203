@@ -144,4 +144,18 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_result_errs() {
+        let mut integer_array = [Z::default(); 256];
+        let num_bits = 12;
+        let num_bytes = 32 * num_bits as usize;
+        let bytes1: Vec<u8> = (0..num_bytes).map(|_| 0xFF).collect();
+        let ret = byte_decode(num_bits, &bytes1, &mut integer_array);
+        assert!(ret.is_err());
+        integer_array.iter_mut().for_each(|x| x.set_u16(u16::MAX));
+        let mut bytes2 = vec![0u8; num_bytes];
+        let ret = byte_encode(num_bits, &integer_array, &mut bytes2);
+        assert!(ret.is_err());
+    }
 }

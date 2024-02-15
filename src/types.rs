@@ -26,26 +26,32 @@ impl Z {
     pub fn add(self, other: Self) -> Self {
         let sum = self.0.wrapping_add(other.0);
         let (trial, borrow) = sum.overflowing_sub(Self::Q16);
-        let result = if borrow { sum } else { trial }; // TODO Not quite CT
+        let select_sum = u16::from(borrow).wrapping_neg();
+        let result = (!select_sum & trial) | (select_sum & sum);
+        // let result = if borrow { sum } else { trial }; // Not quite CT
         Self(result)
     }
 
     #[inline(always)]
     pub fn sub(self, other: Self) -> Self {
         let (diff, borrow) = self.0.overflowing_sub(other.0);
-        let trial = diff.wrapping_add(Self::Q16);
-        let result = if borrow { trial } else { diff }; // TODO Not quite CT
+        let mask = u16::from(borrow).wrapping_neg();
+        let result = diff.wrapping_add(Self::Q16 & mask);
+        // let result = if borrow { trial } else { diff }; // Not quite CT
         Self(result)
     }
 
     #[inline(always)]
+    #[allow(clippy::cast_possible_truncation)] // for diff
     pub fn mul(self, other: Self) -> Self {
         let prod = u64::from(self.0) * u64::from(other.0);
         let quot = prod * Self::M;
         let quot = quot >> (32);
         let rem = prod - quot * Self::Q64;
-        let (diff, borrow) = rem.overflowing_sub(Self::Q64);
-        let result = if borrow { rem } else { diff }; // TODO Not quite CT
-        Self(u16::try_from(result).unwrap())
+        let (diff, borrow) = (rem as u16).overflowing_sub(Self::Q16);
+        let mask = u16::from(borrow).wrapping_neg();
+        let result = diff.wrapping_add(Self::Q16 & mask);
+        // let result = if borrow { rem } else { diff }; Not quite CT
+        Self(result)
     }
 }
