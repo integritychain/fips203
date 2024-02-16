@@ -293,138 +293,80 @@ pub(crate) fn k_pke_decrypt<const K: usize>(
 
 #[cfg(test)]
 mod tests {
-    extern crate alloc;
-
-    use alloc::vec::Vec;
-
-    use rand_core::{CryptoRng, Error, RngCore, SeedableRng};
+    use rand_core::SeedableRng;
 
     use crate::k_pke::{k_pke_decrypt, k_pke_encrypt, k_pke_key_gen};
-
-    struct TestRng {
-        _data: Vec<Vec<u8>>,
-    }
-
-    impl RngCore for TestRng {
-        fn next_u32(&mut self) -> u32 { unimplemented!() }
-
-        fn next_u64(&mut self) -> u64 { unimplemented!() }
-
-        fn fill_bytes(&mut self, _out: &mut [u8]) { unimplemented!() }
-
-        fn try_fill_bytes(&mut self, _out: &mut [u8]) -> Result<(), rand_core::Error> {
-            Err(Error::new("asdf"))
-        }
-    }
-
-    impl CryptoRng for TestRng {}
-
-    impl TestRng {
-        fn new() -> Self { TestRng { _data: Vec::new() } }
-    }
 
     #[test]
     fn test_result_errs() {
         let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
+        const ETA1: u32 = 3;
+        const ETA2: u32 = 2;
+        const DU: u32 = 10;
+        const DV: u32 = 4;
+        const K: usize = 2;
+        const ETA1_64: usize = ETA1 as usize * 64;
+        const ETA2_64: usize = ETA2 as usize * 64;
+        const EK_LEN: usize = 800;
+        const DK_LEN: usize = 1632;
+        const CT_LEN: usize = 768;
+        //const J_LEN: usize = 32 + 32 * (DU as usize * K + DV as usize);
 
-        let mut ek = [0u8; 384 * 2 + 32];
-        let mut dk = [0u8; 384 * 2];
-        let _res = k_pke_key_gen::<2, { 3 * 64 }>(&mut rng, 3, &mut ek, &mut dk).unwrap();
+        let mut ek = [0u8; EK_LEN];
+        let mut dk = [0u8; DK_LEN];
+        let mut ct = [0u8; CT_LEN];
+        let m = [0u8; 32];
+        let r = [0u8; 32];
 
-        let mut ek = [0u8; 384 * 2 + 99];
-        let res = k_pke_key_gen::<2, { 3 * 64 }>(&mut rng, 3, &mut ek, &mut dk);
+
+        let pkg = k_pke_key_gen::<K, ETA1_64>;
+        let res = pkg(&mut rng, ETA1, &mut ek, &mut dk[0..384 * K]);
+        assert!(res.is_ok());
+
+        let mut bad_ek = [0u8; EK_LEN + 1];
+        let res = pkg(&mut rng, ETA1, &mut bad_ek, &mut dk);
         assert!(res.is_err());
 
-        let mut ek = [0u8; 384 * 2 + 32];
-        let mut dk = [0u8; 384 * 2 + 99];
-        let res = k_pke_key_gen::<2, { 3 * 64 }>(&mut rng, 3, &mut ek, &mut dk);
+        let mut bad_dk = [0u8; DK_LEN + 1];
+        let res = pkg(&mut rng, ETA1, &mut ek, &mut bad_dk);
         assert!(res.is_err());
 
-        let mut ek = [0u8; 384 * 2 + 32];
-        let mut dk = [0u8; 384 * 2];
-        let mut bad_rng = TestRng::new();
-        let res = k_pke_key_gen::<2, { 3 * 64 }>(&mut bad_rng, 3, &mut ek, &mut dk);
+
+        let pke = k_pke_encrypt::<K, ETA1_64, ETA2_64>;
+        let res = pke(DU, DV, ETA1, ETA2, &ek, &m, &r, &mut ct);
+        assert!(res.is_ok());
+
+        let res = pke(DU, DV, ETA1, ETA2, &bad_ek, &m, &r, &mut ct);
         assert!(res.is_err());
 
-        let mut ct = [0u8, 1];
-        let _res = k_pke_encrypt::<2, { 3 * 64 }, { 2 * 64 }>(
-            0,
-            0,
-            3,
-            2,
-            &[0u8; 384 * 2 + 32],
-            &[0u8; 32],
-            &[0u8; 32],
-            &mut ct,
-        )
-            .unwrap();
-
-        let res = k_pke_encrypt::<2, { 3 * 64 }, { 2 * 64 }>(
-            0,
-            0,
-            3,
-            2,
-            &[0u8; 384 * 2 + 99],
-            &[0u8; 32],
-            &[0u8; 32],
-            &mut ct,
-        );
+        let bad_m = [0u8; 99];
+        let res = pke(DU, DV, ETA1, ETA2, &ek, &bad_m, &r, &mut ct);
         assert!(res.is_err());
 
-        let res = k_pke_encrypt::<2, { 3 * 64 }, { 2 * 64 }>(
-            0,
-            0,
-            3,
-            2,
-            &[0u8; 384 * 2 + 32],
-            &[0u8; 99],
-            &[0u8; 32],
-            &mut ct,
-        );
+        let ff_ek = [0xFFu8; 384 * 2 + 32]; // oversized values
+        let res = pke(DU, DV, ETA1, ETA2, &ff_ek, &m, &r, &mut ct);
         assert!(res.is_err());
 
-        let res = k_pke_encrypt::<2, { 3 * 64 }, { 2 * 64 }>(
-            0,
-            0,
-            3,
-            2,
-            &[0xffu8; 384 * 2 + 32],
-            &[0u8; 32],
-            &[0u8; 32],
-            &mut ct,
-        );
+        let bad_m = [0u8; 32 + 1];
+        let res = pke(DU, DV, ETA1, ETA2, &ek, &bad_m, &r, &mut ct);
         assert!(res.is_err());
 
-        let res = k_pke_encrypt::<2, { 3 * 64 }, { 2 * 64 }>(
-            0,
-            0,
-            99,
-            2,
-            &[0u8; 384 * 2 + 32],
-            &[0u8; 32],
-            &[0u8; 32],
-            &mut ct,
-        );
+        let res = pke(DU, DV, ETA1 + 1, ETA2, &ek, &m, &r, &mut ct);
         assert!(res.is_err());
 
-        let res = k_pke_encrypt::<2, { 3 * 64 }, { 2 * 64 }>(
-            0,
-            0,
-            3,
-            99,
-            &[0u8; 384 * 2 + 32],
-            &[0u8; 32],
-            &[0u8; 32],
-            &mut ct,
-        );
+        let res = pke(DU, DV, ETA1, ETA2 + 2, &ek, &m, &r, &mut ct);
         assert!(res.is_err());
 
-        let _res = k_pke_decrypt::<2>(10, 4, &[0u8; 384 * 2], &[0u8; 32 * (10 * 2 + 4)]).unwrap();
 
-        let res = k_pke_decrypt::<2>(10, 4, &[0u8; 384 * 2 + 99], &[0u8; 32 * (10 * 2 + 4)]);
+        let pkd = k_pke_decrypt::<K>;
+        let res = pkd(DU, DV, &dk[0..384 * K], &ct);
+        assert!(res.is_ok());
+
+        let res = pkd(DU, DV, &dk, &ct);
         assert!(res.is_err());
 
-        let res = k_pke_decrypt::<2>(10, 4, &[0u8; 384 * 2], &[0u8; 32 * (10 * 2 + 99)]);
+        let bad_ct = [0u8; CT_LEN + 1];
+        let res = pkd(DU, DV, &dk[0..384 * K], &bad_ct);
         assert!(res.is_err());
     }
 }

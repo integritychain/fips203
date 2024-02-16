@@ -167,7 +167,6 @@ pub fn base_case_multiply(a0: Z, a1: Z, b0: Z, b1: Z, gamma: Z) -> (Z, Z) {
 /// HAC Algorithm 14.76 Right-to-left binary exponentiation mod Q.
 #[must_use]
 #[allow(clippy::cast_possible_truncation)]
-#[cfg_attr(coverage_nightly, coverage(off))]
 const fn pow_mod_q(g: u32, e: u8) -> u16 {
     let g = g as u64;
     let mut result = 1;
@@ -187,7 +186,6 @@ const fn pow_mod_q(g: u32, e: u8) -> u16 {
 
 
 #[allow(clippy::cast_possible_truncation)]
-#[cfg_attr(coverage_nightly, coverage(off))]
 const fn gen_zeta_table() -> [u16; 256] {
     let mut result = [0u16; 256];
     let mut i = 0;
@@ -200,3 +198,23 @@ const fn gen_zeta_table() -> [u16; 256] {
 
 
 pub(crate) static ZETA_TABLE: [u16; 256] = gen_zeta_table();
+
+#[cfg(test)]
+mod tests {
+    use crate::ntt::{gen_zeta_table, pow_mod_q};
+    use crate::SharedSecretKey;
+    use crate::traits::SerDes;
+
+    #[test]
+    fn test_zeta_misc() {
+        let res = pow_mod_q(5, 5);
+        assert_eq!(res, 3125);
+
+        let res = gen_zeta_table();
+        assert_eq!(res[4], 2580);
+
+        let ssk_bytes = [0u8; 32];
+        let ssk = SharedSecretKey::try_from_bytes(ssk_bytes);
+        assert!(ssk.is_ok());
+    }
+}

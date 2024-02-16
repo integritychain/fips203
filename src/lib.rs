@@ -68,10 +68,10 @@ impl SerDes for SharedSecretKey {
 
     fn into_bytes(self) -> Self::ByteArray { self.0 }
 
-    fn try_from_bytes(skk: Self::ByteArray) -> Result<Self, &'static str> {
+    fn try_from_bytes(ssk: Self::ByteArray) -> Result<Self, &'static str> {
         // Not really needed but provided for symmetry.
         // No opportunity for validation, but using a Result for a future possibility
-        Ok(SharedSecretKey(skk))
+        Ok(SharedSecretKey(ssk))
     }
 }
 
