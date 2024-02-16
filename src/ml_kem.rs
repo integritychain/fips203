@@ -153,8 +153,8 @@ mod tests {
     use crate::ml_kem::{ml_kem_decaps, ml_kem_encaps, ml_kem_key_gen};
 
     #[test]
+    #[allow(clippy::similar_names)]
     fn test_result_errs() {
-        let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
         const ETA1: u32 = 3;
         const ETA2: u32 = 2;
         const DU: u32 = 10;
@@ -167,6 +167,7 @@ mod tests {
         const CT_LEN: usize = 768;
         const J_LEN: usize = 32 + 32 * (DU as usize * K + DV as usize);
 
+        let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
         let mut ek = [0u8; EK_LEN];
         let mut dk = [0u8; DK_LEN];
         let mut ct = [0u8; CT_LEN];
