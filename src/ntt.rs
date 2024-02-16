@@ -9,7 +9,6 @@ use crate::types::Z;
 #[must_use]
 #[allow(clippy::module_name_repetitions)]
 pub fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
-
     // 1: f_hat ← f                         ▷ will compute NTT in-place on a copy of input array
     let mut f_hat = [Z::default(); 256];
     f_hat.copy_from_slice(array_f);
@@ -64,7 +63,6 @@ pub fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
 #[must_use]
 #[allow(clippy::module_name_repetitions)]
 pub fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
-
     // 1: f ← f_hat                     ▷ will compute in-place on a copy of input array
     let mut f: [Z; 256] = [Z::default(); 256];
     f.copy_from_slice(f_hat);

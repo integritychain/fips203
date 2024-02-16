@@ -102,26 +102,17 @@ macro_rules! functionality {
         use crate::types::Z;
         use crate::SharedSecretKey;
         use rand_core::CryptoRngCore;
-        use zeroize::{Zeroize, ZeroizeOnDrop};
 
         /// Correctly sized encapsulation key specific to the target security parameter set.
-        #[derive(Clone, Zeroize, ZeroizeOnDrop)]
-        pub struct EncapsKey([u8; EK_LEN]);
+        pub type EncapsKey = crate::types::EncapsKey<EK_LEN>;
 
         /// Correctly sized decapsulation key specific to the target security parameter set.
-        #[derive(Clone, Zeroize, ZeroizeOnDrop)]
-        pub struct DecapsKey([u8; DK_LEN]);
+        pub type DecapsKey = crate::types::DecapsKey<DK_LEN>;
 
         /// Correctly sized ciphertext specific to the target security parameter set.
-        #[derive(Clone, Zeroize, ZeroizeOnDrop)]
-        pub struct CipherText([u8; CT_LEN]);
+        pub type CipherText = crate::types::CipherText<CT_LEN>;
 
-        /// Per FIPS 203, the key generation algorithm `ML-KEM.KeyGen` for ML-KEM (Algorithm 15)
-        /// accepts no input, utilizes randomness, and produces an encapsulation key and a
-        /// decapsulation key. While the encapsulation key can be made public, the decapsulation key
-        /// must remain private. This outputs of this function are opaque structs specific to a
-        /// target parameter set.
-
+        /// Supports the KeyGen trait, allowing for keypair generation
         pub struct KG();
 
         impl KeyGen for KG {
@@ -135,7 +126,7 @@ macro_rules! functionality {
             ) -> Result<(EncapsKey, DecapsKey), &'static str> {
                 let (mut ek, mut dk) = ([0u8; EK_LEN], [0u8; DK_LEN]);
                 ml_kem_key_gen::<K, ETA1_64>(rng, ETA1, &mut ek, &mut dk)?;
-                Ok((EncapsKey(ek), DecapsKey(dk)))
+                Ok((EncapsKey{0: ek}, DecapsKey{0: dk}))
             }
 
             fn validate_keypair_vt(ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray) -> bool {
@@ -159,7 +150,7 @@ macro_rules! functionality {
                 let ssk = ml_kem_encaps::<K, ETA1_64, ETA2_64>(
                     rng, DU, DV, ETA1, ETA2, &self.0, &mut ct,
                 )?;
-                Ok((ssk, CipherText(ct)))
+                Ok((ssk, CipherText{0: ct}))
             }
         }
 
@@ -190,7 +181,7 @@ macro_rules! functionality {
                 for i in 0..K {
                     byte_decode(12, &ek[384 * i..384 * (i + 1)], &mut ek_hat)?;
                 }
-                Ok(EncapsKey(ek))
+                Ok(EncapsKey{0: ek})
             }
         }
 
@@ -204,7 +195,7 @@ macro_rules! functionality {
                 // Validation per pg 31. Note that the two checks specify fixed sizes, and these
                 // functions take only byte arrays of correct size. Nonetheless, we use a Result
                 // here in case future opportunities for validation arise.
-                Ok(DecapsKey(dk))
+                Ok(DecapsKey{0: dk})
             }
         }
 
@@ -217,7 +208,7 @@ macro_rules! functionality {
                 // Validation per pg 31. Note that the two checks specify fixed sizes, and these
                 // functions take only byte arrays of correct size. Nonetheless, we use a Result
                 // here in case future opportunities for validation arise.
-                Ok(CipherText(ct))
+                Ok(CipherText{0: ct})
             }
         }
     };
