@@ -5,10 +5,12 @@ use crate::types::Z;
 
 /// Algorithm 6 `SampleNTT(B)` on page 20.
 /// If the input is a stream of uniformly random bytes, the output is a uniformly random element of `T_q`.
+///
+/// Input: byte stream B ∈ B^{∗} <br>
+/// Output: array `a_hat` ∈ `Z^{256}_q`              ▷ the coefficients of the NTT of a polynomial
 #[must_use]
 pub fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
-    // Input: byte stream B ∈ B^{∗}
-    // Output: array a_hat ∈ Z^{256}_q              ▷ the coeffcients of the NTT of a polynomial
+    //
     let mut array_a_hat = [Z::default(); 256];
     let mut bbb = [0u8; 3]; // Space for 3 random (byte) draws
 
@@ -66,11 +68,12 @@ pub fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
 
 
 /// Algorithm 7 `SamplePolyCBDη(B)` on page 20.
-/// If the input is a stream of uniformly random bytes, outputs a sample from the distribution Dη (Rq ). <br>
+/// If the input is a stream of uniformly random bytes, outputs a sample from the distribution `D_η(R_q)`. <br>
 /// This function is an optimized version that avoids the `BytesToBits` function (algorithm 3).
 ///
-/// Input: byte array B ∈ B^{64η} <br>
+/// Input: byte array B ∈ B^{64·η} <br>
 /// Output: array f ∈ `Z^{256}_q`
+#[must_use]
 pub fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> [Z; 256] {
     let mut array_f: [Z; 256] = [Z::default(); 256];
     let mut temp = 0;
@@ -97,11 +100,12 @@ pub fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> [Z; 256] {
     array_f
 }
 
+
 // The original pseudocode for Algorithm 7 follows...
 // Algorithm 7 `SamplePolyCBDη(B)` on page 20.
-// If the input is a stream of uniformly random bytes, outputs a sample from the distribution Dη (Rq ).
+// If the input is a stream of uniformly random bytes, outputs a sample from the distribution `D_η(R_q)`.
 //
-// Input: byte array B ∈ B^{64η}
+// Input: byte array B ∈ B^{64·η}
 // Output: array f ∈ Z^{256}_q
 // 1: b ← BytesToBits(B)
 // 2: for (i ← 0; i < 256; i ++)

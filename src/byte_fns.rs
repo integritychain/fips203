@@ -20,31 +20,31 @@ use crate::types::Z;
 // /// Output: bit array b ∈ {0,1}^{8·ℓ}
 
 
-/// Algorithm 4 `ByteEncode<d>(F)` on page 19.
+/// Algorithm 4 `ByteEncode_d(F)` on page 19.
 /// Encodes an array of `d`-bit integers into a byte array, for `1 ≤ d ≤ 12`.
-/// This is an optimized variant (which does not use individual bit functions)
+/// This is an optimized variant (which does not use individual bit functions).
 ///
-/// Input: integer array `F ∈ Z^256_m`, where `m = 2^d if d < 12` and `m = q if d = 12` <br>
-/// Output: byte array B ∈ B^{32d}
+/// Input: integer array `F ∈ Z^{256}_m`, where `m = 2^d if d < 12` and `m = q if d = 12` <br>
+/// Output: byte array B ∈ B^{32·d}
 pub(crate) fn byte_encode(
     d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8],
 ) -> Result<(), &'static str> {
     //
     // Our "working" register, from which to drop bytes out of
-    let mut temp = 0u64;
+    let mut temp = 0u32;
     // Bit index of current temp contents, and byte index of current output
     let mut bit_index = 0;
     let mut byte_index = 0;
     // Choose m per spec
-    let m = if d < 12 { 2u64.pow(d) } else { u64::from(Q) };
+    let m = if d < 12 { 2u32.pow(d) } else { Q };
 
     // Work through each of the input integers
     for coeff in integers_f {
         //
         // Get coeff as u64, check magnitude, and clean off top bits
-        let coeff = u64::from(coeff.get_u16());
+        let coeff = coeff.get_u32();
         ensure!(coeff <= m, "Alg4: Coeff out of range");
-        let coeff = coeff & (2u64.pow(d) - 1);
+        let coeff = coeff & (2u32.pow(d) - 1);
 
         // Drop coeff into the upper unused bit positions of coeff; adjust bit index
         temp |= coeff << bit_index;
@@ -67,11 +67,11 @@ pub(crate) fn byte_encode(
 }
 
 
-/// Algorithm 5 `ByteDecode<d>(B)` on page 19.
+/// Algorithm 5 `ByteDecode_d(B)` on page 19.
 /// Decodes a byte array into an array of d-bit integers, for 1 ≤ d ≤ 12.
-/// This is an optimized variant (which does not use individual bit functions)
+/// This is an optimized variant (which does not use individual bit functions).
 ///
-/// Input: byte array B ∈ B^{32d} <br>
+/// Input: byte array B ∈ B^{32·d} <br>
 /// Output: integer array `F ∈ Z^256_m`, where `m = 2^d if d < 12` and `m = q if d = 12`
 pub(crate) fn byte_decode(
     d: u32, bytes_b: &[u8], integers_f: &mut [Z; 256],

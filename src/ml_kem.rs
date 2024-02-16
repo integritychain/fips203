@@ -8,11 +8,12 @@ use crate::types::Z;
 
 /// Algorithm 15 `ML-KEM.KeyGen()` on page 29.
 /// Generates an encapsulation key and a corresponding decapsulation key.
+///
+/// Output: Encapsulation key `ek` ∈ `B^{384·k+32}` <br>
+/// Output: Decapsulation key `dk` ∈ `B^{768·k+96}`
 pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
     rng: &mut impl CryptoRngCore, eta1: u32, ek: &mut [u8], dk: &mut [u8],
 ) -> Result<(), &'static str> {
-    // Output: Encapsulation key ek ∈ B^{384k+32}
-    // Output: Decapsulation key dk ∈ B^{768k+96}
     ensure!(ek.len() == 384 * K + 32, "Alg15: ek len not 384 * K + 32");
     ensure!(dk.len() == 768 * K + 96, "Alg15: dk len not 768 * K + 96");
 
@@ -40,12 +41,13 @@ pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
 
 /// Algorithm 16 `ML-KEM.Encaps(ek)` on page 30.
 /// Uses the encapsulation key to generate a shared key and an associated ciphertext.
+///
+/// Validated input: encapsulation key `ek` ∈ `B^{384·k+32}` <br>
+/// Output: shared key `K` ∈ `B^{32}` <br>
+/// Output: ciphertext `c` ∈ `B^{32(du·k+dv)}` <br>
 pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64: usize>(
     rng: &mut impl CryptoRngCore, du: u32, dv: u32, eta1: u32, eta2: u32, ek: &[u8], ct: &mut [u8],
 ) -> Result<SharedSecretKey, &'static str> {
-    // Validated input: encapsulation key ek ∈ B^{384k+32}
-    // Output: shared key K ∈ B^{32}
-    // Output: ciphertext c ∈ B^{32(du k+dv)}
     ensure!(ek.len() == 384 * K + 32, "Alg16: ek len not 384 * K + 32"); // type check: array of length 384k + 32
 
     // modulus check: perform the computation ek ← ByteEncode12 (ByteDecode12(ek_tidle)
@@ -60,7 +62,7 @@ pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64:
 
     // 1: m ←− B32          ▷ m is 32 random bytes (see Section 3.3)
     let mut m = [0u8; 32];
-    rng.fill_bytes(&mut m); //random::<[u8; 32]>();
+    rng.fill_bytes(&mut m);
 
     // 2: (K, r) ← G(m∥H(ek))       ▷ derive shared secret key K and randomness r
     let h_ek = h(ek);
@@ -76,6 +78,10 @@ pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64:
 
 /// Algorithm 17 `ML-KEM.Decaps(c, dk)` on page 32.
 /// Uses the decapsulation key to produce a shared key from a ciphertext.
+///
+/// Validated input: ciphertext `c` ∈ `B^{32(du·k+dv)}` <br>
+/// Validated input: decapsulation key `dk` ∈ `B^{768·k+96}` <br>
+/// Output: shared key `K` ∈ `B^{32}`
 #[allow(clippy::similar_names)]
 pub(crate) fn ml_kem_decaps<
     const K: usize,
@@ -86,9 +92,6 @@ pub(crate) fn ml_kem_decaps<
 >(
     du: u32, dv: u32, eta1: u32, eta2: u32, dk: &[u8], ct: &[u8],
 ) -> Result<SharedSecretKey, &'static str> {
-    // Validated input: ciphertext c ∈ B^{32(du k+dv )}
-    // Validated input: decapsulation key dk ∈ B^{768k+96}
-    // Output: shared key K ∈ B^{32}
     // These length checks are a bit redundant...but present for completeness and paranoia
     ensure!(ct.len() == 32 * (du as usize * K + dv as usize), "Alg17: ct len not 32 * ...");
     // Ciphertext type check

@@ -11,8 +11,8 @@ use crate::types::Z;
 /// Algorithm 12 `K-PKE.KeyGen()` on page 26.
 /// Generates an encryption key and a corresponding decryption key.
 ///
-/// Output: encryption key `ekPKE ∈ B^{384*k+32}` <br>
-/// Output: decryption key `dkPKE ∈ B^{384*k}`
+/// Output: encryption key `ekPKE ∈ B^{384·k+32}` <br>
+/// Output: decryption key `dkPKE ∈ B^{384·k}`
 #[allow(clippy::similar_names, clippy::module_name_repetitions)]
 pub fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
     rng: &mut impl CryptoRngCore, eta1: u32, ek_pke: &mut [u8], dk_pke: &mut [u8],
@@ -115,15 +115,16 @@ pub fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
 
 /// Algorithm 13 `K-PKE.Encrypt(ekPKE , m, r)` on page 27.
 /// Uses the encryption key to encrypt a plaintext message using the randomness r.
+///
+/// Input: encryption key `ekPKE` ∈ `B^{384·k+32}` <br>
+/// Input: message `m` ∈ `B^{32}` <br>
+/// Input: encryption randomness `r` ∈ `B^{32}` <br>
+/// Output: ciphertext `c` ∈ `B^{32(du·k+dv)}` <br>
 #[allow(clippy::many_single_char_names, clippy::too_many_arguments)]
 pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64: usize>(
     du: u32, dv: u32, eta1: u32, eta2: u32, ek: &[u8], m: &[u8], randomness: &[u8; 32],
     ct: &mut [u8],
 ) -> Result<(), &'static str> {
-    // Input: encryption key ekPKE ∈ B^{384k+32}
-    // Input: message m ∈ B^{32}
-    // Input: encryption randomness r ∈ B^{32}
-    // Output: ciphertext c ∈ B^{32(du k+dv )}
     ensure!(ek.len() == 384 * K + 32, "Alg13: ek len not 384 * K + 32");
     ensure!(m.len() == 32, "Alg13: m len not 32");
     ensure!(eta1 as usize * 64 == ETA1_64, "Alg13: const probs 1");
@@ -233,12 +234,13 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
 
 /// Algorithm 14 `K-PKE.Decrypt(dkPKE, c)` on page 28.
 /// Uses the decryption key to decrypt a ciphertext.
+///
+/// Input: decryption key `dk_{PKE}` ∈ `B^{384·k}`
+/// Input: ciphertext `c` ∈ `B^{32(du·k+dv)}`
+/// Output: message `m` ∈ `B^{32}`
 pub(crate) fn k_pke_decrypt<const K: usize>(
     du: u32, dv: u32, dk: &[u8], ct: &[u8],
 ) -> Result<[u8; 32], &'static str> {
-    // Input: decryption key dk_{PKE} ∈ B^{384*k}
-    // Input: ciphertext c ∈ B^{32(du*k+dv)}
-    // Output: message m ∈ B^{32}
     ensure!(dk.len() == 384 * K, "Alg14: dk len not 384 * K");
     ensure!(ct.len() == 32 * (du as usize * K + dv as usize), "Alg14: 32 * (DU * K + DV)");
 

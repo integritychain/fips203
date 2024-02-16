@@ -153,11 +153,11 @@ pub(crate) fn j(bytes: &[&[u8]]) -> [u8; 32] {
 #[allow(clippy::cast_possible_truncation)]
 pub(crate) fn compress(d: u32, inout: &mut [Z]) {
     for x_ref in &mut *inout {
-        // Barrett constants should be sorted out at compile time
+        // Barrett constants should be resolved at compile time
         let q64 = u64::from(Q);
         let k = 32;
         let m = 2u64.pow(k) / q64;
-        // Barrett division/reduction, quotient could be too small by one
+        // Barrett division, quotient could be too small by one
         let top = u64::from(x_ref.get_u32()) << d;
         let quot = (top * m) >> k;
         let bump = (top - quot * q64) > u64::from(Q);
