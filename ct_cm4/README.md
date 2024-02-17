@@ -15,6 +15,7 @@ You will need to be running with two windows in parallel.
    cd ct_cm4   # <here>
    cargo build --target thumbv7em-none-eabihf
    cargo readobj --target thumbv7em-none-eabihf --bin ct_cm4-fips203 -- --file-header  # double-checks built object
+   cargo size --bin ct_cm4-fips203 --release -- -A
    ~~~
 
 2. In the second window:
@@ -31,7 +32,7 @@ cargo run
 
 then
    layout src
-   break main.rs:93
+   break k_pke.rs:29
    continue
    s
 ~~~

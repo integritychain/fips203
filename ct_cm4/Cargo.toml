@@ -9,7 +9,7 @@ fips203 = { path = "..", default-features = false, features = ["ml-kem-512"] }
 cortex-m-semihosting = "0.5.0"
 panic-semihosting = { version = "0.6.0", features = ["exit"] }
 cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
-cortex-m-rt = "0.6.15"
+cortex-m-rt = "0.6.15"  # Required by 'most recent' version of stm32f3-discovery below
 stm32f3-discovery = "0.7.2"
 panic-itm = "0.4.2"
 rand_core = { version = "0.6.4", default-features = false }

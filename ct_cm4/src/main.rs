@@ -1,18 +1,16 @@
 #![no_std]
 #![no_main]
-////////////////////////////////////////////
-#![allow(dead_code)]
-#![allow(clippy::write_with_newline)]
 
+use cortex_m::peripheral::DWT;
 use cortex_m_rt::entry;
 use fips203::ml_kem_512;
-use fips203::traits::{Decaps, Encaps, KeyGen};
+use fips203::traits::KeyGen;
 use rand_core::{CryptoRng, RngCore};
 use stm32f3_discovery::leds::Leds;
 use stm32f3_discovery::stm32f3xx_hal::{pac, prelude::*};
-use stm32f3_discovery::switch_hal::OutputSwitch;
+use stm32f3_discovery::switch_hal::ToggleableOutputSwitch;
 
-// Dummy RNG that regurgitates zeros when asked
+// Dummy RNG that regurgitates zeros when 'asked'
 struct MyRng();
 impl RngCore for MyRng {
     fn next_u32(&mut self) -> u32 { unimplemented!() }
@@ -24,7 +22,6 @@ impl RngCore for MyRng {
     }
 }
 impl CryptoRng for MyRng {}
-
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
@@ -46,30 +43,21 @@ fn main() -> ! {
     let mut my_rng = MyRng {};
     let mut i = 0u32;
     loop {
-        i = if i % 10 == 0 {
-            leds[0].off().ok();
-            1
-        } else {
-            leds[0].on().ok();
-            i + 1
-        };
-        //cortex_m::asm::isb();
-        //let start = DWT::cycle_count();
-        //cortex_m::asm::isb();
+        if (i % 10) == 0 { leds[0].toggle().ok(); };
+        i += 1;
 
-        let res1 = ml_kem_512::KG::try_keygen_with_rng_vt(&mut my_rng);
-        // if res1.is_ok() {
-        //     let (ek1, dk1) = res1.unwrap();
-        //     let (ssk1, ct) = ek1.try_encaps_with_rng_vt(&mut my_rng).unwrap();
-        //     let ssk2 = dk1.try_decaps_vt(&ct).unwrap();
-        //     assert_eq!(ssk1, ssk2);
-        // }
-        //cortex_m::asm::isb();
-        //let finish = DWT::cycle_count();
-        //cortex_m::asm::isb();
-        ///////////////////// ...timing finished
+        cortex_m::asm::isb();
+        let start = DWT::cycle_count();
+        cortex_m::asm::isb();
 
-        //print_semi("Top", finish - start);
+        let _res1 = ml_kem_512::KG::try_keygen_with_rng_vt(&mut my_rng);
+
+        cortex_m::asm::isb();
+        let finish = DWT::cycle_count();
+        cortex_m::asm::isb();
+
+        let _count = finish - start;
+        //print_semi("Top", _count);
         //leds[0].off().ok();
     }
 }
