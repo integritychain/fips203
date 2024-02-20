@@ -1,4 +1,4 @@
-This is a work in progress, but off to a strong start.
+This is a work in progress, but good results currently.
 
 ~~~
 Fuzzing

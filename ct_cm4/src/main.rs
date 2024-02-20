@@ -10,6 +10,7 @@ use stm32f3_discovery::leds::Leds;
 use stm32f3_discovery::stm32f3xx_hal::{pac, prelude::*};
 use stm32f3_discovery::switch_hal::ToggleableOutputSwitch;
 
+
 // Dummy RNG that regurgitates zeros when 'asked'
 struct MyRng();
 impl RngCore for MyRng {
@@ -23,6 +24,7 @@ impl RngCore for MyRng {
 }
 impl CryptoRng for MyRng {}
 
+
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 
@@ -31,17 +33,18 @@ fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 fn main() -> ! {
 
     // Configure MCU
-    let device_periphs = pac::Peripherals::take().unwrap();
-    let mut reset_and_clock_control = device_periphs.RCC.constrain();
+    let device_peripherals = pac::Peripherals::take().unwrap();
+    let mut reset_and_clock_control = device_peripherals.RCC.constrain();
 
     // Initialize LEDs
-    let mut gpioe = device_periphs.GPIOE.split(&mut reset_and_clock_control.ahb);
+    let mut gpioe = device_peripherals.GPIOE.split(&mut reset_and_clock_control.ahb);
     #[rustfmt::skip]
-        let mut leds = Leds::new(gpioe.pe8, gpioe.pe9, gpioe.pe10, gpioe.pe11, gpioe.pe12,
-                                 gpioe.pe13, gpioe.pe14, gpioe.pe15, &mut gpioe.moder, &mut gpioe.otyper).into_array();
+    let mut leds = Leds::new(gpioe.pe8, gpioe.pe9, gpioe.pe10, gpioe.pe11, gpioe.pe12,
+        gpioe.pe13, gpioe.pe14, gpioe.pe15, &mut gpioe.moder, &mut gpioe.otyper).into_array();
 
     let mut my_rng = MyRng {};
     let mut i = 0u32;
+
     loop {
         if (i % 10) == 0 { leds[0].toggle().ok(); };
         i += 1;
@@ -56,8 +59,8 @@ fn main() -> ! {
         let finish = DWT::cycle_count();
         cortex_m::asm::isb();
 
+        // Code will 'soon' present the cycle counts via semi-hosting
         let _count = finish - start;
-        //print_semi("Top", _count);
-        //leds[0].off().ok();
+        // print_semi("Top", _count);
     }
 }

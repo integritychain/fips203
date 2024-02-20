@@ -1,4 +1,4 @@
-Figure-of-merit only; no particular care take (wrt turboboost etc).
+Figure-of-merit only; no particular care take (wrt turbo-boost etc).
 
 ~~~
 Intel® Core™ i7-7700K CPU @ 4.20GHz × 8
