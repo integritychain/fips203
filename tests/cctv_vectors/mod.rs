@@ -5,8 +5,8 @@ use flate2::read::GzDecoder;
 use hex::decode;
 use regex::Regex;
 
-use fips203::{ml_kem_1024, ml_kem_512, ml_kem_768};
 use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
+use fips203::{ml_kem_1024, ml_kem_512, ml_kem_768};
 
 use super::TestRng;
 

@@ -1,5 +1,6 @@
-use crate::{Q, ZETA};
 use crate::types::Z;
+use crate::{Q, ZETA};
+
 
 /// Algorithm 8 `NTT(f)` on page 22.
 /// Computes the NTT representation `f_hat` of the given polynomial f ∈ `R_q`.
@@ -165,10 +166,9 @@ pub fn base_case_multiply(a0: Z, a1: Z, b0: Z, b1: Z, gamma: Z) -> (Z, Z) {
 // ----------
 // The functionality below calculates the Zeta array at compile-time. Thus, not particularly optimal or CT.
 
-
 /// HAC Algorithm 14.76 Right-to-left binary exponentiation mod Q.
 #[must_use]
-#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_truncation)] // on result
 const fn pow_mod_q(g: u32, e: u8) -> u16 {
     let g = g as u64;
     let mut result = 1;
@@ -187,7 +187,7 @@ const fn pow_mod_q(g: u32, e: u8) -> u16 {
 }
 
 
-#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_truncation)] // i as u8
 const fn gen_zeta_table() -> [u16; 256] {
     let mut result = [0u16; 256];
     let mut i = 0;
@@ -205,8 +205,8 @@ pub(crate) static ZETA_TABLE: [u16; 256] = gen_zeta_table();
 #[cfg(test)]
 mod tests {
     use crate::ntt::{gen_zeta_table, pow_mod_q};
-    use crate::SharedSecretKey;
     use crate::traits::SerDes;
+    use crate::SharedSecretKey;
 
     #[test]
     fn test_zeta_misc() {

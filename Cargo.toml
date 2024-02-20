@@ -14,18 +14,18 @@ keywords = ["FIPS", "FIPS203", "lattice", "key", "encapsulation"]
 rust-version = "1.72"
 
 
-[dependencies]
-zeroize = { version = "1.6.0", default-features = false, features = ["zeroize_derive"] }
-rand_core = { version = "0.6.4", default-features = false }
-sha3 = { version = "0.10.2", default-features = false }
-
-
 [features]
 default = ["default-rng", "ml-kem-512", "ml-kem-768", "ml-kem-1024"]
 default-rng = ["rand_core/getrandom"]
 ml-kem-512 = []
 ml-kem-768 = []
 ml-kem-1024 = []
+
+
+[dependencies]
+zeroize = { version = "1.6.0", default-features = false, features = ["zeroize_derive"] }
+rand_core = { version = "0.6.4", default-features = false }
+sha3 = { version = "0.10.2", default-features = false }
 
 
 [dev-dependencies]

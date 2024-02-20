@@ -8,6 +8,7 @@ use crate::ntt::{ntt, ntt_inv};
 use crate::sampling::{sample_ntt, sample_poly_cbd};
 use crate::types::Z;
 
+
 /// Algorithm 12 `K-PKE.KeyGen()` on page 26.
 /// Generates an encryption key and a corresponding decryption key.
 ///
@@ -309,7 +310,6 @@ mod tests {
         let m = [0u8; 32];
         let r = [0u8; 32];
 
-
         let pkg = k_pke_key_gen::<K, ETA1_64>;
         let res = pkg(&mut rng, ETA1, &mut ek, &mut dk[0..384 * K]);
         assert!(res.is_ok());
@@ -321,7 +321,6 @@ mod tests {
         let mut bad_dk = [0u8; DK_LEN + 1];
         let res = pkg(&mut rng, ETA1, &mut ek, &mut bad_dk);
         assert!(res.is_err());
-
 
         let pke = k_pke_encrypt::<K, ETA1_64, ETA2_64>;
         let res = pke(DU, DV, ETA1, ETA2, &ek, &m, &r, &mut ct);
@@ -347,7 +346,6 @@ mod tests {
 
         let res = pke(DU, DV, ETA1, ETA2 + 2, &ek, &m, &r, &mut ct);
         assert!(res.is_err());
-
 
         let pkd = k_pke_decrypt::<K>;
         let res = pkd(DU, DV, &dk[0..384 * K], &ct);

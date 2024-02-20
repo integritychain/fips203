@@ -1,17 +1,16 @@
 use crate::helpers::ensure;
-use crate::Q;
 use crate::types::Z;
+use crate::Q;
+
 
 // Note: Algorithm 2 and 3 have been "optimized away" as they had a lot of overhead
-// and made memory management tricky. The headers are left here for reference.
-
+// and made memory allocations tricky. The definitions are left here for reference.
 
 // /// Algorithm 2 `BitsToBytes(b)` on page 17.
 // /// Converts a bit string (of length a multiple of eight) into an array of bytes.
 // ///
 // /// Input: bit array b ∈ {0,1}^{8·ℓ} <br>
 // /// Output: byte array B ∈ B^ℓ
-
 
 // /// Algorithm 3 `BytesToBits(B)` on page 18.
 // /// Performs the inverse of `BitsToBytes`, converting a byte array into a bit array.
@@ -51,7 +50,7 @@ pub(crate) fn byte_encode(
         bit_index += d as usize;
 
         // While we have enough bits to drop a byte, do so
-        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_possible_truncation)] // Intentional truncation
         while bit_index > 7 {
             //
             // Drop the byte
@@ -91,7 +90,7 @@ pub(crate) fn byte_decode(
         bit_index += 8;
 
         // If we have enough bits to drop an int, do so
-        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_possible_truncation)] // Intentional truncation
         while bit_index >= d {
             //
             // Mask off the upport portion and drop it in

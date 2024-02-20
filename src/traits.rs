@@ -2,6 +2,7 @@ use rand_core::CryptoRngCore;
 #[cfg(feature = "default-rng")]
 use rand_core::OsRng;
 
+
 /// The `KeyGen` trait is defined to allow trait objects.
 pub trait KeyGen {
     /// The (public) encapsulation key sent from the originator to the remote party.
@@ -47,6 +48,7 @@ pub trait KeyGen {
     fn try_keygen_vt() -> Result<(Self::EncapsKey, Self::DecapsKey), &'static str> {
         Self::try_keygen_with_rng_vt(&mut OsRng)
     }
+
 
     /// Generates an encapsulation and decapsulation key key pair specific to this security parameter set. <br>
     /// This function utilizes a supplied random number generator, and makes no (constant)
@@ -99,7 +101,6 @@ pub trait KeyGen {
     ///
     /// # Ok(())}
     /// ```
-
     fn validate_keypair_vt(ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray) -> bool;
 }
 
@@ -110,6 +111,7 @@ pub trait Encaps {
     type SharedSecretKey;
     /// The ciphertext transmitted from the remote party to the originator.
     type CipherText;
+
 
     /// Generates a shared secret and ciphertext from an encapsulation key specific to this security parameter set. <br>
     /// This function utilizes the OS default random number generator, and makes no (constant)
@@ -145,6 +147,7 @@ pub trait Encaps {
     fn try_encaps_vt(&self) -> Result<(Self::SharedSecretKey, Self::CipherText), &'static str> {
         self.try_encaps_with_rng_vt(&mut OsRng)
     }
+
 
     /// Generates a shared secret and ciphertext from an encapsulation key specific to this security parameter set. <br>
     /// This function utilizes a supplied random number generator, and makes no (constant)
@@ -189,6 +192,7 @@ pub trait Decaps {
     /// Shared secret struct
     type SharedSecretKey;
 
+
     /// Generates a shared secret from a decapsulation key and ciphertext specific to this security parameter set. <br>
     /// This function makes no (constant) timing assurances.
     /// # Errors
@@ -227,6 +231,7 @@ pub trait SerDes {
     /// Correctly sized byte array for struct
     type ByteArray;
 
+
     /// Produces a byte array of fixed-size specific to the struct being serialized.
     /// # Examples
     /// ```rust
@@ -254,6 +259,7 @@ pub trait SerDes {
     /// # Ok(())}
     /// ```
     fn into_bytes(self) -> Self::ByteArray;
+
 
     /// Consumes a byte array of fixed-size specific to the struct being deserialized; performs validation
     /// # Errors

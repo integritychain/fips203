@@ -7,8 +7,8 @@ use hex::decode;
 use rand_core::{CryptoRng, RngCore};
 use regex::Regex;
 
-use fips203::{ml_kem_1024, ml_kem_512, ml_kem_768};
 use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
+use fips203::{ml_kem_1024, ml_kem_512, ml_kem_768};
 
 // ----- CUSTOM RNG TO REPLAY VALUES -----
 
@@ -42,7 +42,6 @@ impl MyRng {
         self.data.push(x);
     }
 }
-
 
 // ----- EXTRACT I/O VALUES FROM OFFICIAL VECTORS -----
 
@@ -87,10 +86,9 @@ fn get_decaps_vec(filename: &str) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
             .unwrap()
             .as_str(),
     )
-        .unwrap();
+    .unwrap();
     (dk, c, kprime)
 }
-
 
 // ----- TEST KEYGEN, SIGN AND VERIFY
 
@@ -124,7 +122,6 @@ fn test_keygen() {
     assert_eq!(dk_exp, dk_act.into_bytes());
 }
 
-
 #[test]
 fn test_encaps() {
     let (ek, m, ssk_exp, ct_exp) =
@@ -154,7 +151,6 @@ fn test_encaps() {
     assert_eq!(ssk_exp, ssk_act.into_bytes());
     assert_eq!(ct_exp, ct_act.into_bytes());
 }
-
 
 #[test]
 fn test_decaps() {

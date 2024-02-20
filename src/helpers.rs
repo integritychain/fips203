@@ -1,10 +1,11 @@
-use sha3::{Digest, Sha3_256, Sha3_512, Shake128, Shake256};
-use sha3::digest::{ExtendableOutput, XofReader};
 use sha3::digest::Update;
+use sha3::digest::{ExtendableOutput, XofReader};
+use sha3::{Digest, Sha3_256, Sha3_512, Shake128, Shake256};
 
 use crate::ntt::multiply_ntts;
-use crate::Q;
 use crate::types::Z;
+use crate::Q;
+
 
 /// If the condition is not met, return an error message. Borrowed from the `anyhow` crate.
 macro_rules! ensure {
@@ -115,7 +116,6 @@ pub(crate) fn xof(rho: &[u8; 32], i: u8, j: u8) -> impl XofReader {
 pub(crate) fn g(bytes: &[&[u8]]) -> ([u8; 32], [u8; 32]) {
     let mut hasher = Sha3_512::new();
     bytes.iter().for_each(|b| Digest::update(&mut hasher, b));
-    //Digest::update(&mut hasher, bytes);
     let digest = hasher.finalize();
     let mut a = [0u8; 32];
     let mut b = [0u8; 32];
@@ -160,11 +160,10 @@ pub(crate) fn compress(d: u32, inout: &mut [Z]) {
         // Barrett division, quotient could be too small by one
         let top = u64::from(x_ref.get_u32()) << d;
         let quot = (top * m) >> k;
-        let bump = (top - quot * q64) > u64::from(Q);
+        let (_diff, bump) = u64::from(Q).overflowing_sub(top - quot * q64);
         let quot = quot + (u64::from(bump).wrapping_neg() & 1);
         // Round to nearest
-        let rem = top - quot * q64;
-        let bump = rem > (q64 >> 1);
+        let (_diff, bump) = u64::from(Q >> 1).overflowing_sub(top - quot * q64);
         let result = quot + (u64::from(bump).wrapping_neg() & 1);
         x_ref.set_u16(result as u16);
     }

@@ -3,8 +3,9 @@ use rand_core::CryptoRngCore;
 use crate::byte_fns::{byte_decode, byte_encode};
 use crate::helpers::{ensure, g, h, j};
 use crate::k_pke::{k_pke_decrypt, k_pke_encrypt, k_pke_key_gen};
-use crate::SharedSecretKey;
 use crate::types::Z;
+use crate::SharedSecretKey;
+
 
 /// Algorithm 15 `ML-KEM.KeyGen()` on page 29.
 /// Generates an encapsulation key and a corresponding decapsulation key.
@@ -175,7 +176,6 @@ mod tests {
         let mut dk = [0u8; DK_LEN];
         let mut ct = [0u8; CT_LEN];
 
-
         let mkg = ml_kem_key_gen::<K, ETA1_64>;
         let res = mkg(&mut rng, ETA1, &mut ek, &mut dk);
         assert!(res.is_ok());
@@ -188,7 +188,6 @@ mod tests {
         let res = mkg(&mut rng, ETA1, &mut ek, &mut bad_dk);
         assert!(res.is_err());
 
-
         let mke = ml_kem_encaps::<K, ETA1_64, ETA2_64>;
         let res = mke(&mut rng, DU, DV, ETA1, ETA2, &ek, &mut ct);
         assert!(res.is_ok());
@@ -199,7 +198,6 @@ mod tests {
         let ff_ek = [0xFFu8; 384 * 2 + 32]; // oversized values
         let res = mke(&mut rng, DU, DV, ETA1, ETA2, &ff_ek, &mut ct);
         assert!(res.is_err());
-
 
         let mkd = ml_kem_decaps::<K, ETA1_64, ETA2_64, J_LEN, CT_LEN>;
         let res = mkd(DU, DV, ETA1, ETA2, &dk, &ct);

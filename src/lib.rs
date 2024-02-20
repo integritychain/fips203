@@ -4,11 +4,9 @@
 #![deny(missing_docs)]
 #![doc = include_str!("../README.md")]
 
+// Implements FIPS 203 draft Module-Lattice-based Key-Encapsulation Mechanism Standard.
+// See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
 
-///
-/// Implements FIPS 203 draft Module-Lattice-based Key-Encapsulation Mechanism Standard.
-/// See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
-//
 // Supports automatically clearing sensitive data on drop
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -38,7 +36,8 @@ use crate::traits::SerDes;
 //
 // The three parameter sets are modules in this file with injected macro code
 // that connects them into the functionality in ml_kem.rs. Some of the 'obtuse'
-// coding style is driven by clippy pedantic.
+// coding style is driven by `clippy pedantic`.
+
 
 mod byte_fns;
 mod helpers;
@@ -51,17 +50,20 @@ mod types;
 /// All functionality is covered by traits, such that consumers can utilize trait objects as desired.
 pub mod traits;
 
+
 // Relevant to all parameter sets
 const _N: u32 = 256;
 const Q: u32 = 3329;
 const ZETA: u32 = 17;
 
-/// Shared Secret Key Length for all ML-KEM variants (in bytes)
+
+/// Shared Secret Key length for all ML-KEM variants (in bytes)
 pub const SSK_LEN: usize = 32;
 
 /// The (opaque) secret key that can be de/serialized by each party.
 #[derive(Clone, Debug, Zeroize, ZeroizeOnDrop)]
 pub struct SharedSecretKey([u8; SSK_LEN]);
+
 
 impl SerDes for SharedSecretKey {
     type ByteArray = [u8; SSK_LEN];
@@ -69,14 +71,14 @@ impl SerDes for SharedSecretKey {
     fn into_bytes(self) -> Self::ByteArray { self.0 }
 
     fn try_from_bytes(ssk: Self::ByteArray) -> Result<Self, &'static str> {
-        // Not really needed but provided for symmetry.
-        // No opportunity for validation, but using a Result for a future possibility
+        // The `try_from` is not really needed but provided for symmetry, e.g., there
+        // is no opportunity for validation, but using a Result for the future possibility
         Ok(SharedSecretKey(ssk))
     }
 }
 
 
-// Conservative (constant-time) paranoia...
+// Conservative (constant-time) ambitions...
 impl PartialEq for SharedSecretKey {
     fn eq(&self, other: &Self) -> bool {
         let mut result = true;
@@ -103,6 +105,7 @@ macro_rules! functionality {
         use crate::SharedSecretKey;
         use rand_core::CryptoRngCore;
 
+
         /// Correctly sized encapsulation key specific to the target security parameter set.
         pub type EncapsKey = crate::types::EncapsKey<EK_LEN>;
 
@@ -115,6 +118,7 @@ macro_rules! functionality {
         /// Supports the `KeyGen` trait, allowing for keypair generation
         pub struct KG();
 
+
         impl KeyGen for KG {
             type DecapsByteArray = [u8; DK_LEN];
             type DecapsKey = DecapsKey;
@@ -126,7 +130,7 @@ macro_rules! functionality {
             ) -> Result<(EncapsKey, DecapsKey), &'static str> {
                 let (mut ek, mut dk) = ([0u8; EK_LEN], [0u8; DK_LEN]);
                 ml_kem_key_gen::<K, ETA1_64>(rng, ETA1, &mut ek, &mut dk)?;
-                Ok((EncapsKey{0: ek}, DecapsKey{0: dk}))
+                Ok((EncapsKey { 0: ek }, DecapsKey { 0: dk }))
             }
 
             fn validate_keypair_vt(ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray) -> bool {
@@ -139,6 +143,7 @@ macro_rules! functionality {
             }
         }
 
+
         impl Encaps for EncapsKey {
             type CipherText = CipherText;
             type SharedSecretKey = SharedSecretKey;
@@ -150,9 +155,10 @@ macro_rules! functionality {
                 let ssk = ml_kem_encaps::<K, ETA1_64, ETA2_64>(
                     rng, DU, DV, ETA1, ETA2, &self.0, &mut ct,
                 )?;
-                Ok((ssk, CipherText{0: ct}))
+                Ok((ssk, CipherText { 0: ct }))
             }
         }
+
 
         impl Decaps for DecapsKey {
             type CipherText = CipherText;
@@ -181,7 +187,7 @@ macro_rules! functionality {
                 for i in 0..K {
                     byte_decode(12, &ek[384 * i..384 * (i + 1)], &mut ek_hat)?;
                 }
-                Ok(EncapsKey{0: ek})
+                Ok(EncapsKey { 0: ek })
             }
         }
 
@@ -195,9 +201,10 @@ macro_rules! functionality {
                 // Validation per pg 31. Note that the two checks specify fixed sizes, and these
                 // functions take only byte arrays of correct size. Nonetheless, we use a Result
                 // here in case future opportunities for validation arise.
-                Ok(DecapsKey{0: dk})
+                Ok(DecapsKey { 0: dk })
             }
         }
+
 
         impl SerDes for CipherText {
             type ByteArray = [u8; CT_LEN];
@@ -208,7 +215,7 @@ macro_rules! functionality {
                 // Validation per pg 31. Note that the two checks specify fixed sizes, and these
                 // functions take only byte arrays of correct size. Nonetheless, we use a Result
                 // here in case future opportunities for validation arise.
-                Ok(CipherText{0: ct})
+                Ok(CipherText { 0: ct })
             }
         }
     };

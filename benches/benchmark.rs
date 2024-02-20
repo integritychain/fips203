@@ -1,7 +1,7 @@
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{criterion_group, criterion_main, Criterion};
 
-use fips203::{ml_kem_1024, ml_kem_512, ml_kem_768};
 use fips203::traits::{Decaps, Encaps, KeyGen};
+use fips203::{ml_kem_1024, ml_kem_512, ml_kem_768};
 
 #[allow(clippy::redundant_closure)]
 pub fn criterion_benchmark(c: &mut Criterion) {

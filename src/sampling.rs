@@ -1,7 +1,8 @@
 use sha3::digest::XofReader;
 
-use crate::Q;
 use crate::types::Z;
+use crate::Q;
+
 
 /// Algorithm 6 `SampleNTT(B)` on page 20.
 /// If the input is a stream of uniformly random bytes, the output is a uniformly random element of `T_q`.
