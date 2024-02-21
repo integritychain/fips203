@@ -23,14 +23,14 @@ ml-kem-1024 = []
 
 
 [dependencies]
-zeroize = { version = "1.6.0", default-features = false, features = ["zeroize_derive"] }
+zeroize = { version = "1.7.0", default-features = false, features = ["zeroize_derive"] }
 rand_core = { version = "0.6.4", default-features = false }
 sha3 = { version = "0.10.2", default-features = false }
 
 
 [dev-dependencies]
 rand = "0.8.5"
-regex = "1.10.2"
+regex = "1.10.3"
 hex = "0.4.3"
 rand_chacha = "0.3.1"
 criterion = "0.4.0" # Needed to keep MSRV back at 1.72, newer: "0.5.1"
