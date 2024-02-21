@@ -28,6 +28,7 @@ use crate::Q;
 pub(crate) fn byte_encode(
     d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8],
 ) -> Result<(), &'static str> {
+    debug_assert_eq!(bytes_b.len(), 32 * d as usize, "Alg 4: bytes len is not 32 * d");
     //
     // Our "working" register, from which to drop bytes out of
     let mut temp = 0u32;
@@ -75,6 +76,7 @@ pub(crate) fn byte_encode(
 pub(crate) fn byte_decode(
     d: u32, bytes_b: &[u8], integers_f: &mut [Z; 256],
 ) -> Result<(), &'static str> {
+    debug_assert_eq!(bytes_b.len(), 32 * d as usize, "Alg 5: bytes len is not 32 * d");
     //
     // Our "working" register
     let mut temp = 0u64;

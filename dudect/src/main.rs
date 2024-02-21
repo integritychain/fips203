@@ -41,7 +41,6 @@ fn encaps(runner: &mut CtRunner, mut _rng: &mut BenchRng) {
         classes.push(Class::Right);
     }
 
-
     for (class, input) in classes.into_iter().zip(inputs.into_iter()) {
         runner.run_one(class, || {
             let mut my_rng = MyRng {};

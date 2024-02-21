@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-
 use fips203::traits::{Decaps, Encaps, KeyGen};
 use fips203::{ml_kem_1024, ml_kem_512, ml_kem_768};
+
 
 #[allow(clippy::redundant_closure)]
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -24,6 +24,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("ml_kem_768  Decaps", |b| b.iter(|| dk_768.try_decaps_vt(&ct_768)));
     c.bench_function("ml_kem_1024 Decaps", |b| b.iter(|| dk_1024.try_decaps_vt(&ct_1024)));
 }
+
 
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);

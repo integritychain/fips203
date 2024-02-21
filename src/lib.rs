@@ -28,7 +28,7 @@ use crate::traits::SerDes;
 // Algorithm 13 K-PKE.Encrypt(ekPKE,m,r) on page 27         --> k_pke.rs
 // Algorithm 14 K-PKE.Decrypt(dkPKE,c) on page 28           --> k_pke.rs
 // Algorithm 15 ML-KEM.KeyGen() on page 29                  --> ml_kem.rs
-// Algorithm 16 ML-KEM.Encaps(ek) on page 30                --> ml_ke.rs
+// Algorithm 16 ML-KEM.Encaps(ek) on page 30                --> ml_kem.rs
 // Algorithm 17 ML-KEM.Decaps(c,dk) on page 32              --> ml_kem.rs
 // PRF and XOF on page 16                                   --> helpers.rs
 // Three hash functions: G, H, J on page 17                 --> helpers.rs
@@ -36,8 +36,8 @@ use crate::traits::SerDes;
 //
 // The three parameter sets are modules in this file with injected macro code
 // that connects them into the functionality in ml_kem.rs. Some of the 'obtuse'
-// coding style is driven by `clippy pedantic`.
-
+// coding style is driven by `clippy pedantic`. While the API suggests the
+// code is not constant-time, this is the medium-term ambition.
 
 mod byte_fns;
 mod helpers;
@@ -50,12 +50,10 @@ mod types;
 /// All functionality is covered by traits, such that consumers can utilize trait objects as desired.
 pub mod traits;
 
-
 // Relevant to all parameter sets
 const _N: u32 = 256;
 const Q: u32 = 3329;
 const ZETA: u32 = 17;
-
 
 /// Shared Secret Key length for all ML-KEM variants (in bytes)
 pub const SSK_LEN: usize = 32;

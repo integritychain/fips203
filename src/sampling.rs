@@ -76,6 +76,7 @@ pub fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
 /// Output: array f ∈ `Z^{256}_q`
 #[must_use]
 pub fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> [Z; 256] {
+    debug_assert_eq!(byte_array_b.len(), 64 * eta as usize, "Alg 7: byte array not 64*eta");
     let mut array_f: [Z; 256] = [Z::default(); 256];
     let mut temp = 0;
     let mut int_index = 0;

@@ -59,7 +59,8 @@ fn main() -> ! {
         let finish = DWT::cycle_count();
         cortex_m::asm::isb();
 
-        // Code will 'soon' present the cycle counts via semi-hosting
+        // Code will 'soon' present the cycle counts via semi-hosting,
+        // and will also include encaps/decaps cycle
         let _count = finish - start;
         // print_semi("Top", _count);
     }

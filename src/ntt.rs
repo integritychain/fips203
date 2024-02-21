@@ -5,12 +5,13 @@ use crate::{Q, ZETA};
 /// Algorithm 8 `NTT(f)` on page 22.
 /// Computes the NTT representation `f_hat` of the given polynomial f ∈ `R_q`.
 ///
-/// Input: array `f` ∈ `Z^{256}_q`           ▷ the coefficients of the input polynomial <br>
-/// Output: array `f_hat` ∈ `Z^{256}_q`      ▷ the coefficients of the NTT of the input polynomial
+/// Input: array `f` ∈ `Z^{256}_q`    ▷ the coefficients of the input polynomial <br>
+/// Output: array `f_hat` ∈ `Z^{256}_q`    ▷ the coefficients of the NTT of the input polynomial
 #[must_use]
 #[allow(clippy::module_name_repetitions)]
 pub fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
-    // 1: f_hat ← f                         ▷ will compute NTT in-place on a copy of input array
+    //
+    // 1: f_hat ← f    ▷ will compute NTT in-place on a copy of input array
     let mut f_hat = [Z::default(); 256];
     f_hat.copy_from_slice(array_f);
 
@@ -33,7 +34,7 @@ pub fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
             // 7: for ( j ← start; j < start + len; j ++)
             for j in start..(start + len) {
                 //
-                // 8: t ← zeta · f_hat[ j + len]           ▷ steps 8-10 done modulo q
+                // 8: t ← zeta · f_hat[ j + len]    ▷ steps 8-10 done modulo q
                 let t = f_hat[j + len].mul(zeta);
 
                 // 9: f_hat[ j + len] ← f_hat [ j] − t
@@ -59,12 +60,12 @@ pub fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
 /// Algorithm 9 `NTTinv(f)` on page 23.
 /// Computes the polynomial `f` ∈ `R_q` corresponding to the given NTT representation `f_hat` ∈ `T_q`.
 ///
-/// Input: array `f_hat` ∈ `Z^{256}`     ▷ the coefficients of input NTT representation <br>
-/// Output: array `f` ∈ `Z^{256}`        ▷ the coefficients of the inverse-NTT of the input
+/// Input: array `f_hat` ∈ `Z^{256}`    ▷ the coefficients of input NTT representation <br>
+/// Output: array `f` ∈ `Z^{256}`    ▷ the coefficients of the inverse-NTT of the input
 #[must_use]
 #[allow(clippy::module_name_repetitions)]
 pub fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
-    // 1: f ← f_hat                     ▷ will compute in-place on a copy of input array
+    // 1: f ← f_hat    ▷ will compute in-place on a copy of input array
     let mut f: [Z; 256] = [Z::default(); 256];
     f.copy_from_slice(f_hat);
 
@@ -90,7 +91,7 @@ pub fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
                 // 8: t ← f [ j]
                 let t = f[j];
 
-                // 9: f [ j] ← t + f [ j + len]         ▷ steps 9-10 done modulo q
+                // 9: f [ j] ← t + f [ j + len]    ▷ steps 9-10 done modulo q
                 f[j] = t.add(f[j + len]);
 
                 // 10: f [ j + len] ← zeta · ( f [ j + len] − t)
@@ -105,7 +106,7 @@ pub fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
         // 13: end for
     }
 
-    // 14: f ← f · 3303 mod q                   ▷ multiply every entry by 3303 ≡ 128^{−1} mod q
+    // 14: f ← f · 3303 mod q    ▷ multiply every entry by 3303 ≡ 128^{−1} mod q
     let mut z3303 = Z::default();
     z3303.set_u16(3303);
     f.iter_mut().for_each(|item| *item = item.mul(z3303));
@@ -118,8 +119,8 @@ pub fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
 /// Algorithm 10 `MultiplyNTTs(f, g)` on page 24.
 /// Computes the product (in the ring `T_q` ) of two NTT representations.
 ///
-/// Input: Two arrays `f_hat` ∈ `Z^{256}_q` and `g_hat` ∈ `Z^{256}_q`        ▷ the coefficients of two NTT representations <br>
-/// Output: An array `h_hat` ∈ `Z^{256}_q`                               ▷ the coefficients of the product of the inputs
+/// Input: Two arrays `f_hat` ∈ `Z^{256}_q` and `g_hat` ∈ `Z^{256}_q`    ▷ the coefficients of two NTT representations <br>
+/// Output: An array `h_hat` ∈ `Z^{256}_q`    ▷ the coefficients of the product of the inputs
 #[must_use]
 #[allow(clippy::cast_possible_truncation)]
 pub fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
@@ -147,12 +148,12 @@ pub fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
 /// Algorithm 11 `BaseCaseMultiply(a0, a1, b0, b1, gamma)` on page 24.
 /// Computes the product of two degree-one polynomials with respect to a quadratic modulus.
 ///
-/// Input: `a0`, `a1`, `b0`, `b1` ∈ `Z_q`               ▷ the coefficients of `a0` + `a1` X and `b0` + `b1` X
-/// Input: `γ` ∈ `Z_q`                               ▷ the modulus is `X^2 − γ`
-/// Output: `c0`, `c1` ∈ `Z_q`                        ▷ the coefficients of the product of the two polynomials
+/// Input: `a0`, `a1`, `b0`, `b1` ∈ `Z_q`    ▷ the coefficients of `a0` + `a1` X and `b0` + `b1` X
+/// Input: `γ` ∈ `Z_q`    ▷ the modulus is `X^2 − γ`
+/// Output: `c0`, `c1` ∈ `Z_q`    ▷ the coefficients of the product of the two polynomials
 #[must_use]
 pub fn base_case_multiply(a0: Z, a1: Z, b0: Z, b1: Z, gamma: Z) -> (Z, Z) {
-    // 1: c0 ← a0 · b0 + a1 · b1 · γ                ▷ steps 1-2 done modulo q
+    // 1: c0 ← a0 · b0 + a1 · b1 · γ    ▷ steps 1-2 done modulo q
     let c0 = a0.mul(b0).add(a1.mul(b1).mul(gamma));
 
     // 2: 2: c1 ← a0 · b1 + a1 · b0

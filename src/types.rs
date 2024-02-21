@@ -19,8 +19,8 @@ pub struct CipherText<const CT_LEN: usize>(pub(crate) [u8; CT_LEN]);
 
 
 // While Z is nice, simple and correct, the performance is suboptimal.
-// This will be addressed (particularly in matrix operations etc) 'soon',
-// potentially as a 256-entry row.
+// This will be addressed (particularly in matrix operations etc) over,
+// the medium-term - potentially as a 256-entry row.
 
 /// Stored as u16, but arithmetic as u32 (so we can multiply/reduce/etc)
 #[derive(Clone, Copy, Default)]

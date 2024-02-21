@@ -15,15 +15,15 @@ use crate::SharedSecretKey;
 pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
     rng: &mut impl CryptoRngCore, eta1: u32, ek: &mut [u8], dk: &mut [u8],
 ) -> Result<(), &'static str> {
-    ensure!(ek.len() == 384 * K + 32, "Alg15: ek len not 384 * K + 32");
-    ensure!(dk.len() == 768 * K + 96, "Alg15: dk len not 768 * K + 96");
+    debug_assert_eq!(ek.len(), 384 * K + 32, "Alg15: ek len not 384 * K + 32");
+    debug_assert_eq!(dk.len(), 768 * K + 96, "Alg15: dk len not 768 * K + 96");
 
-    // 1: z ←− B32         ▷ z is 32 random bytes (see Section 3.3)
+    // 1: z ←− B32    ▷ z is 32 random bytes (see Section 3.3)
     let mut z = [0u8; 32];
     rng.try_fill_bytes(&mut z)
         .map_err(|_| "Alg15: Random number generator failed")?;
 
-    // 2: (ek_{PKE}, dk_{PKE}) ← K-PKE.KeyGen()     ▷ run key generation for K-PKE
+    // 2: (ek_{PKE}, dk_{PKE}) ← K-PKE.KeyGen()    ▷ run key generation for K-PKE
     let p1 = 384 * K;
     k_pke_key_gen::<K, ETA1_64>(rng, eta1, ek, &mut dk[..p1])?; // 3: ek ← ekPKE
 
@@ -49,27 +49,32 @@ pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
 pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64: usize>(
     rng: &mut impl CryptoRngCore, du: u32, dv: u32, eta1: u32, eta2: u32, ek: &[u8], ct: &mut [u8],
 ) -> Result<SharedSecretKey, &'static str> {
-    ensure!(ek.len() == 384 * K + 32, "Alg16: ek len not 384 * K + 32"); // type check: array of length 384k + 32
+    debug_assert_eq!(ek.len(), 384 * K + 32, "Alg16: ek len not 384 * K + 32"); // also: size check at top level
+    debug_assert_eq!(
+        ct.len(),
+        32 * (du as usize * K + dv as usize),
+        "Alg16: ct len not 32*(DU*K+DV)"
+    ); // also: size check at top level
 
-    // modulus check: perform the computation ek ← ByteEncode12 (ByteDecode12(ek_tidle)
+    // modulus check: perform the computation ek ← ByteEncode12(ByteDecode12(ek_tidle)
     // note: after checking, we run with the original input (due to const array allocation); the last 32 bytes is rho
     let mut ek_hat = [Z::default(); 256];
     for i in 0..K {
         let mut ek_tilde = [0u8; 384];
         byte_decode(12, &ek[384 * i..384 * (i + 1)], &mut ek_hat)?;
         byte_encode(12, &ek_hat, &mut ek_tilde)?;
-        ensure!(ek_tilde == ek[384 * i..384 * (i + 1)], "Alg16: len check!");
+        ensure!(ek_tilde == ek[384 * i..384 * (i + 1)], "Alg16: ek==check!");
     }
 
     // 1: m ←− B32          ▷ m is 32 random bytes (see Section 3.3)
     let mut m = [0u8; 32];
     rng.fill_bytes(&mut m);
 
-    // 2: (K, r) ← G(m∥H(ek))       ▷ derive shared secret key K and randomness r
+    // 2: (K, r) ← G(m∥H(ek))    ▷ derive shared secret key K and randomness r
     let h_ek = h(ek);
     let (k, r) = g(&[&m, &h_ek]);
 
-    // 3: 3: c ← K-PKE.Encrypt(ek, m, r)        ▷ encrypt m using K-PKE with randomness r
+    // 3: 3: c ← K-PKE.Encrypt(ek, m, r)    ▷ encrypt m using K-PKE with randomness r
     k_pke_encrypt::<K, ETA1_64, ETA2_64>(du, dv, eta1, eta2, ek, &m, &r, ct)?;
 
     // 4: return (K, c)  (note: ct is mutable input)
@@ -106,16 +111,16 @@ pub(crate) fn ml_kem_decaps<
     // NOTE: The decaps key is an opaque struct to the user of this library and has no serialization/deserialization
     // functionality. This limits the amount of validation that is appropriate/necessary.
 
-    // 1: dkPKE ← dk[0 : 384k]              ▷ extract (from KEM decaps key) the PKE decryption key
+    // 1: dkPKE ← dk[0 : 384k]    ▷ extract (from KEM decaps key) the PKE decryption key
     let dk_pke = &dk[0..384 * K];
 
-    // 2: ekPKE ← dk[384k : 768k + 32]      ▷ extract PKE encryption key
+    // 2: ekPKE ← dk[384k : 768k + 32]    ▷ extract PKE encryption key
     let ek_pke = &dk[384 * K..768 * K + 32];
 
-    // 3: h ← dk[768k + 32 : 768k + 64]     ▷ extract hash of PKE encryption key
+    // 3: h ← dk[768k + 32 : 768k + 64]    ▷ extract hash of PKE encryption key
     let h = &dk[768 * K + 32..768 * K + 64];
 
-    // 4: z ← dk[768k + 64 : 768k + 96]     ▷ extract implicit rejection value
+    // 4: z ← dk[768k + 64 : 768k + 96]    ▷ extract implicit rejection value
     let z = &dk[768 * K + 64..768 * K + 96];
 
     // 5: m′ ← K-PKE.Decrypt(dkPKE,c)
@@ -130,7 +135,7 @@ pub(crate) fn ml_kem_decaps<
     j_input[32..32 + ct.len()].copy_from_slice(ct);
     let k_bar = j(&[z, ct]);
 
-    // 8: c′ ← K-PKE.Encrypt(ekPKE , m′ , r′ )      ▷ re-encrypt using the derived randomness r′
+    // 8: c′ ← K-PKE.Encrypt(ekPKE , m′ , r′ )    ▷ re-encrypt using the derived randomness r′
     let mut c_prime = [0u8; CT_LEN];
     k_pke_encrypt::<K, ETA1_64, ETA2_64>(
         du,
@@ -152,62 +157,40 @@ pub(crate) fn ml_kem_decaps<
 
 #[cfg(test)]
 mod tests {
-    use rand_core::SeedableRng;
-
     use crate::ml_kem::{ml_kem_decaps, ml_kem_encaps, ml_kem_key_gen};
+    use rand_core::SeedableRng;
+    const ETA1: u32 = 3;
+    const ETA2: u32 = 2;
+    const DU: u32 = 10;
+    const DV: u32 = 4;
+    const K: usize = 2;
+    const ETA1_64: usize = ETA1 as usize * 64;
+    const ETA2_64: usize = ETA2 as usize * 64;
+    const EK_LEN: usize = 800;
+    const DK_LEN: usize = 1632;
+    const CT_LEN: usize = 768;
+    const J_LEN: usize = 32 + 32 * (DU as usize * K + DV as usize);
 
     #[test]
     #[allow(clippy::similar_names)]
     fn test_result_errs() {
-        const ETA1: u32 = 3;
-        const ETA2: u32 = 2;
-        const DU: u32 = 10;
-        const DV: u32 = 4;
-        const K: usize = 2;
-        const ETA1_64: usize = ETA1 as usize * 64;
-        const ETA2_64: usize = ETA2 as usize * 64;
-        const EK_LEN: usize = 800;
-        const DK_LEN: usize = 1632;
-        const CT_LEN: usize = 768;
-        const J_LEN: usize = 32 + 32 * (DU as usize * K + DV as usize);
-
         let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
         let mut ek = [0u8; EK_LEN];
         let mut dk = [0u8; DK_LEN];
         let mut ct = [0u8; CT_LEN];
 
-        let mkg = ml_kem_key_gen::<K, ETA1_64>;
-        let res = mkg(&mut rng, ETA1, &mut ek, &mut dk);
+        let res = ml_kem_key_gen::<K, ETA1_64>(&mut rng, ETA1, &mut ek, &mut dk);
         assert!(res.is_ok());
 
-        let mut bad_ek = [0u8; EK_LEN + 1];
-        let res = mkg(&mut rng, ETA1, &mut bad_ek, &mut dk);
-        assert!(res.is_err());
-
-        let mut bad_dk = [0u8; DK_LEN + 1];
-        let res = mkg(&mut rng, ETA1, &mut ek, &mut bad_dk);
-        assert!(res.is_err());
-
-        let mke = ml_kem_encaps::<K, ETA1_64, ETA2_64>;
-        let res = mke(&mut rng, DU, DV, ETA1, ETA2, &ek, &mut ct);
+        let res = ml_kem_encaps::<K, ETA1_64, ETA2_64>(&mut rng, DU, DV, ETA1, ETA2, &ek, &mut ct);
         assert!(res.is_ok());
-
-        let res = mke(&mut rng, DU, DV, ETA1, ETA2, &bad_ek, &mut ct);
-        assert!(res.is_err());
 
         let ff_ek = [0xFFu8; 384 * 2 + 32]; // oversized values
-        let res = mke(&mut rng, DU, DV, ETA1, ETA2, &ff_ek, &mut ct);
+        let res =
+            ml_kem_encaps::<K, ETA1_64, ETA2_64>(&mut rng, DU, DV, ETA1, ETA2, &ff_ek, &mut ct);
         assert!(res.is_err());
 
-        let mkd = ml_kem_decaps::<K, ETA1_64, ETA2_64, J_LEN, CT_LEN>;
-        let res = mkd(DU, DV, ETA1, ETA2, &dk, &ct);
+        let res = ml_kem_decaps::<K, ETA1_64, ETA2_64, J_LEN, CT_LEN>(DU, DV, ETA1, ETA2, &dk, &ct);
         assert!(res.is_ok());
-
-        let res = mkd(DU, DV, ETA1, ETA2, &bad_dk, &ct);
-        assert!(res.is_err());
-
-        let bad_ct = [0u8; CT_LEN + 1];
-        let res = mkd(DU, DV, ETA1, ETA2, &dk, &bad_ct);
-        assert!(res.is_err());
     }
 }

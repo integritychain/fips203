@@ -6,6 +6,9 @@ use crate::ntt::multiply_ntts;
 use crate::types::Z;
 use crate::Q;
 
+// Note that checks on 'program structure' (such as "did the calling function provide
+// a correctly sized argument slice?") will use `debug_asserts`, while anything remotely
+// related to data flow will use `ensure`.
 
 /// If the condition is not met, return an error message. Borrowed from the `anyhow` crate.
 macro_rules! ensure {
@@ -21,7 +24,7 @@ pub(crate) use ensure; // make available throughout crate
 
 /// Vector addition; See bottom of page 9, second row: `z_hat` = `u_hat` + `v_hat`
 #[must_use]
-pub(crate) fn vec_add<const K: usize>(
+pub(crate) fn add_vecs<const K: usize>(
     vec_a: &[[Z; 256]; K], vec_b: &[[Z; 256]; K],
 ) -> [[Z; 256]; K] {
     let mut result = [[Z::default(); 256]; K];
@@ -36,7 +39,7 @@ pub(crate) fn vec_add<const K: usize>(
 
 /// Matrix by vector multiplication; See top of page 10, first row: `w_hat` = `A_hat` mul `u_hat`
 #[must_use]
-pub(crate) fn mat_vec_mul<const K: usize>(
+pub(crate) fn mul_mat_vec<const K: usize>(
     a_hat: &[[[Z; 256]; K]; K], u_hat: &[[Z; 256]; K],
 ) -> [[Z; 256]; K] {
     let mut w_hat = [[Z::default(); 256]; K];
@@ -56,7 +59,7 @@ pub(crate) fn mat_vec_mul<const K: usize>(
 
 /// Matrix transpose by vector multiplication; See top of page 10, second row: `y_hat` = `A_hat^T` mul `u_hat`
 #[must_use]
-pub(crate) fn mat_t_vec_mul<const K: usize>(
+pub(crate) fn mul_mat_t_vec<const K: usize>(
     a_hat: &[[[Z; 256]; K]; K], u_hat: &[[Z; 256]; K],
 ) -> [[Z; 256]; K] {
     let mut y_hat = [[Z::default(); 256]; K];
@@ -140,7 +143,6 @@ pub(crate) fn h(bytes: &[u8]) -> [u8; 32] {
 pub(crate) fn j(bytes: &[&[u8]]) -> [u8; 32] {
     let mut hasher = Shake256::default();
     bytes.iter().for_each(|b| hasher.update(b));
-    // hasher.update(bytes);
     let mut reader = hasher.finalize_xof();
     let mut result = [0u8; 32];
     reader.read(&mut result);
@@ -150,7 +152,7 @@ pub(crate) fn j(bytes: &[&[u8]]) -> [u8; 32] {
 
 /// Compress<d> from page 18 (4.5).
 /// x → ⌈(2^d/q) · x⌋
-#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_truncation)]  // last line
 pub(crate) fn compress(d: u32, inout: &mut [Z]) {
     for x_ref in &mut *inout {
         // Barrett constants should be resolved at compile time
@@ -172,7 +174,7 @@ pub(crate) fn compress(d: u32, inout: &mut [Z]) {
 
 /// Decompress<d> from page 18 (4.6).
 /// y → ⌈(q/2^d) · y⌋ .
-#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_truncation)]  // last line
 pub(crate) fn decompress(d: u32, inout: &mut [Z]) {
     for y_ref in &mut *inout {
         let qy = Q * y_ref.get_u32() + 2u32.pow(d) - 1;
