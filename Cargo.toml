@@ -11,7 +11,7 @@ documentation = "https://docs.rs/fips203"
 categories = ["cryptography", "no-std"]
 repository = "https://github.com/integritychain/fips203"
 keywords = ["FIPS", "FIPS203", "lattice", "key", "encapsulation"]
-rust-version = "1.72"
+rust-version = "1.70"
 
 
 [features]
