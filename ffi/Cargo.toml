@@ -19,4 +19,3 @@ name = "fips203"
 [dependencies.fips203]
 path = ".."
 version = "0.1.2"
-features = [ "default-rng", "ml-kem-512" ]
