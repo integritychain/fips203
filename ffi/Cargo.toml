@@ -1,0 +1,21 @@
+[package]
+name = "fips203-ffi"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "C shared library exposing FIPS 203 (draft): Module-Lattice-Based Key-Encapsulation Mechanism"
+authors = ["Daniel Kahn Gillmor <dkg@fifthhorseman.net>"]
+documentation = "https://docs.rs/fips203"
+categories = ["cryptography"]
+repository = "https://github.com/integritychain/fips203"
+keywords = ["FIPS", "203", "lattice", "kem", "ml"]
+rust-version = "1.70"
+
+[lib]
+crate-type = ["staticlib", "cdylib"]
+bench = false
+name = "fips203"
+
+[dependencies.fips203]
+path = ".."
+version = "0.1.2"
