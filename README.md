@@ -58,7 +58,7 @@ The Rust [Documentation][docs-link] lives under each **Module** corresponding to
 * Constant-time ambitions target the source-code level only, and are a work in progress (thus the API 
   suffix of `_vt`).
 * Note that FIPS 203 places specific requirements on randomness per section 3.3, hence the exposed `RNG`.
-* Requires Rust **1.72** or higher. The minimum supported Rust version may be changed in the future, but
+* Requires Rust **1.70** or higher. The minimum supported Rust version may be changed in the future, but
   it will be done with a minor version bump.
 * All on-by-default features of this library are covered by SemVer.
 * This software is experimental and still under active development -- USE AT YOUR OWN RISK!
@@ -87,7 +87,8 @@ defined in the Apache-2.0 license, shall be dual licensed as above, without any 
 
 [build-link]: https://github.com/integritychain/fips203/actions?query=workflow%3Atest
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
-[rustc-image]: https://img.shields.io/badge/rustc-1.72+-blue.svg
+
+[rustc-image]: https://img.shields.io/badge/rustc-1.70+-blue.svg
 
 [//]: # (general links)
 
