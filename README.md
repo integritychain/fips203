@@ -7,7 +7,7 @@
 ![Rust Version][rustc-image]
 
 [FIPS 203] (Initial Public Draft) Module-Lattice-Based Key-Encapsulation Mechanism Standard written in pure Rust for
-server, desktop, browser and embedded applications.
+server, desktop, browser and embedded applications. Repository includes C FFI and Python bindings.
 
 This crate implements the FIPS 203 **draft** standard in pure Rust with minimal and mainstream dependencies. All three
 security parameter sets are fully functional. The implementation does not require the standard library, e.g.
