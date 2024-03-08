@@ -1,9 +1,11 @@
 /target
-/Cargo.lock
 /.idea
 /fuzz/corpus/
 /fuzz/Cargo.lock
 /fuzz/target/
+/fuzz/artifacts
+/fuzz/coverage
 /dudect/Cargo.lock
 /dudect/target/
 /ct_cm4/target/
+**/Cargo.lock
