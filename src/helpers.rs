@@ -1,10 +1,10 @@
-use sha3::digest::Update;
-use sha3::digest::{ExtendableOutput, XofReader};
 use sha3::{Digest, Sha3_256, Sha3_512, Shake128, Shake256};
+use sha3::digest::{ExtendableOutput, XofReader};
+use sha3::digest::Update;
 
 use crate::ntt::multiply_ntts;
-use crate::types::Z;
 use crate::Q;
+use crate::types::Z;
 
 // Note that checks on 'program structure' (such as "did the calling function provide
 // a correctly sized argument slice?") will use `debug_asserts`, while anything remotely
@@ -152,7 +152,7 @@ pub(crate) fn j(bytes: &[&[u8]]) -> [u8; 32] {
 
 /// Compress<d> from page 18 (4.5).
 /// x → ⌈(2^d/q) · x⌋
-#[allow(clippy::cast_possible_truncation)]  // last line
+#[allow(clippy::cast_possible_truncation)] // last line
 pub(crate) fn compress(d: u32, inout: &mut [Z]) {
     for x_ref in &mut *inout {
         // Barrett constants should be resolved at compile time
@@ -174,7 +174,7 @@ pub(crate) fn compress(d: u32, inout: &mut [Z]) {
 
 /// Decompress<d> from page 18 (4.6).
 /// y → ⌈(q/2^d) · y⌋ .
-#[allow(clippy::cast_possible_truncation)]  // last line
+#[allow(clippy::cast_possible_truncation)] // last line
 pub(crate) fn decompress(d: u32, inout: &mut [Z]) {
     for y_ref in &mut *inout {
         let qy = Q * y_ref.get_u32() + 2u32.pow(d) - 1;

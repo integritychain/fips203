@@ -1,8 +1,7 @@
 use sha3::digest::XofReader;
 
-use crate::types::Z;
 use crate::Q;
-
+use crate::types::Z;
 
 /// Algorithm 6 `SampleNTT(B)` on page 20.
 /// If the input is a stream of uniformly random bytes, the output is a uniformly random element of `T_q`.
@@ -10,7 +9,7 @@ use crate::Q;
 /// Input: byte stream B ∈ B^{∗} <br>
 /// Output: array `a_hat` ∈ `Z^{256}_q`              ▷ the coefficients of the NTT of a polynomial
 #[must_use]
-pub fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
+pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
     //
     let mut array_a_hat = [Z::default(); 256];
     let mut bbb = [0u8; 3]; // Space for 3 random (byte) draws
@@ -75,7 +74,7 @@ pub fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
 /// Input: byte array B ∈ B^{64·η} <br>
 /// Output: array f ∈ `Z^{256}_q`
 #[must_use]
-pub fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> [Z; 256] {
+pub(crate) fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> [Z; 256] {
     debug_assert_eq!(byte_array_b.len(), 64 * eta as usize, "Alg 7: byte array not 64*eta");
     let mut array_f: [Z; 256] = [Z::default(); 256];
     let mut temp = 0;

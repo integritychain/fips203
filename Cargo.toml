@@ -1,4 +1,4 @@
-workspace = { members = ['ffi'], exclude = ["dudect", "ct_cm4"] }
+workspace = { members = ['ffi'], exclude = ["ct_cm4", "dudect", "fuzz"] }
 
 [package]
 name = "fips203"
@@ -22,24 +22,37 @@ ml-kem-768 = []
 ml-kem-1024 = []
 
 
-[dependencies]
-zeroize = { version = "1.6.0", default-features = false, features = ["zeroize_derive"] }  # For MSRV 1.70
+[dependencies]  # Some are marginally outdated to retain MSRV 1.70
+zeroize = { version = "1.6.0", default-features = false, features = ["zeroize_derive"] }
 rand_core = { version = "0.6.4", default-features = false }
-sha3 = { version = "0.10.2", default-features = false }  # For MSRV 1.70
+sha3 = { version = "0.10.2", default-features = false }
 
 
-[dev-dependencies]
+[dev-dependencies]  # Some are marginally outdated to retain MSRV 1.70
 rand = "0.8.5"
-regex = "1.10.2"  # for MSRV 1.70
+regex = "1.10.2"
 hex = "0.4.3"
 rand_chacha = "0.3.1"
-criterion = "0.4.0" # For MSRV 1.70
-flate2 = "1.0.27"
+criterion = "0.4.0"
+flate2 = "1.0.28"
 
 
 [[bench]]
 name = "benchmark"
 harness = false
+
+
+[profile.dev]
+debug = true
+lto = true
+opt-level = 3
+codegen-units = 1
+
+
+[profile.release]
+lto = true
+opt-level = "s"
+codegen-units = 1
 
 
 [profile.bench]

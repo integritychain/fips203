@@ -17,6 +17,5 @@ Coverage status is great, see:
 cargo fuzz coverage fuzz_all
 
 cargo cov -- show target/x86_64-unknown-linux-gnu/coverage/x86_64-unknown-linux-gnu/release/fuzz_all \
-       --format=html -instr-profile=/home/eric/work/fips203/fuzz/coverage/fuzz_all/coverage.profdata \
-       > index.html
+       --format=html -instr-profile=coverage/fuzz_all/coverage.profdata > index.html
 ~~~

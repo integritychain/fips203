@@ -2,12 +2,11 @@ use rand_core::CryptoRngCore;
 
 use crate::byte_fns::{byte_decode, byte_encode};
 use crate::helpers::{
-    compress, decompress, dot_t_prod, g, mul_mat_t_vec, mul_mat_vec, prf, add_vecs, xof,
+    add_vecs, compress, decompress, dot_t_prod, g, mul_mat_t_vec, mul_mat_vec, prf, xof,
 };
 use crate::ntt::{ntt, ntt_inv};
 use crate::sampling::{sample_ntt, sample_poly_cbd};
 use crate::types::Z;
-
 
 /// Algorithm 12 `K-PKE.KeyGen()` on page 26.
 /// Generates an encryption key and a corresponding decryption key.
@@ -15,7 +14,7 @@ use crate::types::Z;
 /// Output: encryption key `ekPKE ∈ B^{384·k+32}` <br>
 /// Output: decryption key `dkPKE ∈ B^{384·k}`
 #[allow(clippy::similar_names, clippy::module_name_repetitions)]
-pub fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
+pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
     rng: &mut impl CryptoRngCore, eta1: u32, ek_pke: &mut [u8], dk_pke: &mut [u8],
 ) -> Result<(), &'static str> {
     debug_assert_eq!(ek_pke.len(), 384 * K + 32, "Alg12: ek_pke not 384 * K + 32");
@@ -292,6 +291,7 @@ mod tests {
     use rand_core::SeedableRng;
 
     use crate::k_pke::{k_pke_decrypt, k_pke_encrypt, k_pke_key_gen};
+
     const ETA1: u32 = 3;
     const ETA2: u32 = 2;
     const DU: u32 = 10;

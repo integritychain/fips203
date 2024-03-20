@@ -1,6 +1,5 @@
-use crate::types::Z;
 use crate::{Q, ZETA};
-
+use crate::types::Z;
 
 /// Algorithm 8 `NTT(f)` on page 22.
 /// Computes the NTT representation `f_hat` of the given polynomial f ∈ `R_q`.
@@ -9,7 +8,7 @@ use crate::{Q, ZETA};
 /// Output: array `f_hat` ∈ `Z^{256}_q`    ▷ the coefficients of the NTT of the input polynomial
 #[must_use]
 #[allow(clippy::module_name_repetitions)]
-pub fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
+pub(crate) fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
     //
     // 1: f_hat ← f    ▷ will compute NTT in-place on a copy of input array
     let mut f_hat = [Z::default(); 256];
@@ -64,7 +63,7 @@ pub fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
 /// Output: array `f` ∈ `Z^{256}`    ▷ the coefficients of the inverse-NTT of the input
 #[must_use]
 #[allow(clippy::module_name_repetitions)]
-pub fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
+pub(crate) fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
     // 1: f ← f_hat    ▷ will compute in-place on a copy of input array
     let mut f: [Z; 256] = [Z::default(); 256];
     f.copy_from_slice(f_hat);
@@ -123,7 +122,7 @@ pub fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
 /// Output: An array `h_hat` ∈ `Z^{256}_q`    ▷ the coefficients of the product of the inputs
 #[must_use]
 #[allow(clippy::cast_possible_truncation)]
-pub fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
+pub(crate) fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
     let mut h_hat: [Z; 256] = [Z::default(); 256];
 
     // for (i ← 0; i < 128; i ++)
@@ -152,7 +151,7 @@ pub fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
 /// Input: `γ` ∈ `Z_q`    ▷ the modulus is `X^2 − γ`
 /// Output: `c0`, `c1` ∈ `Z_q`    ▷ the coefficients of the product of the two polynomials
 #[must_use]
-pub fn base_case_multiply(a0: Z, a1: Z, b0: Z, b1: Z, gamma: Z) -> (Z, Z) {
+pub(crate) fn base_case_multiply(a0: Z, a1: Z, b0: Z, b1: Z, gamma: Z) -> (Z, Z) {
     // 1: c0 ← a0 · b0 + a1 · b1 · γ    ▷ steps 1-2 done modulo q
     let c0 = a0.mul(b0).add(a1.mul(b1).mul(gamma));
 
@@ -206,8 +205,8 @@ pub(crate) static ZETA_TABLE: [u16; 256] = gen_zeta_table();
 #[cfg(test)]
 mod tests {
     use crate::ntt::{gen_zeta_table, pow_mod_q};
-    use crate::traits::SerDes;
     use crate::SharedSecretKey;
+    use crate::traits::SerDes;
 
     #[test]
     fn test_zeta_misc() {

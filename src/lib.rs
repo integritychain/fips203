@@ -1,16 +1,20 @@
 #![no_std]
-#![deny(clippy::pedantic)]
-#![deny(warnings)]
-#![deny(missing_docs)]
+#![deny(clippy::pedantic, missing_docs, unsafe_code, warnings)]
+//
+#![deny(absolute_paths_not_starting_with_crate, box_pointers, elided_lifetimes_in_paths)]
+#![deny(explicit_outlives_requirements, keyword_idents, let_underscore_drop)]
+#![deny(macro_use_extern_crate, meta_variable_misuse, missing_abi, non_ascii_idents)]
+#![deny(rust_2021_incompatible_closure_captures, rust_2021_incompatible_or_patterns)]
+#![deny(rust_2021_prefixes_incompatible_syntax, rust_2021_prelude_collisions)]
+#![deny(single_use_lifetimes, trivial_casts, trivial_numeric_casts, unreachable_pub)]
+#![deny(unsafe_op_in_unsafe_fn, unstable_features, unused_extern_crates)]
+#![deny(unused_import_braces, unused_lifetimes, unused_macro_rules, unused_qualifications)]
+#![deny(unused_results, unused_tuple_struct_fields, variant_size_differences)]
+//
 #![doc = include_str!("../README.md")]
 
 // Implements FIPS 203 draft Module-Lattice-based Key-Encapsulation Mechanism Standard.
 // See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
-
-// Supports automatically clearing sensitive data on drop
-use zeroize::{Zeroize, ZeroizeOnDrop};
-
-use crate::traits::SerDes;
 
 // Functionality map per FIPS 203 draft
 //
@@ -38,6 +42,11 @@ use crate::traits::SerDes;
 // that connects them into the functionality in ml_kem.rs. Some of the 'obtuse'
 // coding style is driven by `clippy pedantic`. While the API suggests the
 // code is not constant-time, this is the medium-term ambition.
+
+// Supports automatically clearing sensitive data on drop
+use zeroize::{Zeroize, ZeroizeOnDrop};
+
+use crate::traits::SerDes;
 
 mod byte_fns;
 mod helpers;

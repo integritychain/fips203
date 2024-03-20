@@ -30,12 +30,11 @@ pub struct ml_kem_512_ciphertext {
 
 #[no_mangle]
 pub extern "C" fn ml_kem_512_keygen(
-    encaps_out: Option<&mut ml_kem_512_encaps_key>,
-    decaps_out: Option<&mut ml_kem_512_decaps_key>,
+    encaps_out: Option<&mut ml_kem_512_encaps_key>, decaps_out: Option<&mut ml_kem_512_decaps_key>,
 ) -> u8 {
     use fips203::traits::{KeyGen, SerDes};
 
-    let (Some(encaps_out), Some(decaps_out)) = (encaps_out, decaps_out) else  {
+    let (Some(encaps_out), Some(decaps_out)) = (encaps_out, decaps_out) else {
         return ML_KEM_NULL_PTR_ERROR;
     };
     let Ok((ek, dk)) = fips203::ml_kem_512::KG::try_keygen_vt() else {
@@ -49,13 +48,14 @@ pub extern "C" fn ml_kem_512_keygen(
 
 #[no_mangle]
 pub extern "C" fn ml_kem_512_encaps(
-    encaps: Option<&ml_kem_512_encaps_key>,
-    ciphertext_out: Option<&mut ml_kem_512_ciphertext>,
+    encaps: Option<&ml_kem_512_encaps_key>, ciphertext_out: Option<&mut ml_kem_512_ciphertext>,
     shared_secret_out: Option<&mut ml_kem_shared_secret>,
 ) -> u8 {
     use fips203::traits::{Encaps, SerDes};
 
-    let (Some(encaps), Some(ciphertext_out), Some(shared_secret_out)) = (encaps, ciphertext_out, shared_secret_out) else {
+    let (Some(encaps), Some(ciphertext_out), Some(shared_secret_out)) =
+        (encaps, ciphertext_out, shared_secret_out)
+        else {
         return ML_KEM_NULL_PTR_ERROR;
     };
     let Ok(ek) = fips203::ml_kem_512::EncapsKey::try_from_bytes(encaps.data) else {
@@ -72,13 +72,14 @@ pub extern "C" fn ml_kem_512_encaps(
 
 #[no_mangle]
 pub extern "C" fn ml_kem_512_decaps(
-    decaps: Option<&ml_kem_512_decaps_key>,
-    ciphertext: Option<&ml_kem_512_ciphertext>,
+    decaps: Option<&ml_kem_512_decaps_key>, ciphertext: Option<&ml_kem_512_ciphertext>,
     shared_secret_out: Option<&mut ml_kem_shared_secret>,
 ) -> u8 {
     use fips203::traits::{Decaps, SerDes};
 
-    let (Some(decaps), Some(ciphertext), Some(shared_secret_out)) = (decaps, ciphertext, shared_secret_out) else {
+    let (Some(decaps), Some(ciphertext), Some(shared_secret_out)) =
+        (decaps, ciphertext, shared_secret_out)
+        else {
         return ML_KEM_NULL_PTR_ERROR;
     };
     let Ok(dk) = fips203::ml_kem_512::DecapsKey::try_from_bytes(decaps.data) else {
@@ -112,8 +113,7 @@ pub struct ml_kem_768_ciphertext {
 
 #[no_mangle]
 pub extern "C" fn ml_kem_768_keygen(
-    encaps_out: Option<&mut ml_kem_768_encaps_key>,
-    decaps_out: Option<&mut ml_kem_768_decaps_key>,
+    encaps_out: Option<&mut ml_kem_768_encaps_key>, decaps_out: Option<&mut ml_kem_768_decaps_key>,
 ) -> u8 {
     use fips203::traits::{KeyGen, SerDes};
 
@@ -131,13 +131,14 @@ pub extern "C" fn ml_kem_768_keygen(
 
 #[no_mangle]
 pub extern "C" fn ml_kem_768_encaps(
-    encaps: Option<&ml_kem_768_encaps_key>,
-    ciphertext_out: Option<&mut ml_kem_768_ciphertext>,
+    encaps: Option<&ml_kem_768_encaps_key>, ciphertext_out: Option<&mut ml_kem_768_ciphertext>,
     shared_secret_out: Option<&mut ml_kem_shared_secret>,
 ) -> u8 {
     use fips203::traits::{Encaps, SerDes};
 
-    let (Some(encaps), Some(ciphertext_out), Some(shared_secret_out)) = (encaps, ciphertext_out, shared_secret_out) else {
+    let (Some(encaps), Some(ciphertext_out), Some(shared_secret_out)) =
+        (encaps, ciphertext_out, shared_secret_out)
+        else {
         return ML_KEM_NULL_PTR_ERROR;
     };
     let Ok(ek) = fips203::ml_kem_768::EncapsKey::try_from_bytes(encaps.data) else {
@@ -154,13 +155,14 @@ pub extern "C" fn ml_kem_768_encaps(
 
 #[no_mangle]
 pub extern "C" fn ml_kem_768_decaps(
-    decaps: Option<&ml_kem_768_decaps_key>,
-    ciphertext: Option<&ml_kem_768_ciphertext>,
+    decaps: Option<&ml_kem_768_decaps_key>, ciphertext: Option<&ml_kem_768_ciphertext>,
     shared_secret_out: Option<&mut ml_kem_shared_secret>,
 ) -> u8 {
     use fips203::traits::{Decaps, SerDes};
 
-    let (Some(decaps), Some(ciphertext), Some(shared_secret_out)) = (decaps, ciphertext, shared_secret_out) else {
+    let (Some(decaps), Some(ciphertext), Some(shared_secret_out)) =
+        (decaps, ciphertext, shared_secret_out)
+        else {
         return ML_KEM_NULL_PTR_ERROR;
     };
     let Ok(dk) = fips203::ml_kem_768::DecapsKey::try_from_bytes(decaps.data) else {
@@ -213,13 +215,14 @@ pub extern "C" fn ml_kem_1024_keygen(
 
 #[no_mangle]
 pub extern "C" fn ml_kem_1024_encaps(
-    encaps: Option<&ml_kem_1024_encaps_key>,
-    ciphertext_out: Option<&mut ml_kem_1024_ciphertext>,
+    encaps: Option<&ml_kem_1024_encaps_key>, ciphertext_out: Option<&mut ml_kem_1024_ciphertext>,
     shared_secret_out: Option<&mut ml_kem_shared_secret>,
 ) -> u8 {
     use fips203::traits::{Encaps, SerDes};
 
-    let (Some(encaps), Some(ciphertext_out), Some(shared_secret_out)) = (encaps, ciphertext_out, shared_secret_out) else {
+    let (Some(encaps), Some(ciphertext_out), Some(shared_secret_out)) =
+        (encaps, ciphertext_out, shared_secret_out)
+        else {
         return ML_KEM_NULL_PTR_ERROR;
     };
     let Ok(ek) = fips203::ml_kem_1024::EncapsKey::try_from_bytes(encaps.data) else {
@@ -236,13 +239,14 @@ pub extern "C" fn ml_kem_1024_encaps(
 
 #[no_mangle]
 pub extern "C" fn ml_kem_1024_decaps(
-    decaps: Option<&ml_kem_1024_decaps_key>,
-    ciphertext: Option<&ml_kem_1024_ciphertext>,
+    decaps: Option<&ml_kem_1024_decaps_key>, ciphertext: Option<&ml_kem_1024_ciphertext>,
     shared_secret_out: Option<&mut ml_kem_shared_secret>,
 ) -> u8 {
     use fips203::traits::{Decaps, SerDes};
 
-    let (Some(decaps), Some(ciphertext), Some(shared_secret_out)) = (decaps, ciphertext, shared_secret_out) else {
+    let (Some(decaps), Some(ciphertext), Some(shared_secret_out)) =
+        (decaps, ciphertext, shared_secret_out)
+        else {
         return ML_KEM_NULL_PTR_ERROR;
     };
     let Ok(dk) = fips203::ml_kem_1024::DecapsKey::try_from_bytes(decaps.data) else {
