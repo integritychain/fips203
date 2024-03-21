@@ -1,17 +1,23 @@
-One-off installation
+This is a simple WASM demo for the FIPS 203 code.
 
-~~~
-$ cargo install wasm-pack
-$ sudo npm install npm@latest -g
-~~~
+1. One-off installation:
 
-To run:
+   ~~~
+   $ cargo install wasm-pack
+   $ sudo apt install npm
+   ~~~
 
-~~~
-$ cd wasm    # this directory
-$ wasm-pack build
-$ cd www
-$ npm install
-$ export NODE_OPTIONS=--openssl-legacy-provider
-$ npm run start
-~~~
+2. To run the demo:
+
+   ~~~
+   $ cd wasm    # this directory
+   $ wasm-pack build
+   $ cd www
+   $ npm install
+   $ npm run start
+   ~~~
+
+If the final step fails, try preceding it with: `$ export NODE_OPTIONS=--openssl-legacy-provider`.
+
+While this simple demo will run as-is, it likely has security vulnerabilities within the npm
+dependencies that requires `npm audit fix --force` to resolve.
