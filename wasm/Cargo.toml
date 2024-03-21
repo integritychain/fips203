@@ -1,0 +1,34 @@
+[package]
+name = "fips203-wasm"
+version = "0.1.3"
+authors = ["Eric Schorn <eschorn@integritychain.com>"]
+description = "Sample web page utilizing FIPS 203 code"
+repository = ""
+publish = false
+edition = "2021"
+
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+
+[features]
+default = ["console_error_panic_hook"]
+
+
+[dependencies]
+wasm-bindgen = "0.2.84"
+fips203 = { path = "../../fips203", default-features = false, features = ["ml-kem-512"] }
+rand_chacha = "0.3.1"
+console_error_panic_hook = { version = "0.1.7", optional = true }
+rand = "0.8.5"
+getrandom = { version = "0.2", features = ["js"] }
+hex = "0.4.3"
+
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.34"
+
+
+[profile.release]
+opt-level = "s"

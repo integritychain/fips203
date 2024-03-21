@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>FIPS 203 WASM Demo</title>
+    <link href="https://cdn.simplecss.org/simple.min.css" rel="stylesheet">
+    <style> body {
+        grid-template-columns: 1fr min(60rem, 90%) 1fr;
+    }</style>
+</head>
+<body>
+<noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
+
+<h1>FIPS 203 WASM Demo</h1>
+
+<p>This page is a simple demonstration of code from the <a href="https://crates.io/crates/fips203">FIPS 203
+    Rust crate</a> running in the browser via wasm. This demo has a seedable random number generator so that
+    its results can be compared to <a href="https://github.com/integritychain/fips203/blob/main/tests/native.rs">
+        native test cases.</a> Please see section 3.3 of the
+    <a href="https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf">FIPS 203 standard</a> for critical
+    requirements on randomness when utilizing FIPS 203 in production.
+</p>
+
+<p>Enter a (u64 decimal) seed number below and click on 'Submit'. The encaps and decaps keys will be generated,
+    the encaps() function run to generate the ciphertext and shared secret, the decaps() function run to calculate
+    the 'other' shared secret, the shared secrets confirmed to match, and all resulting values displayed.</p>
+
+<p>
+<form action="" id="wasmForm">
+    <input class="form-control" id="seed" placeholder="Enter the seed number..." type="text">
+    <button type="submit">Submit</button>
+</form>
+</p>
+
+<pre id="wasm-canvas"></pre>
+
+<script src="./bootstrap.js"></script>
+
+</body>
+</html>
