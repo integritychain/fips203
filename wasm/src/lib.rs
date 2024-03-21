@@ -43,7 +43,7 @@ pub fn run(seed: &str) -> String {
     let s0 = format!("The seed used to generate the keys is: {}\n\n", seed);
     let s1 = format!("The generated encaps key is: {}\n", ek_hex);
     let s2 = format!("The generated decaps key is: {}\n\n", dk_hex);
-    let s3 = format!("The generated ciphertext is: {}\n", ct_hex);
+    let s3 = format!("The generated ciphertext is: {}\n\n", ct_hex);
     let s4 = format!("The shared secret is: {}\n", ssk_hex);
     let s5 = "Alice and Bob have an identical shared secret.";  // because the above assert! passed
 

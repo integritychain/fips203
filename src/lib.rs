@@ -1,15 +1,15 @@
 #![no_std]
 #![deny(clippy::pedantic, warnings, missing_docs, unsafe_code)]
-//
-#![deny(absolute_paths_not_starting_with_crate, box_pointers, dead_code, elided_lifetimes_in_paths)]
-#![deny(explicit_outlives_requirements, keyword_idents, let_underscore_drop)]
-#![deny(macro_use_extern_crate, meta_variable_misuse, missing_abi, non_ascii_idents)]
-#![deny(rust_2021_incompatible_closure_captures, rust_2021_incompatible_or_patterns)]
-#![deny(rust_2021_prefixes_incompatible_syntax, rust_2021_prelude_collisions)]
-#![deny(single_use_lifetimes, trivial_casts, trivial_numeric_casts, unreachable_pub)]
-#![deny(unsafe_op_in_unsafe_fn, unstable_features, unused_extern_crates)]
-#![deny(unused_import_braces, unused_lifetimes, unused_macro_rules, unused_qualifications)]
-#![deny(unused_results, variant_size_differences)]
+// Most of the 'allow' category
+#![deny(absolute_paths_not_starting_with_crate, box_pointers, dead_code)]
+#![deny(elided_lifetimes_in_paths, explicit_outlives_requirements, keyword_idents)]
+#![deny(let_underscore_drop, macro_use_extern_crate, meta_variable_misuse, missing_abi)]
+#![deny(non_ascii_idents, rust_2021_incompatible_closure_captures)]
+#![deny(rust_2021_incompatible_or_patterns, rust_2021_prefixes_incompatible_syntax)]
+#![deny(rust_2021_prelude_collisions, single_use_lifetimes, trivial_casts)]
+#![deny(trivial_numeric_casts, unreachable_pub, unsafe_op_in_unsafe_fn, unstable_features)]
+#![deny(unused_extern_crates, unused_import_braces, unused_lifetimes, unused_macro_rules)]
+#![deny(unused_qualifications, unused_results, variant_size_differences)]
 //
 #![doc = include_str!("../README.md")]
 

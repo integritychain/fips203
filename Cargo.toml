@@ -35,7 +35,7 @@ hex = "0.4.3"
 rand_chacha = "0.3.1"
 criterion = "0.4.0"
 flate2 = "1.0.28"
-
+hex-literal = "0.4.1"
 
 [[bench]]
 name = "benchmark"
