@@ -1,19 +1,22 @@
-Figure-of-merit only; no particular care take (wrt turbo-boost etc).
+Figure-of-merit only; no particular care taken to disable turbo-boost etc.
+
+Note that performance optimizations will quickly follow the next update to FIPS 203.
 
 ~~~
+March 22, 2024
 Intel® Core™ i7-7700K CPU @ 4.20GHz × 8
 
 $ RUSTFLAGS="-C target-cpu=native" cargo bench
 
-ml_kem_512  KeyGen      time:   [36.230 µs 36.255 µs 36.283 µs]
-ml_kem_768  KeyGen      time:   [60.202 µs 60.259 µs 60.336 µs]
-ml_kem_1024 KeyGen      time:   [91.026 µs 91.043 µs 91.061 µs]
+ml_kem_512  KeyGen      time:   [25.924 µs 25.961 µs 26.038 µs]
+ml_kem_768  KeyGen      time:   [43.853 µs 43.867 µs 43.883 µs]
+ml_kem_1024 KeyGen      time:   [65.706 µs 65.719 µs 65.733 µs]
 
-ml_kem_512  Encaps      time:   [38.474 µs 38.512 µs 38.562 µs]
-ml_kem_768  Encaps      time:   [60.837 µs 60.867 µs 60.914 µs]
-ml_kem_1024 Encaps      time:   [90.528 µs 90.561 µs 90.611 µs]
+ml_kem_512  Encaps      time:   [31.405 µs 31.411 µs 31.417 µs]
+ml_kem_768  Encaps      time:   [51.315 µs 51.367 µs 51.439 µs]
+ml_kem_1024 Encaps      time:   [73.946 µs 73.984 µs 74.038 µs]
 
-ml_kem_512  Decaps      time:   [49.525 µs 49.562 µs 49.616 µs]
-ml_kem_768  Decaps      time:   [78.445 µs 78.513 µs 78.618 µs]
-ml_kem_1024 Decaps      time:   [112.85 µs 112.87 µs 112.90 µs]
+ml_kem_512  Decaps      time:   [39.446 µs 39.504 µs 39.560 µs]
+ml_kem_768  Decaps      time:   [62.343 µs 62.441 µs 62.574 µs]
+ml_kem_1024 Decaps      time:   [89.069 µs 89.134 µs 89.226 µs]
 ~~~

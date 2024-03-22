@@ -4,16 +4,19 @@ use crate::Q;
 
 /// Correctly sized encapsulation key specific to the target security parameter set.
 #[derive(Clone, Zeroize, ZeroizeOnDrop)]
+#[repr(align(8))]
 pub struct EncapsKey<const EK_LEN: usize>(pub(crate) [u8; EK_LEN]);
 
 
 /// Correctly sized decapsulation key specific to the target security parameter set.
 #[derive(Clone, Zeroize, ZeroizeOnDrop)]
+#[repr(align(8))]
 pub struct DecapsKey<const DK_LEN: usize>(pub(crate) [u8; DK_LEN]);
 
 
 /// Correctly sized ciphertext specific to the target security parameter set.
 #[derive(Clone, Zeroize, ZeroizeOnDrop)]
+#[repr(align(8))]
 pub struct CipherText<const CT_LEN: usize>(pub(crate) [u8; CT_LEN]);
 
 
