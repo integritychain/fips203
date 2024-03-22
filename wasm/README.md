@@ -4,6 +4,7 @@ This is a simple WASM demo for the FIPS 203 code.
 
    ~~~
    $ cargo install wasm-pack
+   $ <install Node.js if not already installed>
    $ sudo apt install npm
    ~~~
 
@@ -15,9 +16,9 @@ This is a simple WASM demo for the FIPS 203 code.
    $ cd www
    $ npm install
    $ npm run start
+   
+   browse http://localhost:8080/
    ~~~
 
-If the final step fails, try preceding it with: `$ export NODE_OPTIONS=--openssl-legacy-provider`.
-
-While this simple demo will run as-is, it likely has security vulnerabilities within the npm
-dependencies that requires `npm audit fix --force` to resolve.
+If the final step fails on newer Node.js versions, try preceding it
+with: `$ export NODE_OPTIONS=--openssl-legacy-provider`.
