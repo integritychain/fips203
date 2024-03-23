@@ -28,6 +28,7 @@ pub struct CipherText<const CT_LEN: usize>(pub(crate) [u8; CT_LEN]);
 #[derive(Clone, Copy, Default)]
 pub(crate) struct Z(u16);
 
+
 #[allow(clippy::inline_always)]
 impl Z {
     const M: u64 = 2u64.pow(32) / (Self::Q64);
@@ -45,8 +46,7 @@ impl Z {
     pub(crate) fn add(self, other: Self) -> Self {
         let sum = self.0.wrapping_add(other.0);
         let (trial, borrow) = sum.overflowing_sub(Self::Q16);
-        let select_sum = u16::from(borrow).wrapping_neg();
-        let result = (!select_sum & trial) | (select_sum & sum);
+        let result = trial.wrapping_add(u16::from(borrow).wrapping_neg() & Self::Q16);
         Self(result)
     }
 

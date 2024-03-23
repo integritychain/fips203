@@ -44,9 +44,9 @@ harness = false
 
 [profile.dev]
 debug = true
-lto = true
-opt-level = 3
-codegen-units = 1
+#lto = true
+#opt-level = 3
+#codegen-units = 1
 
 
 [profile.release]

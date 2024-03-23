@@ -1,6 +1,5 @@
 use sha3::{Digest, Sha3_256, Sha3_512, Shake128, Shake256};
-use sha3::digest::{ExtendableOutput, XofReader};
-use sha3::digest::Update;
+use sha3::digest::{ExtendableOutput, Update, XofReader};
 
 use crate::ntt::multiply_ntts;
 use crate::Q;

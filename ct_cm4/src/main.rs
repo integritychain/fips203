@@ -1,67 +1,53 @@
 #![no_std]
 #![no_main]
 
-use cortex_m::peripheral::DWT;
+use cortex_m::asm;
 use cortex_m_rt::entry;
 use fips203::ml_kem_512;
-use fips203::traits::KeyGen;
-use rand_core::{CryptoRng, RngCore};
-use stm32f3_discovery::leds::Leds;
-use stm32f3_discovery::stm32f3xx_hal::{pac, prelude::*};
-use stm32f3_discovery::switch_hal::ToggleableOutputSwitch;
+use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
+use microbit::{board::Board, hal::{pac::DWT, prelude::OutputPin}};
+use rand_chacha::rand_core::SeedableRng;
+use rtt_target::{rprintln, rtt_init_print};
 
-
-// Dummy RNG that regurgitates zeros when 'asked'
-struct MyRng();
-impl RngCore for MyRng {
-    fn next_u32(&mut self) -> u32 { unimplemented!() }
-    fn next_u64(&mut self) -> u64 { unimplemented!() }
-    fn fill_bytes(&mut self, out: &mut [u8]) { out.iter_mut().for_each(|b| *b = 0); }
-    fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
-        self.fill_bytes(out);
-        Ok(())
-    }
-}
-impl CryptoRng for MyRng {}
-
-
-#[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
+use panic_rtt_target as _;
 
 
 #[entry]
 fn main() -> ! {
+    let mut board = Board::take().unwrap();
+    board.DCB.enable_trace();
+    board.DWT.enable_cycle_counter();
+    board.display_pins.col1.set_low().unwrap();
+    rtt_init_print!();
 
-    // Configure MCU
-    let device_peripherals = pac::Peripherals::take().unwrap();
-    let mut reset_and_clock_control = device_peripherals.RCC.constrain();
-
-    // Initialize LEDs
-    let mut gpioe = device_peripherals.GPIOE.split(&mut reset_and_clock_control.ahb);
-    #[rustfmt::skip]
-    let mut leds = Leds::new(gpioe.pe8, gpioe.pe9, gpioe.pe10, gpioe.pe11, gpioe.pe12,
-        gpioe.pe13, gpioe.pe14, gpioe.pe15, &mut gpioe.moder, &mut gpioe.otyper).into_array();
-
-    let mut my_rng = MyRng {};
+    let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
+    let mut expected_cycles = 0;
     let mut i = 0u32;
 
     loop {
-        if (i % 10) == 0 { leds[0].toggle().ok(); };
+        if (i % 100) == 0 { board.display_pins.row1.set_high().unwrap(); };
+        if (i % 100) == 50 { board.display_pins.row1.set_low().unwrap(); };
         i += 1;
 
-        cortex_m::asm::isb();
+        rng.set_word_pos(1024 * i as u128);  // Removes odd variability in drawing rng data
+
+        asm::isb();
         let start = DWT::cycle_count();
-        cortex_m::asm::isb();
+        asm::isb();
 
-        let _res1 = ml_kem_512::KG::try_keygen_with_rng_vt(&mut my_rng);
+        let (ek, dk) = ml_kem_512::KG::try_keygen_with_rng_vt(&mut rng).unwrap();
+        let (ssk1, ct) = ek.try_encaps_with_rng_vt(&mut rng).unwrap();
+        let ssk2 = dk.try_decaps_vt(&ct).unwrap();
 
-        cortex_m::asm::isb();
+        asm::isb();
         let finish = DWT::cycle_count();
-        cortex_m::asm::isb();
+        asm::isb();
 
-        // Code will 'soon' present the cycle counts via semi-hosting,
-        // and will also include encaps/decaps cycle
-        let _count = finish - start;
-        // print_semi("Top", _count);
+        assert_eq!(ssk1.into_bytes(), ssk2.into_bytes());
+
+        let count = finish - start;
+        if (i == 5) & (expected_cycles == 0) { expected_cycles = count };
+        if (i > 5) & (count != expected_cycles) { panic!("Non constant-time operation!!") };
+        if i % 10 == 0 { rprintln!("Iteration {} cycle count: {}", i, count); }
     }
 }

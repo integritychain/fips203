@@ -19,8 +19,12 @@ pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
     // 2: j ← 0
     let mut j = 0;
 
-    // 3: while j < 256 do
-    while j < 256 {
+    // The original sampling loop has inherent timing variability based on the need to reject
+    // `d1` > `Q` per step 6+ along with `d2` > `Q` per step 10+. The adapted loop below does
+    // "too much, but a constant amount of work" with the 384-256 margin impacting performance.
+    // 3: while j < 256 do  --> this is adapted for constant-time operation TODO: loop # vs fail odds
+    #[allow(clippy::cast_possible_truncation)]  // mask as u16
+    for _k in 0..384 {
         //
         byte_stream_b.read(&mut bbb); // Draw 3 bytes
 
@@ -31,34 +35,33 @@ pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
         let d2 = (u32::from(bbb[1]) >> 4) + 16 * u32::from(bbb[2]);
 
         // 6: if d1 < q then
-        if d1 < Q {
-            //
-            // 7: a_hat[j] ← d1         ▷ a_hat ∈ Z256
-            let mut ah = Z::default();
-            ah.set_u16(u16::try_from(d1).unwrap());
-            array_a_hat[j] = ah;
+        let mask = usize::from((d1 < Q) & (j < 256)).wrapping_neg();
+        //
+        // 7: a_hat[j] ← d1         ▷ a_hat ∈ Z256
+        let mut ah = Z::default();
+        ah.set_u16(u16::try_from(d1).unwrap() & (mask as u16));
+        array_a_hat[j & 0xff] = array_a_hat[j & 0xFF].add(ah);
 
-            // 8: j ← j+1
-            j += 1;
+        // 8: j ← j+1
+        j += 1 & mask;
 
-            // 9: end if
-        }
+        // 9: end if
 
         // 10: if d2 < q and j < 256 then
-        if (d2 < Q) & (j < 256) {
-            //
-            // 11: a_hat[j] ← d2
-            let mut ah = Z::default();
-            ah.set_u16(u16::try_from(d2).unwrap());
-            array_a_hat[j] = ah;
+        let mask2 = usize::from((d2 < Q) & (j < 256)).wrapping_neg();
 
-            // 12: j ← j+1
-            j += 1;
+        // 11: a_hat[j] ← d2
+        let mut ah = Z::default();
+        ah.set_u16(u16::try_from(d2).unwrap() & (mask2 as u16));
+        array_a_hat[j & 0xFF] = array_a_hat[j & 0xFF].add(ah);
 
-            // 13: end if
-        }
+        // 12: j ← j+1
+        j += 1 & mask2;
+
+        // 13: end if
 
         // 14: i ← i+3  (not needed as we draw 3 more bytes next time
+
         // 15: end while
     }
 
@@ -81,17 +84,16 @@ pub(crate) fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> [Z; 256] {
     let mut int_index = 0;
     let mut bit_index = 0;
     for byte in byte_array_b {
-        temp |= u64::from(*byte) << bit_index;
+        temp |= u32::from(*byte) << bit_index;
         bit_index += 8;
-        #[allow(clippy::cast_possible_truncation)]
         while bit_index >= 2 * (eta as usize) {
-            let tmask_x = temp & (2u64.pow(eta) - 1);
-            let x = (tmask_x as u8).count_ones();
-            let tmask_y = (temp >> eta) & (2u64.pow(eta) - 1);
-            let y = (tmask_y as u8).count_ones();
+            let tmask_x = temp & ((1 << eta) - 1);
+            let x = count_ones(tmask_x);
+            let tmask_y = (temp >> eta) & ((1 << eta) - 1);
+            let y = count_ones(tmask_y);
             let (mut xx, mut yy) = (Z::default(), Z::default());
-            xx.set_u16(x as u16);
-            yy.set_u16(y as u16);
+            xx.set_u16(x);
+            yy.set_u16(y);
             array_f[int_index] = xx.sub(yy);
             bit_index -= 2 * (eta as usize);
             temp >>= 2 * (eta as usize);
@@ -99,6 +101,18 @@ pub(crate) fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> [Z; 256] {
         }
     }
     array_f
+}
+
+
+// Count u8 ones in constant time (u32 helps perf)
+#[allow(clippy::cast_possible_truncation)]  // return res as u16
+fn count_ones(x: u32) -> u16 {
+    let (mut res, mut x) = (x & 0xFF, x & 0xFF);
+    for _i in 1..8 {
+        x >>= 1;
+        res -= x;
+    }
+    res as u16
 }
 
 
