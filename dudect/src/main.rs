@@ -1,18 +1,20 @@
 use dudect_bencher::{BenchRng, Class, ctbench_main, CtRunner};
 use fips203::ml_kem_512;
-use fips203::traits::{Decaps, Encaps, KeyGen};
+// Could also be ml_kem_768 or ml_kem_1024.
+//use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
+use fips203::traits::KeyGen;
+//use rand_chacha::rand_core::SeedableRng;
 use rand_core::{CryptoRng, RngCore};
 
-// Could also be ml_kem_768 or ml_kem_1024.
-use crate::ml_kem_512::{CipherText, DecapsKey, EncapsKey};
-
-
 // Dummy RNG that regurgitates zeros when 'asked'
-struct MyRng();
+#[derive(Copy, Clone)]
+struct MyRng {
+    value: u8,
+}
 impl RngCore for MyRng {
     fn next_u32(&mut self) -> u32 { unimplemented!() }
     fn next_u64(&mut self) -> u64 { unimplemented!() }
-    fn fill_bytes(&mut self, out: &mut [u8]) { out.iter_mut().for_each(|b| *b = 0); }
+    fn fill_bytes(&mut self, out: &mut [u8]) { out.iter_mut().for_each(|b| *b = self.value); }
     fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
         self.fill_bytes(out);
         Ok(())
@@ -20,68 +22,33 @@ impl RngCore for MyRng {
 }
 impl CryptoRng for MyRng {}
 
+fn full_flow(runner: &mut CtRunner, mut _rng: &mut BenchRng) {
+    const ITERATIONS_INNER: usize = 5;
+    const ITERATIONS_OUTER: usize = 2_000;
 
-fn encaps(runner: &mut CtRunner, mut _rng: &mut BenchRng) {
-    const ITERATIONS_OUTER: usize = 100;
-    const ITERATIONS_INNER: usize = 100;
+    let rng_left = MyRng { value: 111 }; //rand_chacha::ChaCha8Rng::seed_from_u64(123);
+    let rng_right = MyRng { value: 222 }; //rand_chacha::ChaCha8Rng::seed_from_u64(456);
 
-    let (ek1, _dk1) = ml_kem_512::KG::try_keygen_vt().unwrap();
-    let (ek2, _dk2) = ml_kem_512::KG::try_keygen_vt().unwrap();
+    let mut classes = [Class::Right; ITERATIONS_OUTER];
+    let mut rng_refs = [&rng_right; ITERATIONS_OUTER];
 
-    let mut inputs: Vec<EncapsKey> = Vec::new();
-    let mut classes = Vec::new();
-
-    for _ in 0..ITERATIONS_OUTER {
-        inputs.push(ek1.clone());
-        classes.push(Class::Left);
+    // Interleave left and right
+    for i in (0..(ITERATIONS_OUTER)).step_by(2) {
+        classes[i] = Class::Left;
+        rng_refs[i] = &rng_left;
     }
 
-    for _ in 0..ITERATIONS_OUTER {
-        inputs.push(ek2.clone());
-        classes.push(Class::Right);
-    }
-
-    for (class, input) in classes.into_iter().zip(inputs.into_iter()) {
+    for (class, rng_r) in classes.into_iter().zip(rng_refs.iter()) {
         runner.run_one(class, || {
-            let mut my_rng = MyRng {};
             for _ in 0..ITERATIONS_INNER {
-                let _ = input.try_encaps_with_rng_vt(&mut my_rng);
+                let mut rng = **rng_r;  //(*rng_r).clone();
+                let (_ek, _dk) = ml_kem_512::KG::try_keygen_with_rng_vt(&mut rng).unwrap();
+                //let (ssk1, ct) = ek.try_encaps_with_rng_vt(&mut rng).unwrap();
+                //let ssk2 = dk.try_decaps_vt(&ct).unwrap();
+                //assert_eq!(ssk1.into_bytes(), ssk2.into_bytes());
             }
         })
     }
 }
 
-
-fn decaps(runner: &mut CtRunner, mut _rng: &mut BenchRng) {
-    const ITERATIONS_OUTER: usize = 100;
-    const ITERATIONS_INNER: usize = 100;
-
-    let (ek1, dk1) = ml_kem_512::KG::try_keygen_vt().unwrap();
-    let (_ssk, ct1) = ek1.try_encaps_vt().unwrap();
-    let (ek2, dk2) = ml_kem_512::KG::try_keygen_vt().unwrap();
-    let (_ssk, ct2) = ek2.try_encaps_vt().unwrap();
-
-    let mut inputs: Vec<(DecapsKey, CipherText)> = Vec::new();
-    let mut classes = Vec::new();
-
-    for _ in 0..ITERATIONS_OUTER {
-        inputs.push((dk1.clone(), ct1.clone()));
-        classes.push(Class::Left);
-    }
-
-    for _ in 0..ITERATIONS_OUTER {
-        inputs.push((dk2.clone(), ct2.clone()));
-        classes.push(Class::Right);
-    }
-
-    for (class, input) in classes.into_iter().zip(inputs.into_iter()) {
-        runner.run_one(class, || {
-            for _ in 0..ITERATIONS_INNER {
-                let _ = input.0.try_decaps_vt(&input.1);
-            }
-        })
-    }
-}
-
-
-ctbench_main!(encaps, decaps);
+ctbench_main!(full_flow);
