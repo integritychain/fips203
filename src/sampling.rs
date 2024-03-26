@@ -1,7 +1,8 @@
 use sha3::digest::XofReader;
+use subtle::{Choice, ConditionallySelectable};
 
-use crate::Q;
 use crate::types::Z;
+use crate::Q;
 
 /// Algorithm 6 `SampleNTT(B)` on page 20.
 /// If the input is a stream of uniformly random bytes, the output is a uniformly random element of `T_q`.
@@ -17,13 +18,13 @@ pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
     // 1: i ← 0 (not needed as three bytes are repeatedly drawn from the rng bytestream via bbb)
 
     // 2: j ← 0
-    let mut j = 0;
+    let mut j = 0u32;
 
     // The original sampling loop has inherent timing variability based on the need to reject
     // `d1` > `Q` per step 6+ along with `d2` > `Q` per step 10+. The adapted loop below does
     // "too much, but a constant amount of work" with the 384-256 margin impacting performance.
     // 3: while j < 256 do  --> this is adapted for constant-time operation TODO: loop # vs fail odds
-    #[allow(clippy::cast_possible_truncation)]  // mask as u16
+    #[allow(clippy::cast_possible_truncation)] // mask as u16
     for _k in 0..384 {
         //
         byte_stream_b.read(&mut bbb); // Draw 3 bytes
@@ -35,28 +36,32 @@ pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
         let d2 = (u32::from(bbb[1]) >> 4) + 16 * u32::from(bbb[2]);
 
         // 6: if d1 < q then
-        let mask = usize::from((d1 < Q) & (j < 256)).wrapping_neg();
+        let if_step6 = Choice::from(u8::from((d1 < Q) && (j < 256)));
+        let d1 = u32::conditional_select(&0, &d1, if_step6);
         //
         // 7: a_hat[j] ← d1         ▷ a_hat ∈ Z256
         let mut ah = Z::default();
-        ah.set_u16(u16::try_from(d1).unwrap() & (mask as u16));
-        array_a_hat[j & 0xff] = array_a_hat[j & 0xFF].add(ah);
+        ah.set_u16(d1 as u16);
+        array_a_hat[j as usize & 0xFF] = array_a_hat[j as usize & 0xFF].add(ah);
 
         // 8: j ← j+1
-        j += 1 & mask;
+        //j += 1 & mask;
+        j.conditional_assign(&(j + 1), if_step6);
 
         // 9: end if
 
         // 10: if d2 < q and j < 256 then
-        let mask2 = usize::from((d2 < Q) & (j < 256)).wrapping_neg();
+        let if_step10 = Choice::from(u8::from((d2 < Q) && (j < 256)));
+        let d2 = u32::conditional_select(&0, &d2, if_step10);
 
         // 11: a_hat[j] ← d2
         let mut ah = Z::default();
-        ah.set_u16(u16::try_from(d2).unwrap() & (mask2 as u16));
-        array_a_hat[j & 0xFF] = array_a_hat[j & 0xFF].add(ah);
+        ah.set_u16(d2 as u16);
+        array_a_hat[j as usize & 0xFF] = array_a_hat[j as usize & 0xFF].add(ah);
 
         // 12: j ← j+1
-        j += 1 & mask2;
+        //j += 1 & mask2;
+        j.conditional_assign(&(j + 1), if_step10);
 
         // 13: end if
 
@@ -105,7 +110,7 @@ pub(crate) fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> [Z; 256] {
 
 
 // Count u8 ones in constant time (u32 helps perf)
-#[allow(clippy::cast_possible_truncation)]  // return res as u16
+#[allow(clippy::cast_possible_truncation)] // return res as u16
 fn count_ones(x: u32) -> u16 {
     let (mut res, mut x) = (x & 0xFF, x & 0xFF);
     for _i in 1..8 {

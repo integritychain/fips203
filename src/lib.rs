@@ -100,10 +100,6 @@ impl PartialEq for SharedSecretKey {
 // This common functionality is injected into each parameter set module
 macro_rules! functionality {
     () => {
-        const ETA1_64: usize = ETA1 as usize * 64; // Currently, Rust does not allow expressions involving constants...
-        const ETA2_64: usize = ETA2 as usize * 64; // ...in generics, so these are handled manually.
-        const J_LEN: usize = 32 + 32 * (DU as usize * K + DV as usize);
-
         use crate::byte_fns::byte_decode;
         use crate::helpers::h;
         use crate::ml_kem::{ml_kem_decaps, ml_kem_encaps, ml_kem_key_gen};
@@ -136,7 +132,7 @@ macro_rules! functionality {
                 rng: &mut impl CryptoRngCore,
             ) -> Result<(EncapsKey, DecapsKey), &'static str> {
                 let (mut ek, mut dk) = ([0u8; EK_LEN], [0u8; DK_LEN]);
-                ml_kem_key_gen::<K, ETA1_64>(rng, ETA1, &mut ek, &mut dk)?;
+                ml_kem_key_gen::<K, { ETA1 as usize * 64 }>(rng, ETA1, &mut ek, &mut dk)?;
                 Ok((EncapsKey { 0: ek }, DecapsKey { 0: dk }))
             }
 
@@ -159,7 +155,7 @@ macro_rules! functionality {
                 &self, rng: &mut impl CryptoRngCore,
             ) -> Result<(Self::SharedSecretKey, Self::CipherText), &'static str> {
                 let mut ct = [0u8; CT_LEN];
-                let ssk = ml_kem_encaps::<K, ETA1_64, ETA2_64>(
+                let ssk = ml_kem_encaps::<K, { ETA1 as usize * 64 }, { ETA2 as usize * 64 }>(
                     rng, DU, DV, ETA1, ETA2, &self.0, &mut ct,
                 )?;
                 Ok((ssk, CipherText { 0: ct }))
@@ -172,9 +168,13 @@ macro_rules! functionality {
             type SharedSecretKey = SharedSecretKey;
 
             fn try_decaps_vt(&self, ct: &CipherText) -> Result<SharedSecretKey, &'static str> {
-                let ssk = ml_kem_decaps::<K, ETA1_64, ETA2_64, J_LEN, CT_LEN>(
-                    DU, DV, ETA1, ETA2, &self.0, &ct.0,
-                );
+                let ssk = ml_kem_decaps::<
+                    K,
+                    { ETA1 as usize * 64 },
+                    { ETA2 as usize * 64 },
+                    { 32 + 32 * (DU as usize * K + DV as usize) },
+                    CT_LEN,
+                >(DU, DV, ETA1, ETA2, &self.0, &ct.0);
                 ssk
             }
         }

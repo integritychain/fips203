@@ -1,6 +1,6 @@
-use zeroize::{Zeroize, ZeroizeOnDrop};
-
 use crate::Q;
+use subtle::ConditionallySelectable;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Correctly sized encapsulation key specific to the target security parameter set.
 #[derive(Clone, Zeroize, ZeroizeOnDrop)]
@@ -46,15 +46,15 @@ impl Z {
     pub(crate) fn add(self, other: Self) -> Self {
         let sum = self.0.wrapping_add(other.0);
         let (trial, borrow) = sum.overflowing_sub(Self::Q16);
-        let result = trial.wrapping_add(u16::from(borrow).wrapping_neg() & Self::Q16);
+        let result = u16::conditional_select(&trial, &sum, u8::from(borrow).into());
         Self(result)
     }
 
     #[inline(always)]
     pub(crate) fn sub(self, other: Self) -> Self {
         let (diff, borrow) = self.0.overflowing_sub(other.0);
-        let mask = u16::from(borrow).wrapping_neg();
-        let result = diff.wrapping_add(Self::Q16 & mask);
+        let result =
+            u16::conditional_select(&diff, &diff.wrapping_add(Self::Q16), u8::from(borrow).into());
         Self(result)
     }
 
@@ -66,8 +66,8 @@ impl Z {
         let quot = quot >> (32);
         let rem = prod - quot * Self::Q64;
         let (diff, borrow) = (rem as u16).overflowing_sub(Self::Q16);
-        let mask = u16::from(borrow).wrapping_neg();
-        let result = diff.wrapping_add(Self::Q16 & mask);
+        let result =
+            u16::conditional_select(&diff, &diff.wrapping_add(Self::Q16), u8::from(borrow).into());
         Self(result)
     }
 }

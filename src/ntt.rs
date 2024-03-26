@@ -1,5 +1,5 @@
-use crate::{Q, ZETA};
 use crate::types::Z;
+use crate::{Q, ZETA};
 
 /// Algorithm 8 `NTT(f)` on page 22.
 /// Computes the NTT representation `f_hat` of the given polynomial f ∈ `R_q`.
@@ -205,8 +205,8 @@ pub(crate) static ZETA_TABLE: [u16; 256] = gen_zeta_table();
 #[cfg(test)]
 mod tests {
     use crate::ntt::{gen_zeta_table, pow_mod_q};
-    use crate::SharedSecretKey;
     use crate::traits::SerDes;
+    use crate::SharedSecretKey;
 
     #[test]
     fn test_zeta_misc() {

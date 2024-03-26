@@ -36,7 +36,7 @@ pub(crate) fn byte_encode(
     let mut bit_index = 0;
     let mut byte_index = 0;
     // Choose m per spec
-    let m = if d < 12 { 2u32.pow(d) } else { Q };
+    let m = if d < 12 { 1 << d } else { Q };
 
     // Work through each of the input integers
     for coeff in integers_f {
@@ -44,7 +44,7 @@ pub(crate) fn byte_encode(
         // Get coeff as u64, check magnitude, and clean off top bits
         let coeff = coeff.get_u32();
         ensure!(coeff <= m, "Alg4: Coeff out of range");
-        let coeff = coeff & (2u32.pow(d) - 1);
+        let coeff = coeff & ((1 << d) - 1);
 
         // Drop coeff into the upper unused bit positions of coeff; adjust bit index
         temp |= coeff << bit_index;
@@ -79,7 +79,7 @@ pub(crate) fn byte_decode(
     debug_assert_eq!(bytes_b.len(), 32 * d as usize, "Alg 5: bytes len is not 32 * d");
     //
     // Our "working" register
-    let mut temp = 0u64;
+    let mut temp = 0u32;
     // Bit index of current temp contents, and int index of current output
     let mut bit_index = 0;
     let mut int_index = 0;
@@ -88,7 +88,7 @@ pub(crate) fn byte_decode(
     for byte in bytes_b {
         //
         // Drop the byte into the upper/empty portion of temp; update bit index
-        temp |= u64::from(*byte) << bit_index;
+        temp |= u32::from(*byte) << bit_index;
         bit_index += 8;
 
         // If we have enough bits to drop an int, do so
@@ -97,7 +97,7 @@ pub(crate) fn byte_decode(
             //
             // Mask off the upport portion and drop it in
             let mut z = Z::default();
-            z.set_u16(temp as u16 & (2u16.pow(d) - 1));
+            z.set_u16(temp as u16 & ((1 << d) - 1));
             integers_f[int_index] = z;
 
             // Update the indices
@@ -108,7 +108,7 @@ pub(crate) fn byte_decode(
     }
 
     let m = if d < 12 {
-        2u16.pow(d)
+        1 << d //2u16.pow(d)
     } else {
         u16::try_from(Q).unwrap()
     };

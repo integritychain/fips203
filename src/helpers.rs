@@ -1,9 +1,10 @@
-use sha3::{Digest, Sha3_256, Sha3_512, Shake128, Shake256};
 use sha3::digest::{ExtendableOutput, Update, XofReader};
+use sha3::{Digest, Sha3_256, Sha3_512, Shake128, Shake256};
+use subtle::ConditionallySelectable;
 
 use crate::ntt::multiply_ntts;
-use crate::Q;
 use crate::types::Z;
+use crate::Q;
 
 // Note that checks on 'program structure' (such as "did the calling function provide
 // a correctly sized argument slice?") will use `debug_asserts`, while anything remotely
@@ -162,10 +163,10 @@ pub(crate) fn compress(d: u32, inout: &mut [Z]) {
         let top = u64::from(x_ref.get_u32()) << d;
         let quot = (top * m) >> k;
         let (_diff, bump) = u64::from(Q).overflowing_sub(top - quot * q64);
-        let quot = quot + (u64::from(bump).wrapping_neg() & 1);
+        let quot = u64::conditional_select(&quot, &(quot + 1), u8::from(bump).into());
         // Round to nearest
         let (_diff, bump) = u64::from(Q >> 1).overflowing_sub(top - quot * q64);
-        let result = quot + (u64::from(bump).wrapping_neg() & 1);
+        let result = u64::conditional_select(&quot, &(quot + 1), u8::from(bump).into());
         x_ref.set_u16(result as u16);
     }
 }

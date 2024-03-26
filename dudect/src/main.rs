@@ -1,8 +1,8 @@
 use dudect_bencher::{BenchRng, Class, ctbench_main, CtRunner};
 use fips203::ml_kem_512;
 // Could also be ml_kem_768 or ml_kem_1024.
-//use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
-use fips203::traits::KeyGen;
+use fips203::traits::{Decaps, Encaps, KeyGen};
+//use fips203::traits::KeyGen;
 //use rand_chacha::rand_core::SeedableRng;
 use rand_core::{CryptoRng, RngCore};
 
@@ -24,7 +24,7 @@ impl CryptoRng for MyRng {}
 
 fn full_flow(runner: &mut CtRunner, mut _rng: &mut BenchRng) {
     const ITERATIONS_INNER: usize = 5;
-    const ITERATIONS_OUTER: usize = 2_000;
+    const ITERATIONS_OUTER: usize = 200_000;
 
     let rng_left = MyRng { value: 111 }; //rand_chacha::ChaCha8Rng::seed_from_u64(123);
     let rng_right = MyRng { value: 222 }; //rand_chacha::ChaCha8Rng::seed_from_u64(456);
@@ -42,10 +42,10 @@ fn full_flow(runner: &mut CtRunner, mut _rng: &mut BenchRng) {
         runner.run_one(class, || {
             for _ in 0..ITERATIONS_INNER {
                 let mut rng = **rng_r;  //(*rng_r).clone();
-                let (_ek, _dk) = ml_kem_512::KG::try_keygen_with_rng_vt(&mut rng).unwrap();
-                //let (ssk1, ct) = ek.try_encaps_with_rng_vt(&mut rng).unwrap();
-                //let ssk2 = dk.try_decaps_vt(&ct).unwrap();
-                //assert_eq!(ssk1.into_bytes(), ssk2.into_bytes());
+                let (ek, dk) = ml_kem_512::KG::try_keygen_with_rng_vt(&mut rng).unwrap();
+                let (ssk1, ct) = ek.try_encaps_with_rng_vt(&mut rng).unwrap();
+                let ssk2 = dk.try_decaps_vt(&ct).unwrap();
+                assert_eq!(ssk1, ssk2);
             }
         })
     }
