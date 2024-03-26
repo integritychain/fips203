@@ -26,7 +26,7 @@ ml-kem-1024 = []
 zeroize = { version = "1.6.0", default-features = false, features = ["zeroize_derive"] }
 rand_core = { version = "0.6.4", default-features = false }
 sha3 = { version = "0.10.2", default-features = false }
-subtle = { version = "2.5.0", features = [] }
+subtle = { version = "2.5.0", default-features = false }
 
 [dev-dependencies]  # Some are marginally outdated to retain MSRV 1.70
 rand = "0.8.5"
