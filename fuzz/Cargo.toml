@@ -1,6 +1,6 @@
 [package]
 name = "fips203-fuzz"
-version = "0.0.0"
+version = "0.1.3"
 publish = false
 edition = "2021"
 
@@ -23,7 +23,11 @@ rand = "0.8.5"
 members = ["."]
 
 [profile.release]
+opt-level = 0
 debug = true
+debug-assertions = true
+overflow-checks = true
+
 
 [[bin]]
 name = "fuzz_all"

@@ -1,21 +1,29 @@
 This is a work in progress, but good results currently.
 
-~~~
-Fuzzing
-https://rust-fuzz.github.io/book/cargo-fuzz.html
-  cd fuzz
-  rustup default nightly
-  head -c 3328 </dev/urandom > corpus/fuzz_all/seed1
-  cargo fuzz run fuzz_all -j 4
-~~~
+Harness code is in fuzz/fuzz_targets/fuzz_all.rs. The Cargo.toml file specifies
+that overflow-checks and debug-assertions are true.
 
-Coverage status is great, see:
+See: https://rust-fuzz.github.io/book/cargo-fuzz.html
 
 ~~~
-#246109: cov: 3364 ft: 2218 corp: 99 exec/s 669 oom/timeout/crash: 0/0/0 time: 105s job: 26 dft_time: 0
+$ cd fuzz  # this directory; you may need to install cargo fuzz
+$ rustup default nightly
+$ mkdir -p corpus/fuzz_all
+$ dd if=/dev/zero bs=1 count=3328 > corpus/fuzz_all/seed0
+$ for i in $(seq 1 2); do head -c 3328 </dev/urandom > corpus/fuzz_all/seed$i; done
+$ dd if=/dev/zero bs=1 count=3328 | tr '\0x00' '\377' > corpus/fuzz_all/seed3
+$ cargo fuzz run fuzz_all -j 4
+~~~
 
-cargo fuzz coverage fuzz_all
+Coverage status of ml_kem_512 is robust, see:
 
-cargo cov -- show target/x86_64-unknown-linux-gnu/coverage/x86_64-unknown-linux-gnu/release/fuzz_all \
+~~~
+#7851: cov: 6312 ft: 3969 corp: 26 exec/s 4 oom/timeout/crash: 0/0/0 time: 843s job: 55 dft_time: 0
+
+# Warning: the following tools are tricky to install/configure
+$ cargo install cargo-cov
+$ rustup component add llvm-tools-preview
+$ cargo fuzz coverage fuzz_all
+$ cargo cov -- show target/x86_64-unknown-linux-gnu/coverage/x86_64-unknown-linux-gnu/release/fuzz_all \
        --format=html -instr-profile=coverage/fuzz_all/coverage.profdata > index.html
 ~~~
