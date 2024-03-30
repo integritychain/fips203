@@ -3,9 +3,8 @@ use rand_core::CryptoRngCore;
 use crate::byte_fns::{byte_decode, byte_encode};
 use crate::helpers::{ensure, g, h, j};
 use crate::k_pke::{k_pke_decrypt, k_pke_encrypt, k_pke_key_gen};
-use crate::types::Z;
 use crate::SharedSecretKey;
-
+use crate::types::Z;
 
 /// Algorithm 15 `ML-KEM.KeyGen()` on page 29.
 /// Generates an encapsulation key and a corresponding decapsulation key.
@@ -57,14 +56,21 @@ pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64:
     ); // also: size check at top level
 
     // modulus check: perform the computation ek ← ByteEncode12(ByteDecode12(ek_tidle)
-    // note: after checking, we run with the original input (due to const array allocation); the last 32 bytes is rho
-    let mut ek_hat = [Z::default(); 256];
-    for i in 0..K {
-        let mut ek_tilde = [0u8; 384];
-        byte_decode(12, &ek[384 * i..384 * (i + 1)], &mut ek_hat)?;
-        byte_encode(12, &ek_hat, &mut ek_tilde)?;
-        ensure!(ek_tilde == ek[384 * i..384 * (i + 1)], "Alg16: ek==check!");
-    }
+    // note: *external* ek can only arrive via from_bytes() which does this validation already
+    debug_assert!(
+        {
+            let mut pass = true;
+            let mut ek_hat = [Z::default(); 256];
+            for i in 0..K {
+                let mut ek_tilde = [0u8; 384];
+                byte_decode(12, &ek[384 * i..384 * (i + 1)], &mut ek_hat).unwrap(); // btw, going to panic
+                byte_encode(12, &ek_hat, &mut ek_tilde);
+                pass &= ek_tilde == ek[384 * i..384 * (i + 1)];
+            }
+            pass
+        },
+        "Alg16: ek fails modulus check"
+    );
 
     // 1: m ←− B32          ▷ m is 32 random bytes (see Section 3.3)
     let mut m = [0u8; 32];
@@ -157,8 +163,10 @@ pub(crate) fn ml_kem_decaps<
 
 #[cfg(test)]
 mod tests {
-    use crate::ml_kem::{ml_kem_decaps, ml_kem_encaps, ml_kem_key_gen};
     use rand_core::SeedableRng;
+
+    use crate::ml_kem::{ml_kem_decaps, ml_kem_encaps, ml_kem_key_gen};
+
     const ETA1: u32 = 3;
     const ETA2: u32 = 2;
     const DU: u32 = 10;
@@ -185,10 +193,10 @@ mod tests {
         let res = ml_kem_encaps::<K, ETA1_64, ETA2_64>(&mut rng, DU, DV, ETA1, ETA2, &ek, &mut ct);
         assert!(res.is_ok());
 
-        let ff_ek = [0xFFu8; 384 * 2 + 32]; // oversized values
-        let res =
-            ml_kem_encaps::<K, ETA1_64, ETA2_64>(&mut rng, DU, DV, ETA1, ETA2, &ff_ek, &mut ct);
-        assert!(res.is_err());
+        //let ff_ek = [0xFFu8; 384 * 2 + 32]; // oversized values
+        //let res =
+        //ml_kem_encaps::<K, ETA1_64, ETA2_64>(&mut rng, DU, DV, ETA1, ETA2, &ff_ek, &mut ct);
+        //assert!(res.is_err());
 
         let res = ml_kem_decaps::<K, ETA1_64, ETA2_64, J_LEN, CT_LEN>(DU, DV, ETA1, ETA2, &dk, &ct);
         assert!(res.is_ok());

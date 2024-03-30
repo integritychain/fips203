@@ -1,6 +1,6 @@
 [package]
 name = "fips203-dudect"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Eric Schorn <eschorn@integritychain.com>"]
 publish = false
 edition = "2021"
@@ -10,7 +10,6 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 fips203 = { path = "..", default-features = false, features = ["ml-kem-512"] }
 dudect-bencher = "0.6"
-rand_chacha = { version = "0.3.1", default-features = false }
 rand_core = { version = "0.6.4", default-features = false }
 
 

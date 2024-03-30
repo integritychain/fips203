@@ -1,6 +1,6 @@
 #![no_std]
 #![deny(clippy::pedantic, warnings, missing_docs, unsafe_code)]
-// Most of the 'allow' category
+// Most of the 'allow' category...
 #![deny(absolute_paths_not_starting_with_crate, box_pointers, dead_code)]
 #![deny(elided_lifetimes_in_paths, explicit_outlives_requirements, keyword_idents)]
 #![deny(let_underscore_drop, macro_use_extern_crate, meta_variable_misuse, missing_abi)]
@@ -38,12 +38,15 @@
 // Three hash functions: G, H, J on page 17                 --> helpers.rs
 // Compress and Decompress on page 18                       --> helpers.rs
 //
-// The three parameter sets are modules in this file with injected macro code
-// that connects them into the functionality in ml_kem.rs. Some of the 'obtuse'
-// coding style is driven by `clippy pedantic`. While the API suggests the
-// code is not constant-time, this is the medium-term ambition.
+// The three parameter sets are modules in this file with injected macro code that connects
+// them into the functionality in ml_kem.rs. Some of the 'obtuse' coding style is driven by
+// `clippy pedantic`. While the API suggests the code is not constant-time, this has been
+// confirmed as constant-time by the /fips203/dudect and /fips203/ct_cm4 functionality.
+//
+// The ensure!() instances are for validation purposes. The debug_assert!() instances are
+// (effectively) targeted by the fuzzer in /fips203/fuzz and will support future changes
+// to the FIPS 203 specification.
 
-// Supports automatically clearing sensitive data on drop
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::traits::SerDes;
@@ -56,13 +59,12 @@ mod ntt;
 mod sampling;
 mod types;
 
-/// All functionality is covered by traits, such that consumers can utilize trait objects as desired.
+/// All functionality is covered by traits, such that consumers can utilize trait objects if desired.
 pub mod traits;
 
 // Relevant to all parameter sets
-const _N: u32 = 256;
-const Q: u32 = 3329;
-const ZETA: u32 = 17;
+const Q: u16 = 3329;
+const ZETA: u16 = 17;
 
 /// Shared Secret Key length for all ML-KEM variants (in bytes)
 pub const SSK_LEN: usize = 32;
@@ -78,14 +80,14 @@ impl SerDes for SharedSecretKey {
     fn into_bytes(self) -> Self::ByteArray { self.0 }
 
     fn try_from_bytes(ssk: Self::ByteArray) -> Result<Self, &'static str> {
-        // The `try_from` is not really needed but provided for symmetry, e.g., there
-        // is no opportunity for validation, but using a Result for the future possibility
+        // The `try_` is not really needed but implemented for symmetry, e.g., there is no
+        // opportunity for validation (yet), but using a Result for the future possibility
         Ok(SharedSecretKey(ssk))
     }
 }
 
 
-// Conservative (constant-time) ambitions...
+// Conservative (constant-time) support...
 impl PartialEq for SharedSecretKey {
     fn eq(&self, other: &Self) -> bool {
         let mut result = true;
@@ -207,7 +209,7 @@ macro_rules! functionality {
             fn try_from_bytes(dk: Self::ByteArray) -> Result<Self, &'static str> {
                 // Validation per pg 31. Note that the two checks specify fixed sizes, and these
                 // functions take only byte arrays of correct size. Nonetheless, we use a Result
-                // here in case future opportunities for validation arise.
+                // here in case future opportunities for further validation arise.
                 Ok(DecapsKey { 0: dk })
             }
         }
@@ -221,8 +223,27 @@ macro_rules! functionality {
             fn try_from_bytes(ct: Self::ByteArray) -> Result<Self, &'static str> {
                 // Validation per pg 31. Note that the two checks specify fixed sizes, and these
                 // functions take only byte arrays of correct size. Nonetheless, we use a Result
-                // here in case future opportunities for validation arise.
+                // here in case future opportunities for further validation arise.
                 Ok(CipherText { 0: ct })
+            }
+        }
+
+
+        #[cfg(test)]
+        mod tests {
+            use super::*;
+            use rand_chacha::rand_core::SeedableRng;
+
+            #[test]
+            fn smoke_test() {
+                let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
+                for _i in 0..10 {
+                    let (ek, dk) = KG::try_keygen_with_rng_vt(&mut rng).unwrap();
+                    let (ssk1, ct) = ek.try_encaps_with_rng_vt(&mut rng).unwrap();
+                    let ssk2 = dk.try_decaps_vt(&ct).unwrap();
+                    assert!(KG::validate_keypair_vt(&ek.into_bytes(), &dk.into_bytes()));
+                    assert_eq!(ssk1, ssk2, "Shared secrets differ");
+                }
             }
         }
     };

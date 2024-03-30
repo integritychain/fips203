@@ -1,6 +1,7 @@
-use crate::Q;
 use subtle::ConditionallySelectable;
 use zeroize::{Zeroize, ZeroizeOnDrop};
+
+use crate::Q;
 
 /// Correctly sized encapsulation key specific to the target security parameter set.
 #[derive(Clone, Zeroize, ZeroizeOnDrop)]
@@ -31,10 +32,9 @@ pub(crate) struct Z(u16);
 
 #[allow(clippy::inline_always)]
 impl Z {
-    const M: u64 = 2u64.pow(32) / (Self::Q64);
+    const M: u64 = 2u64.pow(32) / (Q as u64);
+
     #[allow(clippy::cast_possible_truncation)]
-    const Q16: u16 = Q as u16;
-    const Q64: u64 = Q as u64;
 
     pub(crate) fn get_u16(self) -> u16 { self.0 }
 
@@ -45,7 +45,7 @@ impl Z {
     #[inline(always)]
     pub(crate) fn add(self, other: Self) -> Self {
         let sum = self.0.wrapping_add(other.0);
-        let (trial, borrow) = sum.overflowing_sub(Self::Q16);
+        let (trial, borrow) = sum.overflowing_sub(Q);
         let result = u16::conditional_select(&trial, &sum, u8::from(borrow).into());
         Self(result)
     }
@@ -53,8 +53,7 @@ impl Z {
     #[inline(always)]
     pub(crate) fn sub(self, other: Self) -> Self {
         let (diff, borrow) = self.0.overflowing_sub(other.0);
-        let result =
-            u16::conditional_select(&diff, &diff.wrapping_add(Self::Q16), u8::from(borrow).into());
+        let result = u16::conditional_select(&diff, &diff.wrapping_add(Q), u8::from(borrow).into());
         Self(result)
     }
 
@@ -64,10 +63,9 @@ impl Z {
         let prod = u64::from(self.0) * u64::from(other.0);
         let quot = prod * Self::M;
         let quot = quot >> (32);
-        let rem = prod - quot * Self::Q64;
-        let (diff, borrow) = (rem as u16).overflowing_sub(Self::Q16);
-        let result =
-            u16::conditional_select(&diff, &diff.wrapping_add(Self::Q16), u8::from(borrow).into());
+        let rem = prod - quot * u64::from(Q);
+        let (diff, borrow) = (rem as u16).overflowing_sub(Q);
+        let result = u16::conditional_select(&diff, &diff.wrapping_add(Q), u8::from(borrow).into());
         Self(result)
     }
 }

@@ -1,8 +1,8 @@
 use sha3::digest::XofReader;
 use subtle::{Choice, ConditionallySelectable};
 
-use crate::types::Z;
 use crate::Q;
+use crate::types::Z;
 
 /// Algorithm 6 `SampleNTT(B)` on page 20.
 /// If the input is a stream of uniformly random bytes, the output is a uniformly random element of `T_q`.
@@ -36,7 +36,7 @@ pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
         let d2 = (u32::from(bbb[1]) >> 4) + 16 * u32::from(bbb[2]);
 
         // 6: if d1 < q then
-        let if_step6 = Choice::from(u8::from((d1 < Q) && (j < 256)));
+        let if_step6 = Choice::from(u8::from((d1 < u32::from(Q)) && (j < 256)));
         let d1 = u32::conditional_select(&0, &d1, if_step6);
         //
         // 7: a_hat[j] ← d1         ▷ a_hat ∈ Z256
@@ -51,7 +51,7 @@ pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
         // 9: end if
 
         // 10: if d2 < q and j < 256 then
-        let if_step10 = Choice::from(u8::from((d2 < Q) && (j < 256)));
+        let if_step10 = Choice::from(u8::from((d2 < u32::from(Q)) && (j < 256)));
         let d2 = u32::conditional_select(&0, &d2, if_step10);
 
         // 11: a_hat[j] ← d2

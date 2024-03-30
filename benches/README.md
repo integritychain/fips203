@@ -1,4 +1,5 @@
-Figure-of-merit only; no particular care taken to disable turbo-boost etc.
+Figure-of-merit only; no particular care hsa been taken to disable turbo-boost etc.
+Note that constant-time restrictions impact performance.
 
 Note that performance optimizations will quickly follow the next update to FIPS 203.
 

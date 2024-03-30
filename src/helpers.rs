@@ -1,14 +1,10 @@
-use sha3::digest::{ExtendableOutput, Update, XofReader};
 use sha3::{Digest, Sha3_256, Sha3_512, Shake128, Shake256};
+use sha3::digest::{ExtendableOutput, Update, XofReader};
 use subtle::ConditionallySelectable;
 
 use crate::ntt::multiply_ntts;
-use crate::types::Z;
 use crate::Q;
-
-// Note that checks on 'program structure' (such as "did the calling function provide
-// a correctly sized argument slice?") will use `debug_asserts`, while anything remotely
-// related to data flow will use `ensure`.
+use crate::types::Z;
 
 /// If the condition is not met, return an error message. Borrowed from the `anyhow` crate.
 macro_rules! ensure {
@@ -28,8 +24,8 @@ pub(crate) fn add_vecs<const K: usize>(
     vec_a: &[[Z; 256]; K], vec_b: &[[Z; 256]; K],
 ) -> [[Z; 256]; K] {
     let mut result = [[Z::default(); 256]; K];
-    for i in 0..vec_a.len() {
-        for j in 0..vec_a[i].len() {
+    for i in 0..K {
+        for j in 0..256 {
             result[i][j] = vec_a[i][j].add(vec_b[i][j]);
         }
     }
@@ -43,7 +39,6 @@ pub(crate) fn mul_mat_vec<const K: usize>(
     a_hat: &[[[Z; 256]; K]; K], u_hat: &[[Z; 256]; K],
 ) -> [[Z; 256]; K] {
     let mut w_hat = [[Z::default(); 256]; K];
-    #[allow(clippy::needless_range_loop)]
     for i in 0..K {
         #[allow(clippy::needless_range_loop)]
         for j in 0..K {
@@ -177,7 +172,7 @@ pub(crate) fn compress(d: u32, inout: &mut [Z]) {
 #[allow(clippy::cast_possible_truncation)] // last line
 pub(crate) fn decompress(d: u32, inout: &mut [Z]) {
     for y_ref in &mut *inout {
-        let qy = Q * y_ref.get_u32() + 2u32.pow(d) - 1;
+        let qy = u32::from(Q) * y_ref.get_u32() + 2u32.pow(d) - 1;
         y_ref.set_u16((qy >> d) as u16);
     }
 }

@@ -94,13 +94,13 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
 
     // 20: ek_{PKE} ← ByteEncode12(t̂)∥ρ    ▷ ByteEncode12 is run k times; include seed for Â
     for i in 0..K {
-        byte_encode(12, &t_hat[i], &mut ek_pke[i * 384..(i + 1) * 384])?;
+        byte_encode(12, &t_hat[i], &mut ek_pke[i * 384..(i + 1) * 384]);
     }
     ek_pke[K * 384..].copy_from_slice(&rho);
 
     // 21: dk_{PKE} ← ByteEncode12(ŝ)    ▷ ByteEncode12 is run k times
     for i in 0..K {
-        byte_encode(12, &s_hat[i], &mut dk_pke[i * 384..(i + 1) * 384])?;
+        byte_encode(12, &s_hat[i], &mut dk_pke[i * 384..(i + 1) * 384]);
     }
 
     // 22: return (ekPKE , dkPKE )
@@ -210,12 +210,12 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     let step = 32 * du as usize;
     for i in 0..K {
         compress(du, &mut u[i]);
-        byte_encode(du, &u[i], &mut ct[i * step..(i + 1) * step])?;
+        byte_encode(du, &u[i], &mut ct[i * step..(i + 1) * step]);
     }
 
     // 23: c2 ← ByteEncode_{dv}(Compress_{dv}(v))
     compress(dv, &mut v);
-    byte_encode(dv, &v, &mut ct[K * step..(K * step + 32 * dv as usize)])?;
+    byte_encode(dv, &v, &mut ct[K * step..(K * step + 32 * dv as usize)]);
 
     // 24: return c ← (c1 ∥ c2 )
     Ok(())
@@ -279,7 +279,7 @@ pub(crate) fn k_pke_decrypt<const K: usize>(
     // 7: m ← ByteEncode1 (Compress1 (w))    ▷ decode plaintext m from polynomial v
     compress(1, &mut w);
     let mut m = [0u8; 32];
-    byte_encode(1, &w, &mut m)?;
+    byte_encode(1, &w, &mut m);
 
     // 8: return m
     Ok(m)

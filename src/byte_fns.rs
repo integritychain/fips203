@@ -1,7 +1,6 @@
 use crate::helpers::ensure;
-use crate::types::Z;
 use crate::Q;
-
+use crate::types::Z;
 
 // Note: Algorithm 2 and 3 have been "optimized away" as they had a lot of overhead
 // and made memory allocations tricky. The definitions are left here for reference.
@@ -25,26 +24,23 @@ use crate::Q;
 ///
 /// Input: integer array `F ∈ Z^{256}_m`, where `m = 2^d if d < 12` and `m = q if d = 12` <br>
 /// Output: byte array B ∈ B^{32·d}
-pub(crate) fn byte_encode(
-    d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8],
-) -> Result<(), &'static str> {
+pub(crate) fn byte_encode(d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8]) {
     debug_assert_eq!(bytes_b.len(), 32 * d as usize, "Alg 4: bytes len is not 32 * d");
+    debug_assert!(integers_f
+        .iter()
+        .all(|f| f.get_u16() <= if d < 12 { 1 << d } else { Q }));
     //
     // Our "working" register, from which to drop bytes out of
     let mut temp = 0u32;
     // Bit index of current temp contents, and byte index of current output
     let mut bit_index = 0;
     let mut byte_index = 0;
-    // Choose m per spec
-    let m = if d < 12 { 1 << d } else { Q };
 
     // Work through each of the input integers
     for coeff in integers_f {
         //
-        // Get coeff as u64, check magnitude, and clean off top bits
-        let coeff = coeff.get_u32();
-        ensure!(coeff <= m, "Alg4: Coeff out of range");
-        let coeff = coeff & ((1 << d) - 1);
+        // Get coeff and clean off top bits
+        let coeff = coeff.get_u32() & ((1 << d) - 1);
 
         // Drop coeff into the upper unused bit positions of coeff; adjust bit index
         temp |= coeff << bit_index;
@@ -63,7 +59,6 @@ pub(crate) fn byte_encode(
             bit_index -= 8;
         }
     }
-    Ok(())
 }
 
 
@@ -95,7 +90,7 @@ pub(crate) fn byte_decode(
         #[allow(clippy::cast_possible_truncation)] // Intentional truncation
         while bit_index >= d {
             //
-            // Mask off the upport portion and drop it in
+            // Mask off the upper portion and drop it in
             let mut z = Z::default();
             z.set_u16(temp as u16 & ((1 << d) - 1));
             integers_f[int_index] = z;
@@ -107,11 +102,7 @@ pub(crate) fn byte_decode(
         }
     }
 
-    let m = if d < 12 {
-        1 << d //2u16.pow(d)
-    } else {
-        u16::try_from(Q).unwrap()
-    };
+    let m = if d < 12 { 1 << d } else { Q };
     ensure!(integers_f.iter().all(|e| e.get_u16() < m), "Alg5: integers out of range");
     Ok(())
 }
@@ -140,7 +131,7 @@ mod tests {
                 let mut bytes2 = vec![0u8; num_bytes];
                 let bytes1: Vec<u8> = (0..num_bytes).map(|_| rng.gen()).collect();
                 byte_decode(num_bits, &bytes1, &mut integer_array).unwrap();
-                byte_encode(num_bits, &integer_array, &mut bytes2).unwrap();
+                byte_encode(num_bits, &integer_array, &mut bytes2);
                 assert_eq!(bytes1, bytes2);
             }
         }
@@ -155,8 +146,5 @@ mod tests {
         let ret = byte_decode(num_bits, &bytes1, &mut integer_array);
         assert!(ret.is_err());
         integer_array.iter_mut().for_each(|x| x.set_u16(u16::MAX));
-        let mut bytes2 = vec![0u8; num_bytes];
-        let ret = byte_encode(num_bits, &integer_array, &mut bytes2);
-        assert!(ret.is_err());
     }
 }
