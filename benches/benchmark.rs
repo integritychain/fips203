@@ -4,29 +4,35 @@ use rand_core::{CryptoRng, RngCore};
 use fips203::traits::{Decaps, Encaps, KeyGen};
 use fips203::{ml_kem_1024, ml_kem_512, ml_kem_768};
 
-// Removing the RNG from benchmarking path; this is will regurgitate zeros when 'asked'
-struct BenchRng();
+// Simplistic RNG to regurgitate incremented values when 'asked'
+struct TestRng {
+    value: u32,
+}
 
-impl RngCore for BenchRng {
+impl RngCore for TestRng {
     fn next_u32(&mut self) -> u32 { unimplemented!() }
 
     fn next_u64(&mut self) -> u64 { unimplemented!() }
 
-    fn fill_bytes(&mut self, out: &mut [u8]) { out.iter_mut().for_each(|b| *b = 0); }
+    fn fill_bytes(&mut self, out: &mut [u8]) {
+        out.iter_mut().for_each(|b| *b = 0);
+        out[0..4].copy_from_slice(&self.value.to_be_bytes())
+    }
 
     fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
         self.fill_bytes(out);
+        self.value = self.value.wrapping_add(1);
         Ok(())
     }
 }
 
-impl CryptoRng for BenchRng {}
+impl CryptoRng for TestRng {}
 
 
 #[allow(clippy::redundant_closure)]
 pub fn criterion_benchmark(c: &mut Criterion) {
     // Generate intermediate values needed for the actual benchmark functions
-    let mut bench_rng = BenchRng {};
+    let mut bench_rng = TestRng { value: 0 };
     let (ek_512, dk_512) = ml_kem_512::KG::try_keygen_with_rng_vt(&mut bench_rng).unwrap();
     let (_, ct_512) = ek_512.try_encaps_vt().unwrap();
     let (ek_768, dk_768) = ml_kem_768::KG::try_keygen_with_rng_vt(&mut bench_rng).unwrap();

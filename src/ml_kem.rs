@@ -1,10 +1,9 @@
-use rand_core::CryptoRngCore;
-
 use crate::byte_fns::{byte_decode, byte_encode};
 use crate::helpers::{ensure, g, h, j};
 use crate::k_pke::{k_pke_decrypt, k_pke_encrypt, k_pke_key_gen};
-use crate::SharedSecretKey;
 use crate::types::Z;
+use crate::SharedSecretKey;
+use rand_core::CryptoRngCore;
 
 /// Algorithm 15 `ML-KEM.KeyGen()` on page 29.
 /// Generates an encapsulation key and a corresponding decapsulation key.

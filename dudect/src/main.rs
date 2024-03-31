@@ -1,19 +1,24 @@
-use dudect_bencher::{BenchRng, Class, ctbench_main, CtRunner};
-use fips203::ml_kem_512;
-// Could also be ml_kem_768 or ml_kem_1024.
+use dudect_bencher::{ctbench_main, BenchRng, Class, CtRunner};
+use fips203::ml_kem_512; // Could also be ml_kem_768 or ml_kem_1024.
 use fips203::traits::{Decaps, Encaps, KeyGen};
 use rand_core::{CryptoRng, RngCore};
 
-// Dummy RNG that supplies a constant (incremented) value when 'asked'
-#[derive(Copy, Clone)]
-struct DummyRng {
-    value: u8,
+// Simplistic RNG to regurgitate incremented values when 'asked'
+#[derive(Clone)]
+struct TestRng {
+    value: u32,
 }
 
-impl RngCore for DummyRng {
+impl RngCore for TestRng {
     fn next_u32(&mut self) -> u32 { unimplemented!() }
+
     fn next_u64(&mut self) -> u64 { unimplemented!() }
-    fn fill_bytes(&mut self, out: &mut [u8]) { out.iter_mut().for_each(|b| *b = self.value); }
+
+    fn fill_bytes(&mut self, out: &mut [u8]) {
+        out.iter_mut().for_each(|b| *b = 0);
+        out[0..4].copy_from_slice(&self.value.to_be_bytes())
+    }
+
     fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
         self.fill_bytes(out);
         self.value = self.value.wrapping_add(1);
@@ -21,15 +26,15 @@ impl RngCore for DummyRng {
     }
 }
 
-impl CryptoRng for DummyRng {}
+impl CryptoRng for TestRng {}
 
 
 fn full_flow(runner: &mut CtRunner, mut _rng: &mut BenchRng) {
     const ITERATIONS_INNER: usize = 5;
     const ITERATIONS_OUTER: usize = 200_000;
 
-    let rng_left = DummyRng { value: 111 };
-    let rng_right = DummyRng { value: 222 };
+    let rng_left = TestRng { value: 111 };
+    let rng_right = TestRng { value: 222 };
 
     let mut classes = [Class::Right; ITERATIONS_OUTER];
     let mut rng_refs = [&rng_right; ITERATIONS_OUTER];

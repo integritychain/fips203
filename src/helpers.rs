@@ -1,10 +1,9 @@
-use sha3::{Digest, Sha3_256, Sha3_512, Shake128, Shake256};
-use sha3::digest::{ExtendableOutput, Update, XofReader};
-use subtle::ConditionallySelectable;
-
 use crate::ntt::multiply_ntts;
-use crate::Q;
 use crate::types::Z;
+use crate::Q;
+use sha3::digest::{ExtendableOutput, Update, XofReader};
+use sha3::{Digest, Sha3_256, Sha3_512, Shake128, Shake256};
+use subtle::ConditionallySelectable;
 
 /// If the condition is not met, return an error message. Borrowed from the `anyhow` crate.
 macro_rules! ensure {

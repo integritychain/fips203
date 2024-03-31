@@ -12,11 +12,11 @@ use fips203::{ml_kem_1024, ml_kem_512, ml_kem_768};
 
 // ----- CUSTOM RNG TO REPLAY VALUES -----
 
-struct MyRng {
+struct TestRng {
     data: Vec<Vec<u8>>,
 }
 
-impl RngCore for MyRng {
+impl RngCore for TestRng {
     fn next_u32(&mut self) -> u32 { unimplemented!() }
 
     fn next_u64(&mut self) -> u64 { unimplemented!() }
@@ -32,16 +32,17 @@ impl RngCore for MyRng {
     }
 }
 
-impl CryptoRng for MyRng {}
+impl CryptoRng for TestRng {}
 
-impl MyRng {
-    fn new() -> Self { MyRng { data: Vec::new() } }
+impl TestRng {
+    fn new() -> Self { TestRng { data: Vec::new() } }
 
     fn push(&mut self, new_data: &[u8]) {
         let x = new_data.to_vec();
         self.data.push(x);
     }
 }
+
 
 // ----- EXTRACT I/O VALUES FROM OFFICIAL VECTORS -----
 
@@ -96,7 +97,7 @@ fn get_decaps_vec(filename: &str) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
 fn test_keygen() {
     let (z, d, ek_exp, dk_exp) =
         get_keygen_vec("./tests/nist_vectors/Key Generation -- ML-KEM-512.txt");
-    let mut rnd = MyRng::new();
+    let mut rnd = TestRng::new();
     rnd.push(&d);
     rnd.push(&z);
     let (ek_act, dk_act) = ml_kem_512::KG::try_keygen_with_rng_vt(&mut rnd).unwrap();
@@ -105,7 +106,7 @@ fn test_keygen() {
 
     let (z, d, ek_exp, dk_exp) =
         get_keygen_vec("./tests/nist_vectors/Key Generation -- ML-KEM-768.txt");
-    let mut rnd = MyRng::new();
+    let mut rnd = TestRng::new();
     rnd.push(&d);
     rnd.push(&z);
     let (ek_act, dk_act) = ml_kem_768::KG::try_keygen_with_rng_vt(&mut rnd).unwrap();
@@ -114,7 +115,7 @@ fn test_keygen() {
 
     let (z, d, ek_exp, dk_exp) =
         get_keygen_vec("./tests/nist_vectors/Key Generation -- ML-KEM-1024.txt");
-    let mut rnd = MyRng::new();
+    let mut rnd = TestRng::new();
     rnd.push(&d);
     rnd.push(&z);
     let (ek_act, dk_act) = ml_kem_1024::KG::try_keygen_with_rng_vt(&mut rnd).unwrap();
@@ -126,7 +127,7 @@ fn test_keygen() {
 fn test_encaps() {
     let (ek, m, ssk_exp, ct_exp) =
         get_encaps_vec("./tests/nist_vectors/Encapsulation -- ML-KEM-512.txt");
-    let mut rnd = MyRng::new();
+    let mut rnd = TestRng::new();
     rnd.push(&m);
     let ek = ml_kem_512::EncapsKey::try_from_bytes(ek.try_into().unwrap()).unwrap();
     let (ssk_act, ct_act) = ek.try_encaps_with_rng_vt(&mut rnd).unwrap();
@@ -135,7 +136,7 @@ fn test_encaps() {
 
     let (ek, m, ssk_exp, ct_exp) =
         get_encaps_vec("./tests/nist_vectors/Encapsulation -- ML-KEM-768.txt");
-    let mut rnd = MyRng::new();
+    let mut rnd = TestRng::new();
     rnd.push(&m);
     let ek = ml_kem_768::EncapsKey::try_from_bytes(ek.try_into().unwrap()).unwrap();
     let (ssk_act, ct_act) = ek.try_encaps_with_rng_vt(&mut rnd).unwrap();
@@ -144,7 +145,7 @@ fn test_encaps() {
 
     let (ek, m, ssk_exp, ct_exp) =
         get_encaps_vec("./tests/nist_vectors/Encapsulation -- ML-KEM-1024.txt");
-    let mut rnd = MyRng::new();
+    let mut rnd = TestRng::new();
     rnd.push(&m);
     let ek = ml_kem_1024::EncapsKey::try_from_bytes(ek.try_into().unwrap()).unwrap();
     let (ssk_act, ct_act) = ek.try_encaps_with_rng_vt(&mut rnd).unwrap();

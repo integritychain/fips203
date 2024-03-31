@@ -30,26 +30,26 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
 
     // 3: 3: N ← 0
     let mut n = 0;
-    let mut a_hat = [[[Z::default(); 256]; K]; K];
 
     // 4: for (i ← 0; i < k; i++)    ▷ generate matrix A ∈ (Z^{256}_q)^{k×k}
+    let mut a_hat = [[[Z::default(); 256]; K]; K];
     for (i, row) in a_hat.iter_mut().enumerate().take(K) {
         //
         // 5: for (j ← 0; j < k; j++)
+        #[allow(clippy::cast_possible_truncation)] // i and j as u8
         for (j, entry) in row.iter_mut().enumerate().take(K) {
             //
             // 6: A_hat[i, j] ← SampleNTT(XOF(ρ, i, j))    ▷ each entry of Â uniform in NTT domain
             // See page 21 regarding transpose of i, j -? j, i in XOF() https://csrc.nist.gov/files/pubs/fips/203/ipd/docs/fips-203-initial-public-comments-2023.pdf
-            *entry = sample_ntt(xof(&rho, u8::try_from(j).unwrap(), u8::try_from(i).unwrap()));
+            *entry = sample_ntt(xof(&rho, j as u8, i as u8))?;
 
             // 7: end for
         }
         // 8: end for
     }
 
-    let mut s = [[Z::default(); 256]; K];
-
     // 9: for (i ← 0; i < k; i ++)    ▷ generate s ∈ (Z_q^{256})^k
+    let mut s = [[Z::default(); 256]; K];
     for s_i in s.iter_mut().take(K) {
         //
         // 10: s[i] ← SamplePolyCBDη1(PRFη1(σ, N))    ▷ s[i] ∈ Z^{256}_q sampled from CBD
@@ -61,9 +61,8 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
         // 12: end for
     }
 
-    let mut e = [[Z::default(); 256]; K];
-
     // 13: for (i ← 0; i < k; i++)    ▷ generate e ∈ (Z_q^{256})^k
+    let mut e = [[Z::default(); 256]; K];
     for e_i in e.iter_mut().take(K) {
         //
         // 14: e[i] ← SamplePolyCBDη1(PRFη1(σ, N))    ▷ e[i] ∈ Z^{256}_q sampled from CBD
@@ -75,15 +74,14 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
         // 16: end for
     }
 
-    let mut s_hat = [[Z::default(); 256]; K];
-
     // 17: s_hat ← NTT(s)    ▷ NTT is run k times (once for each coordinate of s)
+    let mut s_hat = [[Z::default(); 256]; K];
     for i in 0..K {
         s_hat[i] = ntt(&s[i]);
     }
-    let mut e_hat = [[Z::default(); 256]; K];
 
     // 18: ê ← NTT(e)    ▷ NTT is run k times
+    let mut e_hat = [[Z::default(); 256]; K];
     for i in 0..K {
         e_hat[i] = ntt(&e[i]);
     }
@@ -137,25 +135,25 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     // 3: 3: ρ ← ekPKE [384k : 384k + 32]    ▷ extract 32-byte seed from ekPKE
     let mut rho = [0u8; 32];
     rho.copy_from_slice(&ek[384 * K..(384 * K + 32)]);
-    let mut a_hat = [[[Z::default(); 256]; K]; K];
 
     // 4: for (i ← 0; i < k; i++)    ▷ re-generate matrix A_hat(Z_q{256})^{k×k}
+    let mut a_hat = [[[Z::default(); 256]; K]; K];
     for (i, row) in a_hat.iter_mut().enumerate().take(K) {
         //
         // 5: for (j ← 0; j < k; j++)
+        #[allow(clippy::cast_possible_truncation)] // i and j as u8
         for (j, entry) in row.iter_mut().enumerate().take(K) {
             //
             // 6: Â[i, j] ← SampleNTT(XOF(ρ, i, j))
-            *entry = sample_ntt(xof(&rho, u8::try_from(j).unwrap(), u8::try_from(i).unwrap()));
+            *entry = sample_ntt(xof(&rho, j as u8, i as u8))?;
 
             // 7: end for
         }
         // 8: end for
     }
 
-    let mut r = [[Z::default(); 256]; K];
-
     // 9: for (i ← 0; i < k; i ++)
+    let mut r = [[Z::default(); 256]; K];
     for r_i in r.iter_mut().take(K) {
         //
         // 10: r[i] ← SamplePolyCBDη 1 (PRFη 1 (r, N))    ▷ r[i] ∈ Z^{256}_q sampled from CBD
@@ -167,9 +165,8 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
         // 12: end for
     }
 
-    let mut e1 = [[Z::default(); 256]; K];
-
     // 13: for (i ← 0; i < k; i ++)    ▷ generate e1 ∈ (Z_q^{256})^k
+    let mut e1 = [[Z::default(); 256]; K];
     for e1_i in e1.iter_mut().take(K) {
         //
         // 14: e1 [i] ← SamplePolyCBDη2(PRFη2(r, N))    ▷ e1 [i] ∈ Z^{256}_q sampled from CBD

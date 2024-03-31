@@ -51,6 +51,10 @@ impl Z {
     }
 
     #[inline(always)]
+    #[allow(clippy::cast_possible_truncation)]
+    pub(crate) fn or(self, other: u32) -> Self { Self(self.0 | other as u16) }
+
+    #[inline(always)]
     pub(crate) fn sub(self, other: Self) -> Self {
         let (diff, borrow) = self.0.overflowing_sub(other.0);
         let result = u16::conditional_select(&diff, &diff.wrapping_add(Q), u8::from(borrow).into());
@@ -58,7 +62,7 @@ impl Z {
     }
 
     #[inline(always)]
-    #[allow(clippy::cast_possible_truncation)] // for diff
+    #[allow(clippy::cast_possible_truncation)] // rem as u16
     pub(crate) fn mul(self, other: Self) -> Self {
         let prod = u64::from(self.0) * u64::from(other.0);
         let quot = prod * Self::M;

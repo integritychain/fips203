@@ -1,6 +1,6 @@
 use crate::helpers::ensure;
-use crate::Q;
 use crate::types::Z;
+use crate::Q;
 
 // Note: Algorithm 2 and 3 have been "optimized away" as they had a lot of overhead
 // and made memory allocations tricky. The definitions are left here for reference.

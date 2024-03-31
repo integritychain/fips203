@@ -1,16 +1,14 @@
+use crate::types::Z;
+use crate::Q;
 use sha3::digest::XofReader;
 use subtle::{Choice, ConditionallySelectable};
-
-use crate::Q;
-use crate::types::Z;
 
 /// Algorithm 6 `SampleNTT(B)` on page 20.
 /// If the input is a stream of uniformly random bytes, the output is a uniformly random element of `T_q`.
 ///
 /// Input: byte stream B ∈ B^{∗} <br>
 /// Output: array `a_hat` ∈ `Z^{256}_q`              ▷ the coefficients of the NTT of a polynomial
-#[must_use]
-pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
+pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> Result<[Z; 256], &'static str> {
     //
     let mut array_a_hat = [Z::default(); 256];
     let mut bbb = [0u8; 3]; // Space for 3 random (byte) draws
@@ -22,11 +20,14 @@ pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
 
     // The original sampling loop has inherent timing variability based on the need to reject
     // `d1` > `Q` per step 6+ along with `d2` > `Q` per step 10+. The adapted loop below does
-    // "too much, but a constant amount of work" with the 384-256 margin impacting performance.
-    // 3: while j < 256 do  --> this is adapted for constant-time operation TODO: loop # vs fail odds
-    #[allow(clippy::cast_possible_truncation)] // mask as u16
-    for _k in 0..384 {
+    // "too much, but a constant amount of work" with the additional margin impacting performance.
+    // The proportion of fails is approx 3.098e-12 or 2**{-38}; re-run with fresh randomness.
+    // See cdf at https://www.wolframalpha.com/input?i=binomial+distribution+calculator&assumption=%7B%22F%22%2C+%22BinomialProbabilities%22%2C+%22x%22%7D+-%3E%22256%22&assumption=%7B%22F%22%2C+%22BinomialProbabilities%22%2C+%22n%22%7D+-%3E%22384%22&assumption=%7B%22F%22%2C+%22BinomialProbabilities%22%2C+%22p%22%7D+-%3E%223329%2F4095%22
+    // 3: while j < 256 do  --> this is adapted for constant-time operation
+    // #[allow(clippy::cast_possible_truncation)] // mask as u16
+    for _k in 0..192 {
         //
+        // Note: two samples (d1, d2) are drawn per loop iteration
         byte_stream_b.read(&mut bbb); // Draw 3 bytes
 
         // 4: d1 ← B[i] + 256 · (B[i + 1] mod 16)
@@ -40,9 +41,7 @@ pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
         let d1 = u32::conditional_select(&0, &d1, if_step6);
         //
         // 7: a_hat[j] ← d1         ▷ a_hat ∈ Z256
-        let mut ah = Z::default();
-        ah.set_u16(d1 as u16);
-        array_a_hat[j as usize & 0xFF] = array_a_hat[j as usize & 0xFF].add(ah);
+        array_a_hat[j as usize & 0xFF] = array_a_hat[j as usize & 0xFF].or(d1);
 
         // 8: j ← j+1
         //j += 1 & mask;
@@ -55,12 +54,9 @@ pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
         let d2 = u32::conditional_select(&0, &d2, if_step10);
 
         // 11: a_hat[j] ← d2
-        let mut ah = Z::default();
-        ah.set_u16(d2 as u16);
-        array_a_hat[j as usize & 0xFF] = array_a_hat[j as usize & 0xFF].add(ah);
+        array_a_hat[j as usize & 0xFF] = array_a_hat[j as usize & 0xFF].or(d2);
 
         // 12: j ← j+1
-        //j += 1 & mask2;
         j.conditional_assign(&(j + 1), if_step10);
 
         // 13: end if
@@ -70,8 +66,13 @@ pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
         // 15: end while
     }
 
-    // 16: return a_hat
-    array_a_hat
+    if j < 256 {
+        Err("Alg 6: Sampling issue, please try again with fresh randomness")
+    } else {
+        //
+        // 16: return a_hat
+        Ok(array_a_hat)
+    }
 }
 
 
