@@ -16,6 +16,12 @@
 // Implements FIPS 203 draft Module-Lattice-based Key-Encapsulation Mechanism Standard.
 // See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
 
+// TODO Roadmap
+//   0. Stay current with FIPS 203 updates
+//   1. Perf: optimize/minimize modular reductions, minimize u16 arith, consider avx2/aarch64
+//      (currently, code is 'optimized' for safety and change-support, with reasonable perf)
+//   2. Slightly more intelligent fuzzing (as dk contains h(ek))
+
 // Functionality map per FIPS 203 draft
 //
 // Algorithm 2 BitsToBytes(b) on page 17                    --> optimized out (byte_fns.rs)
@@ -66,6 +72,7 @@ pub mod traits;
 const Q: u16 = 3329;
 const ZETA: u16 = 17;
 
+
 /// Shared Secret Key length for all ML-KEM variants (in bytes)
 pub const SSK_LEN: usize = 32;
 
@@ -103,7 +110,7 @@ impl PartialEq for SharedSecretKey {
 macro_rules! functionality {
     () => {
         use crate::byte_fns::byte_decode;
-        use crate::helpers::h;
+        use crate::helpers::{ensure, h};
         use crate::ml_kem::{ml_kem_decaps, ml_kem_encaps, ml_kem_key_gen};
         use crate::traits::{Decaps, Encaps, KeyGen, SerDes};
         use crate::types::Z;
@@ -139,9 +146,12 @@ macro_rules! functionality {
             }
 
             fn validate_keypair_vt(ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray) -> bool {
+                // Note that size is checked by only accepting ref to correctly sized byte array
                 let len_ek_pke = 384 * K + 32;
                 let len_dk_pke = 384 * K;
+                // dk should contain ek
                 let same_ek = (*ek == dk[len_dk_pke..(len_dk_pke + len_ek_pke)]);
+                // dk should contain hash of ek
                 let same_h =
                     (h(ek) == dk[(len_dk_pke + len_ek_pke)..(len_dk_pke + len_ek_pke + 32)]);
                 same_ek & same_h
@@ -208,8 +218,17 @@ macro_rules! functionality {
 
             fn try_from_bytes(dk: Self::ByteArray) -> Result<Self, &'static str> {
                 // Validation per pg 31. Note that the two checks specify fixed sizes, and these
-                // functions take only byte arrays of correct size. Nonetheless, we use a Result
-                // here in case future opportunities for further validation arise.
+                // functions take only byte arrays of correct size. Nonetheless, we take the
+                // opportunity to validate the ek and h(ek).
+                let len_ek_pke = 384 * K + 32;
+                let len_dk_pke = 384 * K;
+                let ek = &dk[len_dk_pke..len_dk_pke + EK_LEN];
+                let _res =
+                    EncapsKey::try_from_bytes(ek.try_into().map_err(|_| "Malformed encaps key")?)?;
+                ensure!(
+                    h(ek) == dk[(len_dk_pke + len_ek_pke)..(len_dk_pke + len_ek_pke + 32)],
+                    "Encaps hash wrong"
+                );
                 Ok(DecapsKey { 0: dk })
             }
         }
@@ -232,17 +251,20 @@ macro_rules! functionality {
         #[cfg(test)]
         mod tests {
             use super::*;
+            use crate::types::EncapsKey;
             use rand_chacha::rand_core::SeedableRng;
 
             #[test]
             fn smoke_test() {
                 let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
-                for _i in 0..10 {
+                for _i in 0..100 {
                     let (ek, dk) = KG::try_keygen_with_rng_vt(&mut rng).unwrap();
                     let (ssk1, ct) = ek.try_encaps_with_rng_vt(&mut rng).unwrap();
                     let ssk2 = dk.try_decaps_vt(&ct).unwrap();
-                    assert!(KG::validate_keypair_vt(&ek.into_bytes(), &dk.into_bytes()));
-                    assert_eq!(ssk1, ssk2, "Shared secrets differ");
+                    assert!(KG::validate_keypair_vt(&ek.clone().into_bytes(), &dk.into_bytes()));
+                    assert_eq!(ssk1, ssk2);
+                    assert_eq!(ek.clone().0, EncapsKey::try_from_bytes(ek.into_bytes()).unwrap().0);
+                    // the other SerDes routines don't really have logic...
                 }
             }
         }

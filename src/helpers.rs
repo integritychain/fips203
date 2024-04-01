@@ -39,7 +39,7 @@ pub(crate) fn mul_mat_vec<const K: usize>(
 ) -> [[Z; 256]; K] {
     let mut w_hat = [[Z::default(); 256]; K];
     for i in 0..K {
-        #[allow(clippy::needless_range_loop)]
+        #[allow(clippy::needless_range_loop)] // alternative is harder to understand
         for j in 0..K {
             let tmp = multiply_ntts(&a_hat[i][j], &u_hat[j]);
             for k in 0..256 {
@@ -57,9 +57,9 @@ pub(crate) fn mul_mat_t_vec<const K: usize>(
     a_hat: &[[[Z; 256]; K]; K], u_hat: &[[Z; 256]; K],
 ) -> [[Z; 256]; K] {
     let mut y_hat = [[Z::default(); 256]; K];
-    #[allow(clippy::needless_range_loop)]
+    #[allow(clippy::needless_range_loop)] // alternative is harder to understand
     for i in 0..K {
-        #[allow(clippy::needless_range_loop)]
+        #[allow(clippy::needless_range_loop)] // alternative is harder to understand
         for j in 0..K {
             let tmp = multiply_ntts(&a_hat[j][i], &u_hat[j]);
             for k in 0..256 {
@@ -152,7 +152,7 @@ pub(crate) fn compress(d: u32, inout: &mut [Z]) {
         // Barrett constants should be resolved at compile time
         let q64 = u64::from(Q);
         let k = 32;
-        let m = 2u64.pow(k) / q64;
+        let m = (1 << k) / q64;
         // Barrett division, quotient could be too small by one
         let top = u64::from(x_ref.get_u32()) << d;
         let quot = (top * m) >> k;
@@ -171,7 +171,7 @@ pub(crate) fn compress(d: u32, inout: &mut [Z]) {
 #[allow(clippy::cast_possible_truncation)] // last line
 pub(crate) fn decompress(d: u32, inout: &mut [Z]) {
     for y_ref in &mut *inout {
-        let qy = u32::from(Q) * y_ref.get_u32() + 2u32.pow(d) - 1;
+        let qy = u32::from(Q) * y_ref.get_u32() + (1 << d) - 1;
         y_ref.set_u16((qy >> d) as u16);
     }
 }

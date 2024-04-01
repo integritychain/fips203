@@ -25,10 +25,13 @@ use crate::Q;
 /// Input: integer array `F ∈ Z^{256}_m`, where `m = 2^d if d < 12` and `m = q if d = 12` <br>
 /// Output: byte array B ∈ B^{32·d}
 pub(crate) fn byte_encode(d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8]) {
-    debug_assert_eq!(bytes_b.len(), 32 * d as usize, "Alg 4: bytes len is not 32 * d");
-    debug_assert!(integers_f
-        .iter()
-        .all(|f| f.get_u16() <= if d < 12 { 1 << d } else { Q }));
+    debug_assert_eq!(bytes_b.len(), 32 * d as usize, "Alg 4: bytes_b len is not 32 * d");
+    debug_assert!(
+        integers_f
+            .iter()
+            .all(|f| f.get_u16() <= if d < 12 { 1 << d } else { Q }),
+        "Alg 4: integers_f out of range"
+    );
     //
     // Our "working" register, from which to drop bytes out of
     let mut temp = 0u32;
@@ -47,11 +50,10 @@ pub(crate) fn byte_encode(d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8]) {
         bit_index += d as usize;
 
         // While we have enough bits to drop a byte, do so
-        #[allow(clippy::cast_possible_truncation)] // Intentional truncation
         while bit_index > 7 {
             //
             // Drop the byte
-            bytes_b[byte_index] = temp as u8;
+            bytes_b[byte_index] = temp.to_le_bytes()[0];
 
             // Update the indices
             temp >>= 8;
@@ -87,7 +89,7 @@ pub(crate) fn byte_decode(
         bit_index += 8;
 
         // If we have enough bits to drop an int, do so
-        #[allow(clippy::cast_possible_truncation)] // Intentional truncation
+        #[allow(clippy::cast_possible_truncation)] // Intentional truncation, temp as u16
         while bit_index >= d {
             //
             // Mask off the upper portion and drop it in
@@ -103,7 +105,7 @@ pub(crate) fn byte_decode(
     }
 
     let m = if d < 12 { 1 << d } else { Q };
-    ensure!(integers_f.iter().all(|e| e.get_u16() < m), "Alg5: integers out of range");
+    ensure!(integers_f.iter().all(|e| e.get_u16() < m), "Alg 5: integers out of range");
     Ok(())
 }
 

@@ -1,8 +1,8 @@
-use rand_core::SeedableRng;
-
 use fips203::ml_kem_512;
 use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
 use hex_literal::hex;
+use rand_core::SeedableRng;
+
 
 #[test]
 fn wasm_match() {

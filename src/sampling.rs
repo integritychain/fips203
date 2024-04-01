@@ -24,7 +24,6 @@ pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> Result<[Z; 256], 
     // The proportion of fails is approx 3.098e-12 or 2**{-38}; re-run with fresh randomness.
     // See cdf at https://www.wolframalpha.com/input?i=binomial+distribution+calculator&assumption=%7B%22F%22%2C+%22BinomialProbabilities%22%2C+%22x%22%7D+-%3E%22256%22&assumption=%7B%22F%22%2C+%22BinomialProbabilities%22%2C+%22n%22%7D+-%3E%22384%22&assumption=%7B%22F%22%2C+%22BinomialProbabilities%22%2C+%22p%22%7D+-%3E%223329%2F4095%22
     // 3: while j < 256 do  --> this is adapted for constant-time operation
-    // #[allow(clippy::cast_possible_truncation)] // mask as u16
     for _k in 0..192 {
         //
         // Note: two samples (d1, d2) are drawn per loop iteration
@@ -110,6 +109,7 @@ pub(crate) fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> [Z; 256] {
 }
 
 
+// the u types below and above could use a bit more thought
 // Count u8 ones in constant time (u32 helps perf)
 #[allow(clippy::cast_possible_truncation)] // return res as u16
 fn count_ones(x: u32) -> u16 {

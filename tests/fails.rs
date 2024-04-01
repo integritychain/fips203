@@ -1,8 +1,7 @@
+use fips203::ml_kem_512;
+use fips203::traits::{KeyGen, SerDes};
 use rand_chacha::rand_core::SeedableRng;
 use rand_core::RngCore;
-
-use fips203::ml_kem_512;
-use fips203::traits::{Decaps, KeyGen, SerDes};
 
 // Highlights potential validation opportunities
 #[test]
@@ -16,7 +15,7 @@ fn fails_512() {
 
         let mut bad_ct_bytes = [0u8; ml_kem_512::CT_LEN];
         rng.fill_bytes(&mut bad_ct_bytes);
-        let bad_ct = ml_kem_512::CipherText::try_from_bytes(bad_ct_bytes);
+        let _bad_ct = ml_kem_512::CipherText::try_from_bytes(bad_ct_bytes);
         // Note: FIPS 203 validation per page 31 only puts size constraints on the ciphertext.
         // A Result is used to allow for future expansion of validation...
         // assert!(bad_ct.is_err());
@@ -26,12 +25,12 @@ fn fails_512() {
         let bad_dk = ml_kem_512::DecapsKey::try_from_bytes(bad_dk_bytes);
         // Note: FIPS 203 validation per page 31 only puts size constraints on the decaps key.
         // A Result is used to allow for future expansion of validation...
-        // assert!(bad_dk.is_err());
+        assert!(bad_dk.is_err());
 
         // We can validate the non-correspondence of these serialized keypair
         assert!(!ml_kem_512::KG::validate_keypair_vt(&bad_ek_bytes, &bad_dk_bytes));
 
-        let bad_ssk_bytes = bad_dk.unwrap().try_decaps_vt(&bad_ct.unwrap());
-        assert!(bad_ssk_bytes.is_err());
+        // let bad_ssk_bytes = bad_dk.unwrap().try_decaps_vt(&bad_ct.unwrap());
+        // assert!(bad_ssk_bytes.is_err());
     }
 }

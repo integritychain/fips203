@@ -18,7 +18,7 @@ $ cargo fuzz run fuzz_all -j 4
 Coverage status of ml_kem_512 is robust, see:
 
 ~~~
-#7851: cov: 6312 ft: 3969 corp: 26 exec/s 4 oom/timeout/crash: 0/0/0 time: 843s job: 55 dft_time: 0
+#3543: cov: 6156 ft: 4187 corp: 31 exec/s 5 oom/timeout/crash: 0/0/0 time: 170s job: 33 dft_time: 0
 
 # Warning: the following tools are tricky to install/configure
 $ cargo install cargo-cov

@@ -13,7 +13,7 @@ use crate::types::Z;
 ///
 /// Output: encryption key `ekPKE ∈ B^{384·k+32}` <br>
 /// Output: decryption key `dkPKE ∈ B^{384·k}`
-#[allow(clippy::similar_names, clippy::module_name_repetitions)]
+#[allow(clippy::similar_names)]
 pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
     rng: &mut impl CryptoRngCore, eta1: u32, ek_pke: &mut [u8], dk_pke: &mut [u8],
 ) -> Result<(), &'static str> {
@@ -36,12 +36,11 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
     for (i, row) in a_hat.iter_mut().enumerate().take(K) {
         //
         // 5: for (j ← 0; j < k; j++)
-        #[allow(clippy::cast_possible_truncation)] // i and j as u8
         for (j, entry) in row.iter_mut().enumerate().take(K) {
             //
             // 6: A_hat[i, j] ← SampleNTT(XOF(ρ, i, j))    ▷ each entry of Â uniform in NTT domain
             // See page 21 regarding transpose of i, j -? j, i in XOF() https://csrc.nist.gov/files/pubs/fips/203/ipd/docs/fips-203-initial-public-comments-2023.pdf
-            *entry = sample_ntt(xof(&rho, j as u8, i as u8))?;
+            *entry = sample_ntt(xof(&rho, j.to_le_bytes()[0], i.to_le_bytes()[0]))?;
 
             // 7: end for
         }
@@ -118,10 +117,10 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     du: u32, dv: u32, eta1: u32, eta2: u32, ek: &[u8], m: &[u8], randomness: &[u8; 32],
     ct: &mut [u8],
 ) -> Result<(), &'static str> {
-    debug_assert_eq!(ek.len(), 384 * K + 32, "Alg13: ek len not 384 * K + 32");
-    debug_assert_eq!(m.len(), 32, "Alg13: m len not 32");
-    debug_assert_eq!(eta1 as usize * 64, ETA1_64, "Alg13: eta1 size mismatch");
-    debug_assert_eq!(eta2 as usize * 64, ETA2_64, "Alg13: eta2 size mismatch");
+    debug_assert_eq!(ek.len(), 384 * K + 32, "Alg 13: ek len not 384 * K + 32");
+    debug_assert_eq!(m.len(), 32, "Alg 13: m len not 32");
+    debug_assert_eq!(eta1 as usize * 64, ETA1_64, "Alg 13: eta1 size mismatch");
+    debug_assert_eq!(eta2 as usize * 64, ETA2_64, "Alg 13: eta2 size mismatch");
 
     // 1: N ← 0
     let mut n = 0;
@@ -132,7 +131,7 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
         byte_decode(12, &ek[384 * i..384 * (i + 1)], &mut t_hat[i])?;
     }
 
-    // 3: 3: ρ ← ekPKE [384k : 384k + 32]    ▷ extract 32-byte seed from ekPKE
+    // 3: ρ ← ekPKE [384k : 384k + 32]    ▷ extract 32-byte seed from ekPKE
     let mut rho = [0u8; 32];
     rho.copy_from_slice(&ek[384 * K..(384 * K + 32)]);
 
@@ -141,11 +140,10 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     for (i, row) in a_hat.iter_mut().enumerate().take(K) {
         //
         // 5: for (j ← 0; j < k; j++)
-        #[allow(clippy::cast_possible_truncation)] // i and j as u8
         for (j, entry) in row.iter_mut().enumerate().take(K) {
             //
             // 6: Â[i, j] ← SampleNTT(XOF(ρ, i, j))
-            *entry = sample_ntt(xof(&rho, j as u8, i as u8))?;
+            *entry = sample_ntt(xof(&rho, j.to_le_bytes()[0], i.to_le_bytes()[0]))?;
 
             // 7: end for
         }
@@ -203,7 +201,7 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     let mut v = ntt_inv(&dot_t_prod(&t_hat, &r_hat));
     v = add_vecs(&add_vecs(&[v], &[e2]), &[mu])[0];
 
-    // 22: c1 ← ByteEncode_{du}(Compress_{du}(u))    ▷ ByteEncodedu is run k times
+    // 22: c1 ← ByteEncode_{du}(Compress_{du}(u))    ▷ ByteEncode_{du} is run k times
     let step = 32 * du as usize;
     for i in 0..K {
         compress(du, &mut u[i]);
@@ -228,11 +226,11 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
 pub(crate) fn k_pke_decrypt<const K: usize>(
     du: u32, dv: u32, dk: &[u8], ct: &[u8],
 ) -> Result<[u8; 32], &'static str> {
-    debug_assert_eq!(dk.len(), 384 * K, "Alg14: dk len not 384 * K");
+    debug_assert_eq!(dk.len(), 384 * K, "Alg 14: dk len not 384 * K");
     debug_assert_eq!(
         ct.len(),
         32 * (du as usize * K + dv as usize),
-        "Alg14: ct len not 32 * (DU * K + DV)"
+        "Alg 14: ct len not 32 * (DU * K + DV)"
     );
 
     // 1: c1 ← c[0 : 32du k]

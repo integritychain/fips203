@@ -1,4 +1,5 @@
 use rand_core::CryptoRngCore;
+
 #[cfg(feature = "default-rng")]
 use rand_core::OsRng;
 
@@ -16,10 +17,10 @@ pub trait KeyGen {
 
 
     /// Generates an encapsulation and decapsulation key key pair specific to this security parameter set. <br>
-    /// This function utilizes the OS default random number generator, and makes no (constant)
-    /// timing assurances.
+    /// This function utilizes the OS default random number generator and is intended to operate in constant
+    /// time. (the function suffix will change to `_ct` in the forthcoming 0.2.0 release)
     /// # Errors
-    /// Returns an error when the random number generator fails; propagates internal errors.
+    /// Returns an error when the random number generator fails, or when the internal sampling overruns.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -51,10 +52,10 @@ pub trait KeyGen {
 
 
     /// Generates an encapsulation and decapsulation key key pair specific to this security parameter set. <br>
-    /// This function utilizes a supplied random number generator, and makes no (constant)
-    /// timing assurances.
+    /// This function utilizes a provided random number generator and is intended to operate in constant
+    /// time. (the function suffix will change to `_ct` in the forthcoming 0.2.0 release)
     /// # Errors
-    /// Returns an error when the random number generator fails; propagates internal errors.
+    /// Returns an error when the random number generator fails, or when the internal sampling overruns.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -85,7 +86,8 @@ pub trait KeyGen {
     ) -> Result<(Self::EncapsKey, Self::DecapsKey), &'static str>;
 
 
-    /// Performs validation between an encapsulation key and a decapsulation key.
+    /// Performs validation between an encapsulation key and a decapsulation key (both in bytes). This function is
+    /// not intended to operate in constant-time.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -114,10 +116,11 @@ pub trait Encaps {
 
 
     /// Generates a shared secret and ciphertext from an encapsulation key specific to this security parameter set. <br>
-    /// This function utilizes the OS default random number generator, and makes no (constant)
-    /// timing assurances.
+    /// This function utilizes the OS default random number generator and is intended to operate in constant
+    /// time. (the function suffix will change to `_ct` in the forthcoming 0.2.0 release)
     /// # Errors
-    /// Returns an error when the random number generator fails; propagates internal errors.
+    /// Returns an error when the random number generator fails, a malformed encaps key is provided, an internal
+    /// sampling overrun occurs, along with any other internal errors.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -150,10 +153,11 @@ pub trait Encaps {
 
 
     /// Generates a shared secret and ciphertext from an encapsulation key specific to this security parameter set. <br>
-    /// This function utilizes a supplied random number generator, and makes no (constant)
-    /// timing assurances.
+    /// This function utilizes a provided random number generator and is intended to operate in constant
+    /// time. (the function suffix will change to `_ct` in the forthcoming 0.2.0 release)
     /// # Errors
-    /// Returns an error when the random number generator fails; propagates internal errors.
+    /// Returns an error when the random number generator fails, a malformed encaps key is provided, an internal
+    /// sampling overrun occurs, along with any other internal errors.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -194,7 +198,8 @@ pub trait Decaps {
 
 
     /// Generates a shared secret from a decapsulation key and ciphertext specific to this security parameter set. <br>
-    /// This function makes no (constant) timing assurances.
+    /// This function is intended to operate in constant-time. (the function suffix will change to `_ct` in the
+    /// forthcoming 0.2.0 release)
     /// # Errors
     /// Returns an error when the random number generator fails; propagates internal errors.
     /// # Examples

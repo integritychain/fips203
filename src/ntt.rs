@@ -121,7 +121,6 @@ pub(crate) fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
 /// Input: Two arrays `f_hat` ∈ `Z^{256}_q` and `g_hat` ∈ `Z^{256}_q`    ▷ the coefficients of two NTT representations <br>
 /// Output: An array `h_hat` ∈ `Z^{256}_q`    ▷ the coefficients of the product of the inputs
 #[must_use]
-#[allow(clippy::cast_possible_truncation)]
 pub(crate) fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
     let mut h_hat: [Z; 256] = [Z::default(); 256];
 
@@ -168,7 +167,7 @@ pub(crate) fn base_case_multiply(a0: Z, a1: Z, b0: Z, b1: Z, gamma: Z) -> (Z, Z)
 
 /// HAC Algorithm 14.76 Right-to-left binary exponentiation mod Q.
 #[must_use]
-#[allow(clippy::cast_possible_truncation)] // on result
+#[allow(clippy::cast_possible_truncation)] // on result as u16 (try_from not const)
 const fn pow_mod_q(g: u16, e: u8) -> u16 {
     let g = g as u64;
     let mut result = 1;
@@ -187,12 +186,11 @@ const fn pow_mod_q(g: u16, e: u8) -> u16 {
 }
 
 
-#[allow(clippy::cast_possible_truncation)] // i as u8
 const fn gen_zeta_table() -> [u16; 256] {
     let mut result = [0u16; 256];
     let mut i = 0;
     while i < 256u16 {
-        result[i as usize] = pow_mod_q(ZETA, (i as u8).reverse_bits());
+        result[i as usize] = pow_mod_q(ZETA, (i.to_le_bytes()[0]).reverse_bits());
         i += 1;
     }
     result
