@@ -1,25 +1,25 @@
 Figure-of-merit only; no particular care has been taken to disable turbo-boost etc.
-Note that constant-time restrictions impact performance.
+Note that constant-time restrictions significantly impact performance.
 
-Note that performance optimizations will quickly follow the next update to FIPS 203.
-Near-obvious uplift can be had with more careful modular mul & add then reduction.
-Also, 'u16' arithmetic has a performance penalty.
+Performance optimizations will quickly follow the next update to FIPS 203.
+Near-obvious uplift can be had with more careful modular multiplication & addition,
+then fewer reductions. Also, 'u16' arithmetic has a performance penalty.
 
 ~~~
-March 31, 2024
+April 1, 2024
 Intel® Core™ i7-7700K CPU @ 4.20GHz × 8
 
 $ RUSTFLAGS="-C target-cpu=native" cargo bench
 
-ml_kem_512  KeyGen      time:   [54.335 µs 54.358 µs 54.390 µs]
-ml_kem_768  KeyGen      time:   [92.541 µs 92.608 µs 92.689 µs]
-ml_kem_1024 KeyGen      time:   [143.35 µs 143.37 µs 143.39 µs]
+ml_kem_512  KeyGen      time:   [52.346 µs 52.370 µs 52.386 µs]
+ml_kem_768  KeyGen      time:   [90.119 µs 90.518 µs 91.110 µs]
+ml_kem_1024 KeyGen      time:   [140.77 µs 140.96 µs 141.13 µs]
 
-ml_kem_512  Encaps      time:   [68.294 µs 68.306 µs 68.319 µs]
-ml_kem_768  Encaps      time:   [109.51 µs 109.68 µs 109.95 µs]
-ml_kem_1024 Encaps      time:   [162.11 µs 162.18 µs 162.25 µs]
+ml_kem_512  Encaps      time:   [66.662 µs 66.938 µs 67.355 µs]
+ml_kem_768  Encaps      time:   [107.48 µs 107.54 µs 107.62 µs]
+ml_kem_1024 Encaps      time:   [156.71 µs 156.93 µs 157.19 µs]
 
-ml_kem_512  Decaps      time:   [97.659 µs 97.826 µs 98.043 µs]
-ml_kem_768  Decaps      time:   [152.66 µs 152.70 µs 152.74 µs]
-ml_kem_1024 Decaps      time:   [219.13 µs 220.42 µs 222.12 µs]
+ml_kem_512  Decaps      time:   [94.679 µs 94.720 µs 94.749 µs]
+ml_kem_768  Decaps      time:   [150.44 µs 151.12 µs 152.29 µs]
+ml_kem_1024 Decaps      time:   [213.44 µs 214.01 µs 214.65 µs]
 ~~~

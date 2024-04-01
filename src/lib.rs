@@ -49,9 +49,9 @@
 // `clippy pedantic`. While the API suggests the code is not constant-time, this has been
 // confirmed as constant-time by the /fips203/dudect and /fips203/ct_cm4 functionality.
 //
-// The ensure!() instances are for validation purposes. The debug_assert!() instances are
-// (effectively) targeted by the fuzzer in /fips203/fuzz and will support future changes
-// to the FIPS 203 specification.
+// The ensure!() instances are for validation purposes and cannot be turned off. The
+// debug_assert!() instances are (effectively) targeted by the fuzzer in /fips203/fuzz and
+// will support future changes to the FIPS 203 specification.
 
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -288,6 +288,8 @@ pub mod ml_kem_512 {
     //! 5. The originator deserializes the ciphertext via `try_from_bytes(<bytes>)` then
     //!    runs `decapsKey.try_decaps_vt(cipherText)` to the get shared secret ket `ssk`.
     //! 6. Both the originator and remote party now have the same shared secret key `ssk`.
+    //!
+    //! **--> See [`traits`] for the keygen, encapsulation, decapsulation, and serialization/deserialization functionality.**
 
     const K: usize = 2;
     const ETA1: u32 = 3;
@@ -322,6 +324,8 @@ pub mod ml_kem_768 {
     //! 5. The originator deserializes the ciphertext via `try_from_bytes(<bytes>)` then
     //!    runs `decapsKey.try_decaps_vt(cipherText)` to the get shared secret ket `ssk`.
     //! 6. Both the originator and remote party now have the same shared secret key `ssk`.
+    //!
+    //! **--> See [`traits`] for the keygen, encapsulation, decapsulation, and serialization/deserialization functionality.**
 
     const K: usize = 3;
     const ETA1: u32 = 2;
@@ -355,6 +359,8 @@ pub mod ml_kem_1024 {
     //! 5. The originator deserializes the ciphertext via `try_from_bytes(<bytes>)` then
     //!    runs `decapsKey.try_decaps_vt(cipherText)` to the get shared secret ket `ssk`.
     //! 6. Both the originator and remote party now have the same shared secret key `ssk`.
+    //!
+    //! **--> See [`traits`] for the keygen, encapsulation, decapsulation, and serialization/deserialization functionality.**
 
     const K: usize = 4;
     const ETA1: u32 = 2;

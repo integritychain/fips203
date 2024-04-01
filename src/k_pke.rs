@@ -1,5 +1,3 @@
-use rand_core::CryptoRngCore;
-
 use crate::byte_fns::{byte_decode, byte_encode};
 use crate::helpers::{
     add_vecs, compress, decompress, dot_t_prod, g, mul_mat_t_vec, mul_mat_vec, prf, xof,
@@ -7,6 +5,8 @@ use crate::helpers::{
 use crate::ntt::{ntt, ntt_inv};
 use crate::sampling::{sample_ntt, sample_poly_cbd};
 use crate::types::Z;
+use rand_core::CryptoRngCore;
+
 
 /// Algorithm 12 `K-PKE.KeyGen()` on page 26.
 /// Generates an encryption key and a corresponding decryption key.

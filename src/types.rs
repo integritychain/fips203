@@ -21,7 +21,7 @@ pub struct DecapsKey<const DK_LEN: usize>(pub(crate) [u8; DK_LEN]);
 pub struct CipherText<const CT_LEN: usize>(pub(crate) [u8; CT_LEN]);
 
 
-// While Z is nice, simple and correct, the performance is suboptimal.
+// While Z is simple and correct, the performance is suboptimal.
 // This will be addressed (particularly in matrix operations etc) over
 // the medium-term - potentially as a 256-entry row.
 
@@ -42,6 +42,8 @@ impl Z {
 
     #[inline(always)]
     pub(crate) fn add(self, other: Self) -> Self {
+        debug_assert!(self.0 < Q);
+        debug_assert!(other.0 < Q);
         let sum = self.0.wrapping_add(other.0);
         let (trial, borrow) = sum.overflowing_sub(Q);
         let result = u16::conditional_select(&trial, &sum, u8::from(borrow).into());
@@ -51,10 +53,16 @@ impl Z {
 
     #[inline(always)]
     #[allow(clippy::cast_possible_truncation)] // for perf
-    pub(crate) fn or(self, other: u32) -> Self { Self(self.0 | other as u16) }
+    pub(crate) fn or(self, other: u32) -> Self {
+        debug_assert!(self.0 < Q);
+        debug_assert!(other < u32::from(Q));
+        Self(self.0 | other as u16)
+    }
 
     #[inline(always)]
     pub(crate) fn sub(self, other: Self) -> Self {
+        debug_assert!(self.0 < Q);
+        debug_assert!(other.0 < Q);
         let (diff, borrow) = self.0.overflowing_sub(other.0);
         let result = u16::conditional_select(&diff, &diff.wrapping_add(Q), u8::from(borrow).into());
         debug_assert!(result < Q);
@@ -64,6 +72,8 @@ impl Z {
     #[inline(always)]
     #[allow(clippy::cast_possible_truncation)] // rem as u16
     pub(crate) fn mul(self, other: Self) -> Self {
+        debug_assert!(self.0 < Q);
+        debug_assert!(other.0 < Q);
         let prod = u64::from(self.0) * u64::from(other.0);
         let quot = prod * Self::M;
         let quot = quot >> 32;

@@ -1,7 +1,8 @@
 This is a work in progress, but good results currently.
 
 Harness code is in fuzz/fuzz_targets/fuzz_all.rs. The Cargo.toml file specifies
-that overflow-checks and debug-assertions are true.
+that overflow-checks and debug-assertions are enabled (so the fuzzer can find
+these panics).
 
 See: https://rust-fuzz.github.io/book/cargo-fuzz.html
 
@@ -18,7 +19,7 @@ $ cargo fuzz run fuzz_all -j 4
 Coverage status of ml_kem_512 is robust, see:
 
 ~~~
-#3543: cov: 6156 ft: 4187 corp: 31 exec/s 5 oom/timeout/crash: 0/0/0 time: 170s job: 33 dft_time: 0
+#3543: cov: 6550 ft: 4187 corp: 31 exec/s 5 oom/timeout/crash: 0/0/0 time: 170s job: 33 dft_time: 0
 
 # Warning: the following tools are tricky to install/configure
 $ cargo install cargo-cov
