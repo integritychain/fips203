@@ -53,7 +53,7 @@ pub(crate) fn byte_encode(d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8]) {
         while bit_index > 7 {
             //
             // Drop the byte
-            bytes_b[byte_index] = temp.to_le_bytes()[0];
+            bytes_b[byte_index] = temp.to_le_bytes()[0]; // avoids u8 cast
 
             // Update the indices
             temp >>= 8;

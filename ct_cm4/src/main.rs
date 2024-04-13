@@ -12,9 +12,13 @@ use microbit::{
 use panic_rtt_target as _;
 use rand_core::{CryptoRng, RngCore};
 use rtt_target::{rprintln, rtt_init_print};
+use subtle::{ConditionallySelectable, ConstantTimeEq};
 
-// Simplistic RNG to regurgitate incremented values when 'asked'
+
+// Simplistic RNG to regurgitate incremented values when 'asked' except rho every i mod 4 == 1
+#[derive(Clone)]
 struct TestRng {
+    rho: u32,
     value: u32,
 }
 
@@ -25,12 +29,14 @@ impl RngCore for TestRng {
 
     fn fill_bytes(&mut self, out: &mut [u8]) {
         out.iter_mut().for_each(|b| *b = 0);
-        out[0..4].copy_from_slice(&self.value.to_be_bytes())
+        let supply_rho = (self.value & 0x03).ct_eq(&1);
+        let target = u32::conditional_select(&self.value, &self.rho, supply_rho);
+        out[0..4].copy_from_slice(&target.to_be_bytes());
+        self.value = self.value.wrapping_add(1);
     }
 
     fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
         self.fill_bytes(out);
-        self.value = self.value.wrapping_add(1);
         Ok(())
     }
 }
@@ -46,7 +52,8 @@ fn main() -> ! {
     board.display_pins.col1.set_low().unwrap();
     rtt_init_print!();
 
-    let mut rng = TestRng { value: 1 };
+    let mut rng = TestRng { rho: 999, value: 4 }; // arbitrary choice (value must be mult of 4)
+    let mut spare_draw = [0u8; 32];
     let mut expected_cycles = 0;
     let mut i = 0u32;
 
@@ -71,16 +78,22 @@ fn main() -> ! {
         asm::isb();
         let finish = DWT::cycle_count();
         asm::isb();
+        let _ = rng.try_fill_bytes(&mut spare_draw).unwrap(); // ease our lives; multiple of 4
 
         let count = finish - start;
-        if i == 5 {
+
+        if (i % 1000) == 0 {
+            rng.rho += 1
+        }; // each rho should have a fixed cycle count
+        if (i % 1000) == 2 {
             expected_cycles = count
+        }; // capture the cycle count
+        if ((i % 1000) > 2) & (count != expected_cycles) {
+            // make sure it is constant
+            panic!("Non constant-time operation!! iteration:{} cycles:{}", i, count)
         };
-        if (i > 5) & (count != expected_cycles) {
-            panic!("Non constant-time operation!! {}", i)
+        if i % 100 == 0 {
+            rprintln!("Iteration {} cycle count: {}", i, count)
         };
-        if i % 10 == 0 {
-            rprintln!("Iteration {} cycle count: {}", i, count);
-        }
     }
 }

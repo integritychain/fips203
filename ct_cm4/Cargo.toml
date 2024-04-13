@@ -1,11 +1,12 @@
 [package]
 name = "fips203-ct_cm4"
-version = "0.1.4"
+version = "0.1.5"
 license = "MIT OR Apache-2.0"
 description = "Cortex-M4 testbench for FIPS 203 (draft) ML-KEM"
 authors = ["Eric Schorn <eschorn@integritychain.com>"]
 publish = false
 edition = "2021"
+rust-version = "1.70"
 
 
 [dependencies]
@@ -16,8 +17,7 @@ panic-rtt-target = { version = "0.1.2", features = ["cortex-m"] }
 microbit-v2 = "0.13.0"
 rtt-target = { version = "0.5.0" }
 rand_core = { version = "0.6.4", default-features = false }
-hex-literal = "0.4.1"
-rand_chacha = { version = "0.3.1", default-features = false }
+subtle = { version = "2.5.0", default-features = false }
 
 
 [profile.dev]
@@ -29,4 +29,5 @@ opt-level = 3
 codegen-units = 1
 
 
-# cargo update -p fixed@1.26.0 --precise 1.23.1
+# If cargo complains about 'fixed' on MSRV 1.70, use version 1.23.1
+# cargo update -p fixed@1.27.0 --precise 1.23.1

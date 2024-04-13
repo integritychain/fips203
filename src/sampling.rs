@@ -1,14 +1,13 @@
 use crate::types::Z;
 use crate::Q;
 use sha3::digest::XofReader;
-use subtle::{Choice, ConditionallySelectable};
 
 /// Algorithm 6 `SampleNTT(B)` on page 20.
 /// If the input is a stream of uniformly random bytes, the output is a uniformly random element of `T_q`.
 ///
 /// Input: byte stream B ∈ B^{∗} <br>
 /// Output: array `a_hat` ∈ `Z^{256}_q`              ▷ the coefficients of the NTT of a polynomial
-pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> Result<[Z; 256], &'static str> {
+pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
     //
     let mut array_a_hat = [Z::default(); 256];
     let mut bbb = [0u8; 3]; // Space for 3 random (byte) draws
@@ -16,15 +15,13 @@ pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> Result<[Z; 256], 
     // 1: i ← 0 (not needed as three bytes are repeatedly drawn from the rng bytestream via bbb)
 
     // 2: j ← 0
-    let mut j = 0u32;
+    let mut j = 0usize;
 
-    // The original sampling loop has inherent timing variability based on the need to reject
-    // `d1` > `Q` per step 6+ along with `d2` > `Q` per step 10+. The adapted loop below does
-    // "too much, but a constant amount of work" with the additional margin impacting performance.
-    // The proportion of fails is approx 3.098e-12 or 2**{-38}; re-run with fresh randomness.
-    // See cdf at https://www.wolframalpha.com/input?i=binomial+distribution+calculator&assumption=%7B%22F%22%2C+%22BinomialProbabilities%22%2C+%22x%22%7D+-%3E%22256%22&assumption=%7B%22F%22%2C+%22BinomialProbabilities%22%2C+%22n%22%7D+-%3E%22384%22&assumption=%7B%22F%22%2C+%22BinomialProbabilities%22%2C+%22p%22%7D+-%3E%223329%2F4095%22
-    // 3: while j < 256 do  --> this is adapted for constant-time operation
-    for _k in 0..192 {
+    // This rejection sampling loop is solely dependent upon rho which crosses a trust boundary
+    // in the clear. Thus, it does not need to be constant time.
+    // 3: while j < 256 do
+    #[allow(clippy::cast_possible_truncation)] // d1 as u16, d2 as u16
+    while j < 256 {
         //
         // Note: two samples (d1, d2) are drawn per loop iteration
         byte_stream_b.read(&mut bbb); // Draw 3 bytes
@@ -36,43 +33,36 @@ pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> Result<[Z; 256], 
         let d2 = (u32::from(bbb[1]) >> 4) + 16 * u32::from(bbb[2]);
 
         // 6: if d1 < q then
-        let if_step6 = Choice::from(u8::from((d1 < u32::from(Q)) && (j < 256)));
-        let d1 = u32::conditional_select(&0, &d1, if_step6);
-        //
-        // 7: a_hat[j] ← d1         ▷ a_hat ∈ Z256
-        array_a_hat[j as usize & 0xFF] = array_a_hat[j as usize & 0xFF].or(d1);
+        if d1 < u32::from(Q) {
+            //
+            // 7: a_hat[j] ← d1         ▷ a_hat ∈ Z256
+            array_a_hat[j].set_u16(d1 as u16);
 
-        // 8: j ← j+1
-        //j += 1 & mask;
-        j.conditional_assign(&(j + 1), if_step6);
+            // 8: j ← j+1
+            j += 1;
 
-        // 9: end if
+            // 9: end if
+        }
 
         // 10: if d2 < q and j < 256 then
-        let if_step10 = Choice::from(u8::from((d2 < u32::from(Q)) && (j < 256)));
-        let d2 = u32::conditional_select(&0, &d2, if_step10);
+        if (d2 < u32::from(Q)) & (j < 256) {
+            //
+            // 11: a_hat[j] ← d2
+            array_a_hat[j].set_u16(d2 as u16);
 
-        // 11: a_hat[j] ← d2
-        array_a_hat[j as usize & 0xFF] = array_a_hat[j as usize & 0xFF].or(d2);
+            // 12: j ← j+1
+            j += 1;
 
-        // 12: j ← j+1
-        j.conditional_assign(&(j + 1), if_step10);
-
-        // 13: end if
+            // 13: end if
+        }
 
         // 14: i ← i+3  (not needed as we draw 3 more bytes next time
 
         // 15: end while
     }
 
-    // Result does not need to be constant-time
-    if j < 256 {
-        Err("Alg 6: Sampling issue, please try again with fresh randomness")
-    } else {
-        //
-        // 16: return a_hat
-        Ok(array_a_hat)
-    }
+    // 16: return a_hat
+    array_a_hat
 }
 
 
@@ -83,7 +73,8 @@ pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> Result<[Z; 256], 
 /// Input: byte array B ∈ B^{64·η} <br>
 /// Output: array f ∈ `Z^{256}_q`
 #[must_use]
-pub(crate) fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> [Z; 256] {
+pub(crate) fn sample_poly_cbd(byte_array_b: &[u8]) -> [Z; 256] {
+    let eta = u32::try_from(byte_array_b.len()).unwrap() >> 6;
     debug_assert_eq!(byte_array_b.len(), 64 * eta as usize, "Alg 7: byte array not 64 * eta");
     let mut array_f: [Z; 256] = [Z::default(); 256];
     let mut temp = 0;
@@ -112,14 +103,12 @@ pub(crate) fn sample_poly_cbd(eta: u32, byte_array_b: &[u8]) -> [Z; 256] {
 
 // the u types below and above could use a bit more thought
 // Count u8 ones in constant time (u32 helps perf)
-#[allow(clippy::cast_possible_truncation)] // return res as u16
+#[allow(clippy::cast_possible_truncation)] // return x as u16
 fn count_ones(x: u32) -> u16 {
-    let (mut res, mut x) = (x & 0xFF, x & 0xFF);
-    for _i in 1..8 {
-        x >>= 1;
-        res -= x;
-    }
-    res as u16
+    let x = (x & 0x5555_5555) + ((x >> 1) & 0x5555_5555);
+    let x = (x & 0x3333_3333) + ((x >> 2) & 0x3333_3333);
+    let x = (x & 0x0F0F_0F0F) + ((x >> 4) & 0x0F0F_0F0F);
+    x as u16
 }
 
 

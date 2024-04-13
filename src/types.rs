@@ -1,5 +1,4 @@
 use crate::Q;
-use subtle::ConditionallySelectable;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 
@@ -32,8 +31,6 @@ pub(crate) struct Z(u16);
 
 #[allow(clippy::inline_always)]
 impl Z {
-    const M: u64 = 2u64.pow(32) / (Q as u64);
-
     pub(crate) fn get_u16(self) -> u16 { self.0 }
 
     pub(crate) fn get_u32(self) -> u32 { u32::from(self.0) }
@@ -41,46 +38,38 @@ impl Z {
     pub(crate) fn set_u16(&mut self, a: u16) { self.0 = a }
 
     #[inline(always)]
+    #[allow(clippy::cast_possible_truncation)] // rem as u16; for perf
     pub(crate) fn add(self, other: Self) -> Self {
         debug_assert!(self.0 < Q);
         debug_assert!(other.0 < Q);
-        let sum = self.0.wrapping_add(other.0);
-        let (trial, borrow) = sum.overflowing_sub(Q);
-        let result = u16::conditional_select(&trial, &sum, u8::from(borrow).into());
-        debug_assert!(result < Q);
-        Self(result)
+        let res = u32::from(self.0) + u32::from(other.0);
+        let res = res.wrapping_sub(u32::from(Q));
+        let res = res.wrapping_add((res >> 16) & (u32::from(Q)));
+        debug_assert!(res < u32::from(Q));
+        Self(res as u16)
     }
 
     #[inline(always)]
-    #[allow(clippy::cast_possible_truncation)] // for perf
-    pub(crate) fn or(self, other: u32) -> Self {
-        debug_assert!(self.0 < Q);
-        debug_assert!(other < u32::from(Q));
-        Self(self.0 | other as u16)
-    }
-
-    #[inline(always)]
+    #[allow(clippy::cast_possible_truncation)] // res as u16; for perf
     pub(crate) fn sub(self, other: Self) -> Self {
         debug_assert!(self.0 < Q);
         debug_assert!(other.0 < Q);
-        let (diff, borrow) = self.0.overflowing_sub(other.0);
-        let result = u16::conditional_select(&diff, &diff.wrapping_add(Q), u8::from(borrow).into());
-        debug_assert!(result < Q);
-        Self(result)
+        let res = u32::from(self.0).wrapping_sub(u32::from(other.0));
+        let res = res.wrapping_add((res >> 16) & (u32::from(Q)));
+        debug_assert!(res < u32::from(Q));
+        Self(res as u16)
     }
 
     #[inline(always)]
-    #[allow(clippy::cast_possible_truncation)] // rem as u16
+    #[allow(clippy::items_after_statements, clippy::cast_possible_truncation)] // rem as u16; for perf
     pub(crate) fn mul(self, other: Self) -> Self {
         debug_assert!(self.0 < Q);
         debug_assert!(other.0 < Q);
-        let prod = u64::from(self.0) * u64::from(other.0);
-        let quot = prod * Self::M;
-        let quot = quot >> 32;
-        let rem = prod - quot * u64::from(Q);
-        let (diff, borrow) = (rem as u16).overflowing_sub(Q);
-        let result = u16::conditional_select(&diff, &diff.wrapping_add(Q), u8::from(borrow).into());
-        debug_assert!(result < Q);
-        Self(result)
+        const M: u64 = ((1u64 << 36) + Q as u64 - 1) / Q as u64;
+        let prod = u32::from(self.0) * u32::from(other.0);
+        let quot = ((u64::from(prod) * M) >> 36) as u32;
+        let rem = prod - quot * u32::from(Q);
+        debug_assert!(rem < u32::from(Q));
+        Self(rem as u16)
     }
 }

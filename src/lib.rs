@@ -17,7 +17,7 @@
 // See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
 
 // TODO Roadmap
-//   0. Stay current with FIPS 203 updates
+//   0. Stay current with FIPS 203 updates (due late summer 2024)
 //   1. Perf: optimize/minimize modular reductions, minimize u16 arith, consider avx2/aarch64
 //      (currently, code is 'optimized' for safety and change-support, with reasonable perf)
 //   2. Slightly more intelligent fuzzing (as dk contains h(ek))
@@ -47,15 +47,25 @@
 // The three parameter sets are modules in this file with injected macro code that connects
 // them into the functionality in ml_kem.rs. Some of the 'obtuse' coding style is driven by
 // `clippy pedantic`. While the API suggests the code is not constant-time, this has been
-// confirmed as constant-time by the /fips203/dudect and /fips203/ct_cm4 functionality.
+// confirmed as constant-time (outside of rho) by both /fips203/dudect and /fips203/ct_cm4
+// functionality.
+//
+// Note that the use of generics has been constrained to storage allocation purposes,
+// e.g. `[0u8; EK_LEN];` (where arithmetic expressions are not allowed), while the remainder
+// of the security parameters are generally passed as normal function parameters.
 //
 // The ensure!() instances are for validation purposes and cannot be turned off. The
 // debug_assert!() instances are (effectively) targeted by the fuzzer in /fips203/fuzz and
-// will support future changes to the FIPS 203 specification.
+// will support quicker future changes from the FIPS 203 specification update.
 
-use zeroize::{Zeroize, ZeroizeOnDrop};
+
+/// The `rand_core` types are re-exported so that users of fips203 do not
+/// have to worry about using the exact correct version of `rand_core`.
+pub use rand_core::{CryptoRng, Error as RngError, RngCore};
 
 use crate::traits::SerDes;
+use subtle::ConstantTimeEq;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 mod byte_fns;
 mod helpers;
@@ -87,8 +97,8 @@ impl SerDes for SharedSecretKey {
     fn into_bytes(self) -> Self::ByteArray { self.0 }
 
     fn try_from_bytes(ssk: Self::ByteArray) -> Result<Self, &'static str> {
-        // The `try_` is not really needed but implemented for symmetry, e.g., there is no
-        // opportunity for validation (yet), but using a Result for the future possibility
+        // The `try_` is not really needed but implemented for symmetry/consistency, e.g., there
+        // is no opportunity for validation (yet), but using a Result for the future possibility
         Ok(SharedSecretKey(ssk))
     }
 }
@@ -96,13 +106,7 @@ impl SerDes for SharedSecretKey {
 
 // Conservative (constant-time) support...
 impl PartialEq for SharedSecretKey {
-    fn eq(&self, other: &Self) -> bool {
-        let mut result = true;
-        for i in 0..self.0.len() {
-            result &= self.0[i] == other.0[i];
-        }
-        result
-    }
+    fn eq(&self, other: &Self) -> bool { bool::from(self.0.ct_eq(&other.0)) }
 }
 
 
@@ -141,12 +145,12 @@ macro_rules! functionality {
                 rng: &mut impl CryptoRngCore,
             ) -> Result<(EncapsKey, DecapsKey), &'static str> {
                 let (mut ek, mut dk) = ([0u8; EK_LEN], [0u8; DK_LEN]);
-                ml_kem_key_gen::<K, { ETA1 as usize * 64 }>(rng, ETA1, &mut ek, &mut dk)?;
+                ml_kem_key_gen::<K, { ETA1 as usize * 64 }>(rng, &mut ek, &mut dk)?;
                 Ok((EncapsKey { 0: ek }, DecapsKey { 0: dk }))
             }
 
             fn validate_keypair_vt(ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray) -> bool {
-                // Note that size is checked by only accepting ref to correctly sized byte array
+                // Note that size is checked by only accepting a ref to a correctly sized byte array
                 let len_ek_pke = 384 * K + 32;
                 let len_dk_pke = 384 * K;
                 // dk should contain ek
@@ -168,7 +172,7 @@ macro_rules! functionality {
             ) -> Result<(Self::SharedSecretKey, Self::CipherText), &'static str> {
                 let mut ct = [0u8; CT_LEN];
                 let ssk = ml_kem_encaps::<K, { ETA1 as usize * 64 }, { ETA2 as usize * 64 }>(
-                    rng, DU, DV, ETA1, ETA2, &self.0, &mut ct,
+                    rng, DU, DV, &self.0, &mut ct,
                 )?;
                 Ok((ssk, CipherText { 0: ct }))
             }
@@ -186,7 +190,7 @@ macro_rules! functionality {
                     { ETA2 as usize * 64 },
                     { 32 + 32 * (DU as usize * K + DV as usize) },
                     CT_LEN,
-                >(DU, DV, ETA1, ETA2, &self.0, &ct.0);
+                >(DU, DV, &self.0, &ct.0);
                 ssk
             }
         }
@@ -261,10 +265,13 @@ macro_rules! functionality {
                     let (ek, dk) = KG::try_keygen_with_rng_vt(&mut rng).unwrap();
                     let (ssk1, ct) = ek.try_encaps_with_rng_vt(&mut rng).unwrap();
                     let ssk2 = dk.try_decaps_vt(&ct).unwrap();
-                    assert!(KG::validate_keypair_vt(&ek.clone().into_bytes(), &dk.into_bytes()));
+                    assert!(KG::validate_keypair_vt(
+                        &ek.clone().into_bytes(),
+                        &dk.clone().into_bytes()
+                    ));
                     assert_eq!(ssk1, ssk2);
                     assert_eq!(ek.clone().0, EncapsKey::try_from_bytes(ek.into_bytes()).unwrap().0);
-                    // the other SerDes routines don't really have logic...
+                    assert_eq!(dk.clone().0, DecapsKey::try_from_bytes(dk.into_bytes()).unwrap().0);
                 }
             }
         }

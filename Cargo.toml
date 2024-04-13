@@ -2,7 +2,7 @@ workspace = { members = ['ffi'], exclude = ["ct_cm4", "dudect", "fuzz", "wasm"] 
 
 [package]
 name = "fips203"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "FIPS 203 (draft): Module-Lattice-Based Key-Encapsulation Mechanism"
@@ -10,7 +10,7 @@ authors = ["Eric Schorn <eschorn@integritychain.com>"]
 documentation = "https://docs.rs/fips203"
 categories = ["cryptography", "no-std"]
 repository = "https://github.com/integritychain/fips203"
-keywords = ["FIPS", "FIPS203", "lattice", "key", "encapsulation"]
+keywords = ["FIPS", "FIPS203", "lattice", "kyber", "encapsulation"]
 rust-version = "1.70"  # Requires several marginally outdated dependencies
 
 
@@ -26,7 +26,7 @@ ml-kem-1024 = []
 zeroize = { version = "1.6.0", default-features = false, features = ["zeroize_derive"] }
 rand_core = { version = "0.6.4", default-features = false }
 sha3 = { version = "0.10.2", default-features = false }
-subtle = { version = "2.5.0", default-features = false }
+subtle = { version = "2.5.0", default-features = false, features = ['const-generics'] }
 
 [dev-dependencies]  # Some are marginally outdated to retain MSRV 1.70
 rand = "0.8.5"

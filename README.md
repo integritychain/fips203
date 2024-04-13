@@ -8,14 +8,15 @@
 
 [FIPS 203] (Initial Public Draft) Module-Lattice-Based Key-Encapsulation Mechanism Standard written in pure Rust for
 server, desktop, browser and embedded applications. The source repository includes examples demonstrating benchmarking, 
-an embedded target, constant-time statistics, fuzzing, WASM execution, C FFI and Python bindings.
+an embedded target, constant-time statistical measurements, fuzzing, WASM execution, C FFI and Python bindings.
 
-This crate implements the FIPS 203 **draft** standard in pure Rust with minimal and mainstream dependencies. All three
-security parameter sets are fully functional. The implementation operates in constant-time, does not require the 
-standard library, e.g. `#[no_std]`, has no heap allocations, e.g. no `alloc` needed, and optionally exposes the `RNG` 
-so it is suitable for the full range of applications down to the bare-metal. The API is stabilized and the code is 
-heavily biased towards safety and  correctness; further performance optimizations will be implemented as the standard 
-matures. This crate will quickly follow any changes to FIPS 203 as they become available.
+This crate implements the FIPS 203 **draft** standard in pure Rust with minimal and mainstream dependencies **and 
+without any unsafe code**. All three security parameter sets are fully functional. The implementation operates in 
+constant-time (outside of rho), does not require the standard library, e.g. `#[no_std]`, has no heap allocations, 
+e.g. no `alloc` needed, and optionally exposes the `RNG` so it is suitable for the full range of applications down to 
+the bare-metal. The API is stabilized and the code is heavily biased towards safety and  correctness; further 
+performance optimizations will be implemented as the standard matures. This crate will quickly follow any changes to 
+FIPS 203 as they become available.
 
 See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf> for a full description of the target functionality.
 
@@ -57,7 +58,7 @@ The Rust [Documentation][docs-link] lives under each **Module** corresponding to
 
 * This crate is fully functional and corresponds to the first initial public draft of FIPS 203.
 * Constant-time operation targets the source-code level only, with confirmation via the embedded target and
-  the `dudect` dynamic tests. While the API has a suffix of `_vt`, this will change to `_ct` in version 0.2.0.
+  the `dudect` dynamic tests. While the API uses a suffix of `_vt`, this will be changed in version 0.2.0.
 * Note that FIPS 203 places specific requirements on randomness per section 3.3, hence the exposed `RNG`.
 * Requires Rust **1.70** or higher. The minimum supported Rust version may be changed in the future, but
   it will be done with a minor version bump (when the major version is larger than 0).

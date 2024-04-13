@@ -4,6 +4,8 @@ use crate::k_pke::{k_pke_decrypt, k_pke_encrypt, k_pke_key_gen};
 use crate::types::Z;
 use crate::SharedSecretKey;
 use rand_core::CryptoRngCore;
+use subtle::{ConditionallySelectable, ConstantTimeEq};
+
 
 /// Algorithm 15 `ML-KEM.KeyGen()` on page 29.
 /// Generates an encapsulation key and a corresponding decapsulation key.
@@ -11,7 +13,7 @@ use rand_core::CryptoRngCore;
 /// Output: Encapsulation key `ek` ∈ `B^{384·k+32}` <br>
 /// Output: Decapsulation key `dk` ∈ `B^{768·k+96}`
 pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
-    rng: &mut impl CryptoRngCore, eta1: u32, ek: &mut [u8], dk: &mut [u8],
+    rng: &mut impl CryptoRngCore, ek: &mut [u8], dk: &mut [u8],
 ) -> Result<(), &'static str> {
     debug_assert_eq!(ek.len(), 384 * K + 32, "Alg 15: ek len not 384 * K + 32");
     debug_assert_eq!(dk.len(), 768 * K + 96, "Alg 15: dk len not 768 * K + 96");
@@ -23,7 +25,7 @@ pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
 
     // 2: (ek_{PKE}, dk_{PKE}) ← K-PKE.KeyGen()    ▷ run key generation for K-PKE
     let p1 = 384 * K;
-    k_pke_key_gen::<K, ETA1_64>(rng, eta1, ek, &mut dk[..p1])?; // 3: ek ← ekPKE
+    k_pke_key_gen::<K, ETA1_64>(rng, ek, &mut dk[..p1])?; // 3: ek ← ekPKE
 
     // 4: dk ← (dkPKE ∥ek∥H(ek)∥z)  (first concat element is done above alongside ek)
     let h_ek = h(ek);
@@ -45,7 +47,7 @@ pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
 /// Output: shared key `K` ∈ `B^{32}` <br>
 /// Output: ciphertext `c` ∈ `B^{32(du·k+dv)}` <br>
 pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64: usize>(
-    rng: &mut impl CryptoRngCore, du: u32, dv: u32, eta1: u32, eta2: u32, ek: &[u8], ct: &mut [u8],
+    rng: &mut impl CryptoRngCore, du: u32, dv: u32, ek: &[u8], ct: &mut [u8],
 ) -> Result<SharedSecretKey, &'static str> {
     debug_assert_eq!(ek.len(), 384 * K + 32, "Alg 16: ek len not 384 * K + 32"); // also: size check at top level
     debug_assert_eq!(
@@ -73,14 +75,15 @@ pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64:
 
     // 1: m ←− B32          ▷ m is 32 random bytes (see Section 3.3)
     let mut m = [0u8; 32];
-    rng.fill_bytes(&mut m);
+    rng.try_fill_bytes(&mut m)
+        .map_err(|_| "Alg16: random number generator failed")?;
 
     // 2: (K, r) ← G(m∥H(ek))    ▷ derive shared secret key K and randomness r
     let h_ek = h(ek);
     let (k, r) = g(&[&m, &h_ek]);
 
-    // 3: 3: c ← K-PKE.Encrypt(ek, m, r)    ▷ encrypt m using K-PKE with randomness r
-    k_pke_encrypt::<K, ETA1_64, ETA2_64>(du, dv, eta1, eta2, ek, &m, &r, ct)?;
+    // 3: c ← K-PKE.Encrypt(ek, m, r)    ▷ encrypt m using K-PKE with randomness r
+    k_pke_encrypt::<K, ETA1_64, ETA2_64>(du, dv, ek, &m, &r, ct)?;
 
     // 4: return (K, c)  (note: ct is mutable input)
     Ok(SharedSecretKey(k))
@@ -101,7 +104,7 @@ pub(crate) fn ml_kem_decaps<
     const J_LEN: usize,
     const CT_LEN: usize,
 >(
-    du: u32, dv: u32, eta1: u32, eta2: u32, dk: &[u8], ct: &[u8],
+    du: u32, dv: u32, dk: &[u8], ct: &[u8],
 ) -> Result<SharedSecretKey, &'static str> {
     // These length checks are a bit redundant...but present for completeness and paranoia
     debug_assert_eq!(ct.len(), 32 * (du as usize * K + dv as usize), "Alg17: ct len not 32 * ...");
@@ -128,26 +131,20 @@ pub(crate) fn ml_kem_decaps<
     let (mut k_prime, r_prime) = g(&[&m_prime, h]);
 
     // 7: K̄ ← J(z∥c, 32)
-    let mut j_input = [0u8; J_LEN];
-    j_input[0..32].copy_from_slice(z);
-    j_input[32..32 + ct.len()].copy_from_slice(ct);
-    let k_bar = j(&[z, ct]);
+    let k_bar = j(z.try_into().unwrap(), ct);
 
     // 8: c′ ← K-PKE.Encrypt(ekPKE , m′ , r′ )    ▷ re-encrypt using the derived randomness r′
     let mut c_prime = [0u8; CT_LEN];
     k_pke_encrypt::<K, ETA1_64, ETA2_64>(
         du,
         dv,
-        eta1,
-        eta2,
         ek_pke,
         &m_prime,
         &r_prime,
         &mut c_prime[0..ct.len()],
     )?;
-    if *ct != c_prime[0..ct.len()] {
-        k_prime = k_bar;
-    };
+
+    k_prime.conditional_assign(&k_bar, ct.ct_ne(&c_prime));
 
     Ok(SharedSecretKey(k_prime))
 }
@@ -179,13 +176,13 @@ mod tests {
         let mut dk = [0u8; DK_LEN];
         let mut ct = [0u8; CT_LEN];
 
-        let res = ml_kem_key_gen::<K, ETA1_64>(&mut rng, ETA1, &mut ek, &mut dk);
+        let res = ml_kem_key_gen::<K, ETA1_64>(&mut rng, &mut ek, &mut dk);
         assert!(res.is_ok());
 
-        let res = ml_kem_encaps::<K, ETA1_64, ETA2_64>(&mut rng, DU, DV, ETA1, ETA2, &ek, &mut ct);
+        let res = ml_kem_encaps::<K, ETA1_64, ETA2_64>(&mut rng, DU, DV, &ek, &mut ct);
         assert!(res.is_ok());
 
-        let res = ml_kem_decaps::<K, ETA1_64, ETA2_64, J_LEN, CT_LEN>(DU, DV, ETA1, ETA2, &dk, &ct);
+        let res = ml_kem_decaps::<K, ETA1_64, ETA2_64, J_LEN, CT_LEN>(DU, DV, &dk, &ct);
         assert!(res.is_ok());
     }
 }

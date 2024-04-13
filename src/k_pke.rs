@@ -1,6 +1,7 @@
 use crate::byte_fns::{byte_decode, byte_encode};
 use crate::helpers::{
-    add_vecs, compress, decompress, dot_t_prod, g, mul_mat_t_vec, mul_mat_vec, prf, xof,
+    add_vecs, compress_vector, decompress_vector, dot_t_prod, g, mul_mat_t_vec, mul_mat_vec, prf,
+    xof,
 };
 use crate::ntt::{ntt, ntt_inv};
 use crate::sampling::{sample_ntt, sample_poly_cbd};
@@ -15,7 +16,7 @@ use rand_core::CryptoRngCore;
 /// Output: decryption key `dkPKE ∈ B^{384·k}`
 #[allow(clippy::similar_names)]
 pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
-    rng: &mut impl CryptoRngCore, eta1: u32, ek_pke: &mut [u8], dk_pke: &mut [u8],
+    rng: &mut impl CryptoRngCore, ek_pke: &mut [u8], dk_pke: &mut [u8],
 ) -> Result<(), &'static str> {
     debug_assert_eq!(ek_pke.len(), 384 * K + 32, "Alg12: ek_pke not 384 * K + 32");
     debug_assert_eq!(dk_pke.len(), 384 * K, "Alg12: dk_pke not 384 * K");
@@ -25,65 +26,40 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
     rng.try_fill_bytes(&mut d)
         .map_err(|_| "Alg12: random number generator failed")?;
 
-    // 2: 2: (ρ, σ) ← G(d)    ▷ expand to two pseudorandom 32-byte seeds
+    // 2: (ρ, σ) ← G(d)    ▷ expand to two pseudorandom 32-byte seeds
     let (rho, sigma) = g(&[&d]);
 
-    // 3: 3: N ← 0
+    // 3: N ← 0
     let mut n = 0;
 
-    // 4: for (i ← 0; i < k; i++)    ▷ generate matrix A ∈ (Z^{256}_q)^{k×k}
-    let mut a_hat = [[[Z::default(); 256]; K]; K];
-    for (i, row) in a_hat.iter_mut().enumerate().take(K) {
-        //
-        // 5: for (j ← 0; j < k; j++)
-        for (j, entry) in row.iter_mut().enumerate().take(K) {
-            //
-            // 6: A_hat[i, j] ← SampleNTT(XOF(ρ, i, j))    ▷ each entry of Â uniform in NTT domain
-            // See page 21 regarding transpose of i, j -? j, i in XOF() https://csrc.nist.gov/files/pubs/fips/203/ipd/docs/fips-203-initial-public-comments-2023.pdf
-            *entry = sample_ntt(xof(&rho, j.to_le_bytes()[0], i.to_le_bytes()[0]))?;
-
-            // 7: end for
-        }
-        // 8: end for
-    }
+    // Steps 4-8 in gen_a_hat() below
+    let a_hat = gen_a_hat(&rho);
 
     // 9: for (i ← 0; i < k; i ++)    ▷ generate s ∈ (Z_q^{256})^k
-    let mut s = [[Z::default(); 256]; K];
-    for s_i in s.iter_mut().take(K) {
-        //
-        // 10: s[i] ← SamplePolyCBDη1(PRFη1(σ, N))    ▷ s[i] ∈ Z^{256}_q sampled from CBD
-        *s_i = sample_poly_cbd(eta1, &prf::<ETA1_64>(&sigma, n));
-
-        // 11: N ← N +1
+    // 10: s[i] ← SamplePolyCBDη1(PRFη1(σ, N))    ▷ s[i] ∈ Z^{256}_q sampled from CBD
+    // 11: N ← N +1
+    // 12: end for
+    let s: [[Z; 256]; K] = core::array::from_fn(|_| {
+        let x = sample_poly_cbd(&prf::<ETA1_64>(&sigma, n));
         n += 1;
-
-        // 12: end for
-    }
+        x
+    });
 
     // 13: for (i ← 0; i < k; i++)    ▷ generate e ∈ (Z_q^{256})^k
-    let mut e = [[Z::default(); 256]; K];
-    for e_i in e.iter_mut().take(K) {
-        //
-        // 14: e[i] ← SamplePolyCBDη1(PRFη1(σ, N))    ▷ e[i] ∈ Z^{256}_q sampled from CBD
-        *e_i = sample_poly_cbd(eta1, &prf::<ETA1_64>(&sigma, n));
-
-        // 15: N ← N +1
+    // 14: e[i] ← SamplePolyCBDη1(PRFη1(σ, N))    ▷ e[i] ∈ Z^{256}_q sampled from CBD
+    // 15: N ← N +1
+    // 16: end for
+    let e: [[Z; 256]; K] = core::array::from_fn(|_| {
+        let x = sample_poly_cbd(&prf::<ETA1_64>(&sigma, n));
         n += 1;
-
-        // 16: end for
-    }
+        x
+    });
 
     // 17: s_hat ← NTT(s)    ▷ NTT is run k times (once for each coordinate of s)
-    let mut s_hat = [[Z::default(); 256]; K];
-    for i in 0..K {
-        s_hat[i] = ntt(&s[i]);
-    }
+    let s_hat: [[Z; 256]; K] = core::array::from_fn(|i| ntt(&s[i]));
 
     // 18: ê ← NTT(e)    ▷ NTT is run k times
-    let mut e_hat = [[Z::default(); 256]; K];
-    for i in 0..K {
-        e_hat[i] = ntt(&e[i]);
-    }
+    let e_hat: [[Z; 256]; K] = core::array::from_fn(|i| ntt(&e[i]));
 
     // 19: t̂ ← Â ◦ ŝ + ê
     let as_hat = mul_mat_vec(&a_hat, &s_hat);
@@ -105,6 +81,30 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
 }
 
 
+/// Shared function for `k_pke_key_gen()` and `k_pke_encrypt()`; steps 4-8
+fn gen_a_hat<const K: usize>(rho: &[u8; 32]) -> [[[Z; 256]; K]; K] {
+    //
+    // 4: for (i ← 0; i < k; i++)    ▷ generate matrix A ∈ (Z^{256}_q)^{k×k}
+    let mut a_hat = [[[Z::default(); 256]; K]; K];
+    for (i, row) in a_hat.iter_mut().enumerate().take(K) {
+        //
+        // 5: for (j ← 0; j < k; j++)
+        for (j, entry) in row.iter_mut().enumerate().take(K) {
+            //
+            // 6: A_hat[i, j] ← SampleNTT(XOF(ρ, i, j))    ▷ each entry of Â uniform in NTT domain
+            // See page 21 regarding transpose of i, j -? j, i in XOF() https://csrc.nist.gov/files/pubs/fips/203/ipd/docs/fips-203-initial-public-comments-2023.pdf
+            *entry = sample_ntt(xof(rho, j.to_le_bytes()[0], i.to_le_bytes()[0]));
+
+            // 7: end for
+        }
+
+        // 8: end for
+    }
+
+    a_hat
+}
+
+
 /// Algorithm 13 `K-PKE.Encrypt(ekPKE , m, r)` on page 27.
 /// Uses the encryption key to encrypt a plaintext message using the randomness r.
 ///
@@ -114,13 +114,10 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
 /// Output: ciphertext `c` ∈ `B^{32(du·k+dv)}` <br>
 #[allow(clippy::many_single_char_names, clippy::too_many_arguments)]
 pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64: usize>(
-    du: u32, dv: u32, eta1: u32, eta2: u32, ek: &[u8], m: &[u8], randomness: &[u8; 32],
-    ct: &mut [u8],
+    du: u32, dv: u32, ek: &[u8], m: &[u8], randomness: &[u8; 32], ct: &mut [u8],
 ) -> Result<(), &'static str> {
     debug_assert_eq!(ek.len(), 384 * K + 32, "Alg 13: ek len not 384 * K + 32");
     debug_assert_eq!(m.len(), 32, "Alg 13: m len not 32");
-    debug_assert_eq!(eta1 as usize * 64, ETA1_64, "Alg 13: eta1 size mismatch");
-    debug_assert_eq!(eta2 as usize * 64, ETA2_64, "Alg 13: eta2 size mismatch");
 
     // 1: N ← 0
     let mut n = 0;
@@ -135,59 +132,39 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     let mut rho = [0u8; 32];
     rho.copy_from_slice(&ek[384 * K..(384 * K + 32)]);
 
-    // 4: for (i ← 0; i < k; i++)    ▷ re-generate matrix A_hat(Z_q{256})^{k×k}
-    let mut a_hat = [[[Z::default(); 256]; K]; K];
-    for (i, row) in a_hat.iter_mut().enumerate().take(K) {
-        //
-        // 5: for (j ← 0; j < k; j++)
-        for (j, entry) in row.iter_mut().enumerate().take(K) {
-            //
-            // 6: Â[i, j] ← SampleNTT(XOF(ρ, i, j))
-            *entry = sample_ntt(xof(&rho, j.to_le_bytes()[0], i.to_le_bytes()[0]))?;
-
-            // 7: end for
-        }
-        // 8: end for
-    }
+    // Steps 4-8 in gen_a_hat() above
+    let a_hat = gen_a_hat(&rho);
 
     // 9: for (i ← 0; i < k; i ++)
-    let mut r = [[Z::default(); 256]; K];
-    for r_i in r.iter_mut().take(K) {
-        //
-        // 10: r[i] ← SamplePolyCBDη 1 (PRFη 1 (r, N))    ▷ r[i] ∈ Z^{256}_q sampled from CBD
-        *r_i = sample_poly_cbd(eta1, &prf::<ETA1_64>(randomness, n));
-
-        // 11: N ← N +1
+    // 10: r[i] ← SamplePolyCBDη 1 (PRFη 1 (r, N))    ▷ r[i] ∈ Z^{256}_q sampled from CBD
+    // 11: N ← N +1
+    // 12: end for
+    let r: [[Z; 256]; K] = core::array::from_fn(|_| {
+        let x = sample_poly_cbd(&prf::<ETA1_64>(randomness, n));
         n += 1;
-
-        // 12: end for
-    }
+        x
+    });
 
     // 13: for (i ← 0; i < k; i ++)    ▷ generate e1 ∈ (Z_q^{256})^k
-    let mut e1 = [[Z::default(); 256]; K];
-    for e1_i in e1.iter_mut().take(K) {
-        //
-        // 14: e1 [i] ← SamplePolyCBDη2(PRFη2(r, N))    ▷ e1 [i] ∈ Z^{256}_q sampled from CBD
-        *e1_i = sample_poly_cbd(eta2, &prf::<ETA2_64>(randomness, n));
-
-        // 15: N ← N +1
+    // 14: e1 [i] ← SamplePolyCBDη2(PRFη2(r, N))    ▷ e1 [i] ∈ Z^{256}_q sampled from CBD
+    // 15: N ← N +1
+    // 16: end for
+    let e1: [[Z; 256]; K] = core::array::from_fn(|_| {
+        let x = sample_poly_cbd(&prf::<ETA2_64>(randomness, n));
         n += 1;
+        x
+    });
 
-        // 16: end for
-    }
 
     // 17: 17: e2 ← SamplePolyCBDη(PRFη2(r, N))    ▷ sample e2 ∈ Z^{256}_q from CBD
-    let e2 = sample_poly_cbd(eta2, &prf::<ETA2_64>(randomness, n));
+    let e2 = sample_poly_cbd(&prf::<ETA2_64>(randomness, n));
 
     // 18: 18: r̂ ← NTT(r)    ▷ NTT is run k times
-    let mut r_hat = [[Z::default(); 256]; K];
-    for i in 0..K {
-        r_hat[i] = ntt(&r[i]);
-    }
+    let r_hat: [[Z; 256]; K] = core::array::from_fn(|i| ntt(&r[i]));
 
     // 19: u ← NTT−1 (Â⊺ ◦ r̂) + e1
     let mut u = mul_mat_t_vec(&a_hat, &r_hat);
-    for u_i in u.iter_mut().take(K) {
+    for u_i in &mut u {
         *u_i = ntt_inv(u_i);
     }
     u = add_vecs(&u, &e1);
@@ -195,7 +172,7 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     // 20: µ ← Decompress1(ByteDecode1(m)))
     let mut mu = [Z::default(); 256];
     byte_decode(1, m, &mut mu)?;
-    decompress(1, &mut mu);
+    decompress_vector(1, &mut mu);
 
     // 21: v ← NTT−1 (t̂⊺ ◦ r̂) + e2 + µ    ▷ encode plaintext m into polynomial v.
     let mut v = ntt_inv(&dot_t_prod(&t_hat, &r_hat));
@@ -204,12 +181,12 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     // 22: c1 ← ByteEncode_{du}(Compress_{du}(u))    ▷ ByteEncode_{du} is run k times
     let step = 32 * du as usize;
     for i in 0..K {
-        compress(du, &mut u[i]);
+        compress_vector(du, &mut u[i]);
         byte_encode(du, &u[i], &mut ct[i * step..(i + 1) * step]);
     }
 
     // 23: c2 ← ByteEncode_{dv}(Compress_{dv}(v))
-    compress(dv, &mut v);
+    compress_vector(dv, &mut v);
     byte_encode(dv, &v, &mut ct[K * step..(K * step + 32 * dv as usize)]);
 
     // 24: return c ← (c1 ∥ c2 )
@@ -243,15 +220,15 @@ pub(crate) fn k_pke_decrypt<const K: usize>(
     let mut u = [[Z::default(); 256]; K];
     for i in 0..K {
         byte_decode(du, &c1[32 * du as usize * i..32 * du as usize * (i + 1)], &mut u[i])?;
-        decompress(du, &mut u[i]);
+        decompress_vector(du, &mut u[i]);
     }
 
     // 4: v ← Decompress_{dv}(ByteDecode_{dv}(c_2))
     let mut v = [Z::default(); 256];
     byte_decode(dv, c2, &mut v)?;
-    decompress(dv, &mut v);
+    decompress_vector(dv, &mut v);
 
-    // 5: s_hat ← ByteDecode_{12}(dk_{PKE{)
+    // 5: s_hat ← ByteDecode_{12}(dk_{PKE})
     let mut s_hat = [[Z::default(); 256]; K];
     for i in 0..K {
         byte_decode(12, &dk[384 * i..384 * (i + 1)], &mut s_hat[i])?;
@@ -259,10 +236,7 @@ pub(crate) fn k_pke_decrypt<const K: usize>(
 
     // 6: w ← v − NTT−1 (ŝ⊺ ◦ NTT(u))    ▷ NTT−1 and NTT invoked k times
     let mut w = [Z::default(); 256];
-    let mut ntt_u = [[Z::default(); 256]; K];
-    for i in 0..K {
-        ntt_u[i] = ntt(&u[i]);
-    }
+    let ntt_u: [[Z; 256]; K] = core::array::from_fn(|i| ntt(&u[i]));
     let st_ntt_u = dot_t_prod(&s_hat, &ntt_u);
     for _i in 0..K {
         let yy = ntt_inv(&st_ntt_u);
@@ -272,7 +246,7 @@ pub(crate) fn k_pke_decrypt<const K: usize>(
     }
 
     // 7: m ← ByteEncode1 (Compress1 (w))    ▷ decode plaintext m from polynomial v
-    compress(1, &mut w);
+    compress_vector(1, &mut w);
     let mut m = [0u8; 32];
     byte_encode(1, &w, &mut m);
 
@@ -308,14 +282,14 @@ mod tests {
         let m = [0u8; 32];
         let r = [0u8; 32];
 
-        let res = k_pke_key_gen::<K, ETA1_64>(&mut rng, ETA1, &mut ek, &mut dk[0..384 * K]);
+        let res = k_pke_key_gen::<K, ETA1_64>(&mut rng, &mut ek, &mut dk[0..384 * K]);
         assert!(res.is_ok());
 
-        let res = k_pke_encrypt::<K, ETA1_64, ETA2_64>(DU, DV, ETA1, ETA2, &ek, &m, &r, &mut ct);
+        let res = k_pke_encrypt::<K, ETA1_64, ETA2_64>(DU, DV, &ek, &m, &r, &mut ct);
         assert!(res.is_ok());
 
         let ff_ek = [0xFFu8; EK_LEN]; // oversized values
-        let res = k_pke_encrypt::<K, ETA1_64, ETA2_64>(DU, DV, ETA1, ETA2, &ff_ek, &m, &r, &mut ct);
+        let res = k_pke_encrypt::<K, ETA1_64, ETA2_64>(DU, DV, &ff_ek, &m, &r, &mut ct);
         assert!(res.is_err());
 
         let res = k_pke_decrypt::<K>(DU, DV, &dk[0..384 * K], &ct);

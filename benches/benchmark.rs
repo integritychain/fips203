@@ -16,12 +16,12 @@ impl RngCore for TestRng {
 
     fn fill_bytes(&mut self, out: &mut [u8]) {
         out.iter_mut().for_each(|b| *b = 0);
-        out[0..4].copy_from_slice(&self.value.to_be_bytes())
+        out[0..4].copy_from_slice(&self.value.to_be_bytes());
+        self.value = self.value.wrapping_add(1);
     }
 
     fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
         self.fill_bytes(out);
-        self.value = self.value.wrapping_add(1);
         Ok(())
     }
 }

@@ -11,8 +11,7 @@ use crate::{Q, ZETA};
 pub(crate) fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
     //
     // 1: f_hat ← f    ▷ will compute NTT in-place on a copy of input array
-    let mut f_hat = [Z::default(); 256];
-    f_hat.copy_from_slice(array_f);
+    let mut f_hat: [Z; 256] = core::array::from_fn(|i| array_f[i]);
 
     // 2: k ← 1
     let mut k = 1;
@@ -65,8 +64,7 @@ pub(crate) fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
 #[allow(clippy::module_name_repetitions)]
 pub(crate) fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
     // 1: f ← f_hat    ▷ will compute in-place on a copy of input array
-    let mut f: [Z; 256] = [Z::default(); 256];
-    f.copy_from_slice(f_hat);
+    let mut f: [Z; 256] = core::array::from_fn(|i| f_hat[i]);
 
     // 2: k ← 127
     let mut k = 127;
@@ -165,52 +163,31 @@ pub(crate) fn base_case_multiply(a0: Z, a1: Z, b0: Z, b1: Z, gamma: Z) -> (Z, Z)
 // ----------
 // The functionality below calculates the Zeta array at compile-time. Thus, not particularly optimal or CT.
 
-/// HAC Algorithm 14.76 Right-to-left binary exponentiation mod Q.
 #[must_use]
-#[allow(clippy::cast_possible_truncation)] // on result as u16 (try_from not const)
-const fn pow_mod_q(g: u16, e: u8) -> u16 {
-    let g = g as u64;
-    let mut result = 1;
-    let mut s = g;
-    let mut e = e;
-    while e != 0 {
-        if e & 1 != 0 {
-            result = (result * s).rem_euclid(Q as u64);
-        };
-        e >>= 1;
-        if e != 0 {
-            s = (s * s).rem_euclid(Q as u64);
-        };
-    }
-    result as u16
-}
-
-
+#[allow(clippy::cast_possible_truncation)] // const fns cannot use u32::from() etc...
 const fn gen_zeta_table() -> [u16; 256] {
     let mut result = [0u16; 256];
-    let mut i = 0;
-    while i < 256u16 {
-        result[i as usize] = pow_mod_q(ZETA, (i.to_le_bytes()[0]).reverse_bits());
+    let mut x = 1u32;
+    let mut i = 0u32;
+    while i < 256 {
+        result[(i as u8).reverse_bits() as usize] = x as u16;
+        x = (x * (ZETA as u32)) % (Q as u32);
         i += 1;
     }
     result
 }
-
 
 pub(crate) static ZETA_TABLE: [u16; 256] = gen_zeta_table();
 
 
 #[cfg(test)]
 mod tests {
-    use crate::ntt::{gen_zeta_table, pow_mod_q};
+    use crate::ntt::gen_zeta_table;
     use crate::traits::SerDes;
     use crate::SharedSecretKey;
 
     #[test]
     fn test_zeta_misc() {
-        let res = pow_mod_q(5, 5);
-        assert_eq!(res, 3125);
-
         let res = gen_zeta_table();
         assert_eq!(res[4], 2580);
 
