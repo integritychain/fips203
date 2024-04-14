@@ -2,6 +2,7 @@ use crate::types::Z;
 use crate::Q;
 use sha3::digest::XofReader;
 
+
 /// Algorithm 6 `SampleNTT(B)` on page 20.
 /// If the input is a stream of uniformly random bytes, the output is a uniformly random element of `T_q`.
 ///
@@ -23,7 +24,7 @@ pub(crate) fn sample_ntt(mut byte_stream_b: impl XofReader) -> [Z; 256] {
     #[allow(clippy::cast_possible_truncation)] // d1 as u16, d2 as u16
     while j < 256 {
         //
-        // Note: two samples (d1, d2) are drawn per loop iteration
+        // Note: two samples (d1, d2) are drawn from these per loop iteration
         byte_stream_b.read(&mut bbb); // Draw 3 bytes
 
         // 4: d1 ← B[i] + 256 · (B[i + 1] mod 16)

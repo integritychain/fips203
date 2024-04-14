@@ -3,25 +3,26 @@ not entirely definitive. A work in progress.
 
 See <https://docs.rs/dudect-bencher/latest/dudect_bencher/>
 
+> t-values greater than 5 are generally considered a good indication that the function is not constant time. t-values less than 5 does not necessarily imply that the function is constant-time, since there may be other input distributions under which the function behaves significantly differently.
+
 ~~~
-April 13, 2024
+April 14, 2024
 Intel® Core™ i7-7700K CPU @ 4.20GHz × 8
 
 $ cd dudect  # this directory
 $ RUSTFLAGS="-C target-cpu=native" cargo run --release -- --continuous full_flow
 
-bench full_flow seeded with 0xea4abed34ed3db26
-bench full_flow ... : n == +0.026M, max t = +1.01335, max tau = +0.00630, (5/tau)^2 = 629412
-bench full_flow ... : n == +0.337M, max t = -1.75137, max tau = -0.00302, (5/tau)^2 = 2747082
-bench full_flow ... : n == +0.497M, max t = -1.51764, max tau = -0.00215, (5/tau)^2 = 5396932
-bench full_flow ... : n == +0.740M, max t = -1.61671, max tau = -0.00188, (5/tau)^2 = 7074543
-bench full_flow ... : n == +0.786M, max t = -1.32078, max tau = -0.00149, (5/tau)^2 = 11271287
-bench full_flow ... : n == +1.064M, max t = -1.33199, max tau = -0.00129, (5/tau)^2 = 14999502
-bench full_flow ... : n == +1.193M, max t = -1.67507, max tau = -0.00153, (5/tau)^2 = 10632445
-bench full_flow ... : n == +1.383M, max t = -1.77745, max tau = -0.00151, (5/tau)^2 = 10940561
-bench full_flow ... : n == +1.437M, max t = -1.46110, max tau = -0.00122, (5/tau)^2 = 16823530
-bench full_flow ... : n == +1.746M, max t = -1.52752, max tau = -0.00116, (5/tau)^2 = 18704795
-bench full_flow ... : n == +1.937M, max t = -1.54864, max tau = -0.00111, (5/tau)^2 = 20194492
-bench full_flow ... : n == +2.125M, max t = -1.50879, max tau = -0.00104, (5/tau)^2 = 23332048
+bench full_flow ... : n == +0.182M, max t = +1.29070, max tau = +0.00302, (5/tau)^2 = 2735523
+bench full_flow ... : n == +0.323M, max t = -1.38512, max tau = -0.00244, (5/tau)^2 = 4206368
+bench full_flow ... : n == +0.488M, max t = -1.58404, max tau = -0.00227, (5/tau)^2 = 4865946
+bench full_flow ... : n == +0.694M, max t = -1.64031, max tau = -0.00197, (5/tau)^2 = 6444702
+bench full_flow ... : n == +0.860M, max t = -1.71572, max tau = -0.00185, (5/tau)^2 = 7307035
+bench full_flow ... : n == +1.035M, max t = -1.66358, max tau = -0.00164, (5/tau)^2 = 9346102
+bench full_flow ... : n == +1.206M, max t = -2.07949, max tau = -0.00189, (5/tau)^2 = 6970472
+bench full_flow ... : n == +1.375M, max t = -2.29981, max tau = -0.00196, (5/tau)^2 = 6499633
+bench full_flow ... : n == +1.548M, max t = -2.34428, max tau = -0.00188, (5/tau)^2 = 7041088
+bench full_flow ... : n == +1.721M, max t = -2.43307, max tau = -0.00185, (5/tau)^2 = 7267865
+bench full_flow ... : n == +1.892M, max t = -2.54895, max tau = -0.00185, (5/tau)^2 = 7281281
+bench full_flow ... : n == +2.063M, max t = -2.67748, max tau = -0.00186, (5/tau)^2 = 7194446
 ...
 ~~~

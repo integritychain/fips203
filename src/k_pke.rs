@@ -238,11 +238,9 @@ pub(crate) fn k_pke_decrypt<const K: usize>(
     let mut w = [Z::default(); 256];
     let ntt_u: [[Z; 256]; K] = core::array::from_fn(|i| ntt(&u[i]));
     let st_ntt_u = dot_t_prod(&s_hat, &ntt_u);
-    for _i in 0..K {
-        let yy = ntt_inv(&st_ntt_u);
-        for i in 0..256 {
-            w[i] = v[i].sub(yy[i]);
-        }
+    let yy = ntt_inv(&st_ntt_u);
+    for i in 0..256 {
+        w[i] = v[i].sub(yy[i]);
     }
 
     // 7: m ← ByteEncode1 (Compress1 (w))    ▷ decode plaintext m from polynomial v

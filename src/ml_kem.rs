@@ -106,11 +106,11 @@ pub(crate) fn ml_kem_decaps<
 >(
     du: u32, dv: u32, dk: &[u8], ct: &[u8],
 ) -> Result<SharedSecretKey, &'static str> {
-    // These length checks are a bit redundant...but present for completeness and paranoia
-    debug_assert_eq!(ct.len(), 32 * (du as usize * K + dv as usize), "Alg17: ct len not 32 * ...");
     // Ciphertext type check
-    debug_assert_eq!(dk.len(), 768 * K + 96, "Alg17: dk len not 768 ..."); // Decapsulation key type check
-                                                                           // Note: decaps key is either correctly sourced from KeyGen, or validated by into_bytes()
+    debug_assert_eq!(ct.len(), 32 * (du as usize * K + dv as usize), "Alg17: ct len not 32 * ...");
+    // Decapsulation key type check
+    debug_assert_eq!(dk.len(), 768 * K + 96, "Alg17: dk len not 768 ...");
+    // Note: decaps key is either correctly sourced from KeyGen, or validated by into_bytes()
 
     // 1: dkPKE ← dk[0 : 384k]    ▷ extract (from KEM decaps key) the PKE decryption key
     let dk_pke = &dk[0..384 * K];

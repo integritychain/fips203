@@ -20,11 +20,11 @@ pub struct DecapsKey<const DK_LEN: usize>(pub(crate) [u8; DK_LEN]);
 pub struct CipherText<const CT_LEN: usize>(pub(crate) [u8; CT_LEN]);
 
 
-// While Z is simple and correct, the performance is suboptimal.
+// While Z is simple and correct, the performance is somewhat suboptimal.
 // This will be addressed (particularly in matrix operations etc) over
-// the medium-term - potentially as a 256-entry row.
+// the medium-term - potentially using 256-entry rows.
 
-/// Stored as u16, but arithmetic as u32 (so we can multiply/reduce/etc)
+/// Stored as u16 for space, but arithmetic as u32 for perf
 #[derive(Clone, Copy, Default)]
 pub(crate) struct Z(u16);
 
@@ -68,7 +68,7 @@ impl Z {
         const M: u64 = ((1u64 << 36) + Q as u64 - 1) / Q as u64;
         let prod = u32::from(self.0) * u32::from(other.0);
         let quot = ((u64::from(prod) * M) >> 36) as u32;
-        let rem = prod - quot * u32::from(Q);
+        let rem = prod - quot * u32::from(Q); // further reduction is not needed
         debug_assert!(rem < u32::from(Q));
         Self(rem as u16)
     }

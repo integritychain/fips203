@@ -2,6 +2,7 @@ use crate::helpers::ensure;
 use crate::types::Z;
 use crate::Q;
 
+
 // Note: Algorithm 2 and 3 have been "optimized away" as they had a lot of overhead
 // and made memory allocations tricky. The definitions are left here for reference.
 
@@ -94,7 +95,7 @@ pub(crate) fn byte_decode(
             //
             // Mask off the upper portion and drop it in
             let mut z = Z::default();
-            z.set_u16(temp as u16 & ((1 << d) - 1));
+            z.set_u16((temp & ((1 << d) - 1)) as u16);
             integers_f[int_index] = z;
 
             // Update the indices
@@ -104,8 +105,8 @@ pub(crate) fn byte_decode(
         }
     }
 
-    let m = if d < 12 { 1 << d } else { Q };
-    ensure!(integers_f.iter().all(|e| e.get_u16() < m), "Alg 5: integers out of range");
+    let m = if d < 12 { 1 << d } else { u32::from(Q) };
+    ensure!(integers_f.iter().all(|e| e.get_u32() < m), "Alg 5: integers out of range");
     Ok(())
 }
 

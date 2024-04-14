@@ -1,5 +1,6 @@
 use rand_core::CryptoRngCore;
 
+
 #[cfg(feature = "default-rng")]
 use rand_core::OsRng;
 
@@ -18,9 +19,10 @@ pub trait KeyGen {
 
     /// Generates an encapsulation and decapsulation key key pair specific to this security parameter set. <br>
     /// This function utilizes the OS default random number generator and is intended to operate in constant
-    /// time. (the function suffix will change to `_ct` in the forthcoming 0.2.0 release)
+    /// time outside of `rho` which crosses the trust boundary in the clear. The function suffix will change
+    /// in the forthcoming 0.2.0 release.
     /// # Errors
-    /// Returns an error when the random number generator fails, or when the internal sampling overruns.
+    /// Returns an error when the random number generator fails.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -53,9 +55,10 @@ pub trait KeyGen {
 
     /// Generates an encapsulation and decapsulation key key pair specific to this security parameter set. <br>
     /// This function utilizes a provided random number generator and is intended to operate in constant
-    /// time. (the function suffix will change to `_ct` in the forthcoming 0.2.0 release)
+    /// time outside of `rho` which crosses the trust boundary in the clear. The function suffix will change
+    /// in the forthcoming 0.2.0 release.
     /// # Errors
-    /// Returns an error when the random number generator fails, or when the internal sampling overruns.
+    /// Returns an error when the random number generator fails.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -86,8 +89,8 @@ pub trait KeyGen {
     ) -> Result<(Self::EncapsKey, Self::DecapsKey), &'static str>;
 
 
-    /// Performs validation between an encapsulation key and a decapsulation key (both in bytes). This function is
-    /// not intended to operate in constant-time.
+    /// Performs validation between an encapsulation key and a decapsulation key (both in byte arrays). This function
+    /// is not intended to operate in constant-time. The function suffix will change in the forthcoming 0.2.0 release.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -117,10 +120,10 @@ pub trait Encaps {
 
     /// Generates a shared secret and ciphertext from an encapsulation key specific to this security parameter set. <br>
     /// This function utilizes the OS default random number generator and is intended to operate in constant
-    /// time. (the function suffix will change to `_ct` in the forthcoming 0.2.0 release)
+    /// time outside of `rho` which crosses the trust boundary in the clear. The function suffix will change in the
+    /// forthcoming 0.2.0 release.
     /// # Errors
-    /// Returns an error when the random number generator fails, a malformed encaps key is provided, an internal
-    /// sampling overrun occurs, along with any other internal errors.
+    /// Returns an error when the random number generator fails or an internal error condition arises.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -154,10 +157,9 @@ pub trait Encaps {
 
     /// Generates a shared secret and ciphertext from an encapsulation key specific to this security parameter set. <br>
     /// This function utilizes a provided random number generator and is intended to operate in constant
-    /// time. (the function suffix will change to `_ct` in the forthcoming 0.2.0 release)
+    /// time. The function suffix will change in the forthcoming 0.2.0 release.
     /// # Errors
-    /// Returns an error when the random number generator fails, a malformed encaps key is provided, an internal
-    /// sampling overrun occurs, along with any other internal errors.
+    /// Returns an error when the random number generator fails or an internal error condition arises.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -198,10 +200,10 @@ pub trait Decaps {
 
 
     /// Generates a shared secret from a decapsulation key and ciphertext specific to this security parameter set. <br>
-    /// This function is intended to operate in constant-time. (the function suffix will change to `_ct` in the
-    /// forthcoming 0.2.0 release)
+    /// This function is intended to operate in constant-time. The function suffix will change in the forthcoming 0.2.0
+    /// release.
     /// # Errors
-    /// Returns an error when the random number generator fails; propagates internal errors.
+    /// Returns an error when the random number generator fails or an internal error condition arises.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
