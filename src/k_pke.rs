@@ -155,11 +155,10 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
         x
     });
 
-
-    // 17: 17: e2 ← SamplePolyCBDη(PRFη2(r, N))    ▷ sample e2 ∈ Z^{256}_q from CBD
+    // 17: e2 ← SamplePolyCBDη(PRFη2(r, N))    ▷ sample e2 ∈ Z^{256}_q from CBD
     let e2 = sample_poly_cbd(&prf::<ETA2_64>(randomness, n));
 
-    // 18: 18: r̂ ← NTT(r)    ▷ NTT is run k times
+    // 18: r̂ ← NTT(r)    ▷ NTT is run k times
     let r_hat: [[Z; 256]; K] = core::array::from_fn(|i| ntt(&r[i]));
 
     // 19: u ← NTT−1 (Â⊺ ◦ r̂) + e1
@@ -216,7 +215,7 @@ pub(crate) fn k_pke_decrypt<const K: usize>(
     // 2: c2 ← c[32du k : 32(du*k + dv)]
     let c2 = &ct[32 * du as usize * K..32 * (du as usize * K + dv as usize)];
 
-    // 3: 3: u ← Decompress_{du}(ByteDecode_{du}(c_1))    ▷ ByteDecode_{du} invoked k times
+    // 3: u ← Decompress_{du}(ByteDecode_{du}(c_1))    ▷ ByteDecode_{du} invoked k times
     let mut u = [[Z::default(); 256]; K];
     for i in 0..K {
         byte_decode(du, &c1[32 * du as usize * i..32 * du as usize * (i + 1)], &mut u[i])?;

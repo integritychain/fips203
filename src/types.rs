@@ -42,7 +42,7 @@ impl Z {
     pub(crate) fn add(self, other: Self) -> Self {
         debug_assert!(self.0 < Q);
         debug_assert!(other.0 < Q);
-        let res = u32::from(self.0) + u32::from(other.0);
+        let res = u32::from(self.0) + u32::from(other.0); // + debug=strict, release=wrapping
         let res = res.wrapping_sub(u32::from(Q));
         let res = res.wrapping_add((res >> 16) & (u32::from(Q)));
         debug_assert!(res < u32::from(Q));
@@ -66,7 +66,7 @@ impl Z {
         debug_assert!(self.0 < Q);
         debug_assert!(other.0 < Q);
         const M: u64 = ((1u64 << 36) + Q as u64 - 1) / Q as u64;
-        let prod = u32::from(self.0) * u32::from(other.0);
+        let prod = u32::from(self.0) * u32::from(other.0); // * debug=strict, release=wrapping
         let quot = ((u64::from(prod) * M) >> 36) as u32;
         let rem = prod - quot * u32::from(Q); // further reduction is not needed
         debug_assert!(rem < u32::from(Q));

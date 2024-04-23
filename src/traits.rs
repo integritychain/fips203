@@ -17,7 +17,7 @@ pub trait KeyGen {
     type DecapsByteArray;
 
 
-    /// Generates an encapsulation and decapsulation key key pair specific to this security parameter set. <br>
+    /// Generates an encapsulation and decapsulation key pair specific to this security parameter set. <br>
     /// This function utilizes the OS default random number generator and is intended to operate in constant
     /// time outside of `rho` which crosses the trust boundary in the clear. The function suffix will change
     /// in the forthcoming 0.2.0 release.

@@ -12,11 +12,11 @@ an embedded target, constant-time statistical measurements, fuzzing, WASM execut
 
 This crate implements the FIPS 203 **draft** standard in pure Rust with minimal and mainstream dependencies, **and 
 without any unsafe code**. All three security parameter sets are fully supported and tested. The implementation operates
-in constant-time (outside of rho), does not require the standard library, e.g. `#[no_std]`, has no heap allocations, 
-e.g. no `alloc` needed, and optionally exposes the `RNG` so it is suitable for the full range of applications down to 
-the bare-metal. The API is stabilized and the code is heavily biased towards safety and  correctness; further 
-performance optimizations will be implemented as the standard matures. This crate will quickly follow any changes to 
-FIPS 203 as they become available.
+in constant-time (outside of rho, which is part of the encapsulation key sent across the trust boundary in the clear), 
+does not require the standard library, e.g. `#[no_std]`, has no heap allocations, e.g. no `alloc` needed, and optionally 
+exposes the `RNG` so it is suitable for the full range of applications down to the bare-metal. The API is stabilized 
+and the code is heavily biased towards safety and  correctness; further performance optimizations will be implemented 
+as the standard matures. This crate will quickly follow any changes to FIPS 203 as they become available.
 
 See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf> for a full description of the target functionality.
 

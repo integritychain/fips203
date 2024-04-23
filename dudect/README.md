@@ -7,7 +7,7 @@ See <https://docs.rs/dudect-bencher/latest/dudect_bencher/>
 
 ~~~
 April 14, 2024
-Intel® Core™ i7-7700K CPU @ 4.20GHz × 8
+Intel® Core™ i7-7700K CPU @ 4.20GHz × 8  Circa 2017
 
 $ cd dudect  # this directory
 $ RUSTFLAGS="-C target-cpu=native" cargo run --release -- --continuous full_flow

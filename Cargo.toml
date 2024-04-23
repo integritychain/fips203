@@ -2,7 +2,7 @@ workspace = { members = ['ffi'], exclude = ["ct_cm4", "dudect", "fuzz", "wasm"] 
 
 [package]
 name = "fips203"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "FIPS 203 (draft): Module-Lattice-Based Key-Encapsulation Mechanism"
@@ -11,7 +11,9 @@ documentation = "https://docs.rs/fips203"
 categories = ["cryptography", "no-std"]
 repository = "https://github.com/integritychain/fips203"
 keywords = ["FIPS", "FIPS203", "lattice", "kyber", "encapsulation"]
-rust-version = "1.70"  # Requires several marginally outdated dependencies
+# MSRV set at 1.70 for debian testing, e.g. https://packages.debian.org/search?keywords=rustc
+# This requires several marginally outdated dependencies, see below
+rust-version = "1.70"
 
 
 [features]

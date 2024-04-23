@@ -105,6 +105,7 @@ pub(crate) fn byte_decode(
         }
     }
 
+    // Supports modulus check per FIPS 203 section 6.2.2
     let m = if d < 12 { 1 << d } else { u32::from(Q) };
     ensure!(integers_f.iter().all(|e| e.get_u32() < m), "Alg 5: integers out of range");
     Ok(())

@@ -119,7 +119,8 @@ macro_rules! functionality {
         use crate::traits::{Decaps, Encaps, KeyGen, SerDes};
         use crate::types::Z;
         use crate::SharedSecretKey;
-        use rand_core::CryptoRngCore;
+        //use rand_core::{CryptoRngCore, RngCore, CryptoRng};
+        use rand_core::{CryptoRng, CryptoRngCore, RngCore};
 
 
         /// Correctly sized encapsulation key specific to the target security parameter set.
@@ -149,16 +150,53 @@ macro_rules! functionality {
                 Ok((EncapsKey { 0: ek }, DecapsKey { 0: dk }))
             }
 
+            #[allow(clippy::items_after_statements)] // Introduce A5Rng just when needed prior to encaps
             fn validate_keypair_vt(ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray) -> bool {
                 // Note that size is checked by only accepting a ref to a correctly sized byte array
                 let len_ek_pke = 384 * K + 32;
                 let len_dk_pke = 384 * K;
-                // dk should contain ek
-                let same_ek = (*ek == dk[len_dk_pke..(len_dk_pke + len_ek_pke)]);
-                // dk should contain hash of ek
-                let same_h =
-                    (h(ek) == dk[(len_dk_pke + len_ek_pke)..(len_dk_pke + len_ek_pke + 32)]);
-                same_ek & same_h
+                // 1. dk should contain ek
+                if !(*ek == dk[len_dk_pke..(len_dk_pke + len_ek_pke)]) {
+                    return false;
+                };
+                // 2. dk should contain hash of ek
+                if !(h(ek) == dk[(len_dk_pke + len_ek_pke)..(len_dk_pke + len_ek_pke + 32)]) {
+                    return false;
+                };
+                // 3. ek and dk should deserialize ok
+                let ek = EncapsKey::try_from_bytes(*ek);
+                let dk = DecapsKey::try_from_bytes(*dk);
+                if ek.is_err() || dk.is_err() {
+                    return false;
+                };
+                // A dummy RNG for use in `try_encaps_with_rng_vt()` so that it doesn't require an external RNG
+                struct A5Rng();
+                impl RngCore for A5Rng {
+                    fn next_u32(&mut self) -> u32 { unimplemented!() }
+
+                    fn next_u64(&mut self) -> u64 { unimplemented!() }
+
+                    fn fill_bytes(&mut self, _out: &mut [u8]) { unimplemented!() }
+
+                    fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
+                        out.iter_mut().for_each(|b| *b = 0xa5);
+                        Ok(())
+                    }
+                }
+                impl CryptoRng for A5Rng {}
+                let mut a5rng = A5Rng {};
+                // 4. encaps should run without problem
+                let ek_res = ek.unwrap().try_encaps_with_rng_vt(&mut a5rng);
+                if ek_res.is_err() {
+                    return false;
+                };
+                // 5. decaps should run without problem
+                let dk_res = dk.unwrap().try_decaps_vt(&ek_res.as_ref().unwrap().1);
+                if dk_res.is_err() {
+                    return false;
+                };
+                // 6. encaps and decaps should produce the same shared secret
+                return ek_res.unwrap().0 == dk_res.unwrap();
             }
         }
 
@@ -350,8 +388,8 @@ pub mod ml_kem_768 {
     functionality!();
 }
 
-
-/// ML-KEM-1024 is claimed to be in security category 5, see table 2 & 3 on page 33.
+/// Functionality for the ML-KEM-1024 security parameter set, which is claimed to be in security category 5, see
+/// table 2 & 3 on page 33 of spec.
 #[cfg(feature = "ml-kem-1024")]
 pub mod ml_kem_1024 {
     //!

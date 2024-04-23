@@ -56,8 +56,10 @@ pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64:
         "Alg 16: ct len not 32*(DU*K+DV)"
     ); // also: size check at top level
 
-    // modulus check: perform the computation ek ← ByteEncode12(ByteDecode12(ek_tidle)
-    // note: *external* ek can only arrive via from_bytes() which does this validation already
+    // modulus check: perform/confirm the computation ek ← ByteEncode12(ByteDecode12(ek_tilde).
+    // Note: An *external* ek can only arrive via try_from_bytes() which does this validation already.
+    // As such, this check is redundant but is left in for caution, as it is removed in release builds
+    // anyway. It also supports quicker changes if the spec moves...
     debug_assert!(
         {
             let mut pass = true;
@@ -110,7 +112,9 @@ pub(crate) fn ml_kem_decaps<
     debug_assert_eq!(ct.len(), 32 * (du as usize * K + dv as usize), "Alg17: ct len not 32 * ...");
     // Decapsulation key type check
     debug_assert_eq!(dk.len(), 768 * K + 96, "Alg17: dk len not 768 ...");
-    // Note: decaps key is either correctly sourced from KeyGen, or validated by into_bytes()
+    // Note: decaps key is either correctly sourced from KeyGen, or validated by try_from_bytes(). As
+    // such, the two above checks are redundant but will be removed in release builds. The are left
+    // here for A) caution, B) give guardrails for future changes
 
     // 1: dkPKE ← dk[0 : 384k]    ▷ extract (from KEM decaps key) the PKE decryption key
     let dk_pke = &dk[0..384 * K];
