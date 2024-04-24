@@ -20,7 +20,7 @@
 //   0. Stay current with FIPS 203 updates (due late summer 2024)
 //   1. Perf: optimize/minimize modular reductions, minimize u16 arith, consider avx2/aarch64
 //      (currently, code is 'optimized' for safety and change-support, with reasonable perf)
-//   2. Slightly more intelligent fuzzing (as dk contains h(ek))
+//   2. Slightly more intelligent fuzzing (e.g., as dk contains h(ek))
 
 // Functionality map per FIPS 203 draft
 //
@@ -119,7 +119,6 @@ macro_rules! functionality {
         use crate::traits::{Decaps, Encaps, KeyGen, SerDes};
         use crate::types::Z;
         use crate::SharedSecretKey;
-        //use rand_core::{CryptoRngCore, RngCore, CryptoRng};
         use rand_core::{CryptoRng, CryptoRngCore, RngCore};
 
 
@@ -185,12 +184,12 @@ macro_rules! functionality {
                 }
                 impl CryptoRng for A5Rng {}
                 let mut a5rng = A5Rng {};
-                // 4. encaps should run without problem
+                // 4. encaps should run without a problem
                 let ek_res = ek.unwrap().try_encaps_with_rng_vt(&mut a5rng);
                 if ek_res.is_err() {
                     return false;
                 };
-                // 5. decaps should run without problem
+                // 5. decaps should run without a problem
                 let dk_res = dk.unwrap().try_decaps_vt(&ek_res.as_ref().unwrap().1);
                 if dk_res.is_err() {
                     return false;

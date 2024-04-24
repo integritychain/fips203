@@ -17,14 +17,12 @@ impl RngCore for TestRng {
 
     fn next_u64(&mut self) -> u64 { unimplemented!() }
 
-    fn fill_bytes(&mut self, out: &mut [u8]) {
-        let x = self.data.pop().expect("TestRng problem");
-        out.copy_from_slice(&x)
-    }
+    fn fill_bytes(&mut self, _out: &mut [u8]) { unimplemented!() }
 
     fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
-        self.fill_bytes(out);
-        Ok(()) // panic on probs is OK
+        let x = self.data.pop().expect("TestRng problem");
+        out.copy_from_slice(&x);
+        Ok(())
     }
 }
 

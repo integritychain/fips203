@@ -27,16 +27,14 @@ impl RngCore for TestRng {
 
     fn next_u64(&mut self) -> u64 { unimplemented!() }
 
-    fn fill_bytes(&mut self, out: &mut [u8]) {
+    fn fill_bytes(&mut self, out: &mut [u8]) { unimplemented!() }
+
+    fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
         out.iter_mut().for_each(|b| *b = 0);
         let supply_rho = (self.value & 0x03).ct_eq(&1);
         let target = u32::conditional_select(&self.value, &self.rho, supply_rho);
         out[0..4].copy_from_slice(&target.to_be_bytes());
         self.value = self.value.wrapping_add(1);
-    }
-
-    fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
-        self.fill_bytes(out);
         Ok(())
     }
 }
@@ -82,14 +80,16 @@ fn main() -> ! {
 
         let count = finish - start;
 
+        // each rho should have a fixed cycle count
         if (i % 1000) == 0 {
             rng.rho += 1
-        }; // each rho should have a fixed cycle count
+        };
+        // capture the cycle count
         if (i % 1000) == 2 {
             expected_cycles = count
-        }; // capture the cycle count
+        };
+        // make sure it is constant
         if ((i % 1000) > 2) & (count != expected_cycles) {
-            // make sure it is constant
             panic!("Non constant-time operation!! iteration:{} cycles:{}", i, count)
         };
         if i % 100 == 0 {

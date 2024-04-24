@@ -17,16 +17,14 @@ impl RngCore for TestRng {
 
     fn next_u64(&mut self) -> u64 { unimplemented!() }
 
-    fn fill_bytes(&mut self, out: &mut [u8]) {
+    fn fill_bytes(&mut self, _out: &mut [u8]) { unimplemented!() }
+
+    fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
         out.iter_mut().for_each(|b| *b = 0);
         let supply_rho = (self.value & 0x03u32).ct_eq(&1_u32);
         let target = u32::conditional_select(&self.value, &self.rho, supply_rho);
         out[0..4].copy_from_slice(&target.to_be_bytes());
         self.value = self.value.wrapping_add(1);
-    }
-
-    fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
-        self.fill_bytes(out);
         Ok(())
     }
 }

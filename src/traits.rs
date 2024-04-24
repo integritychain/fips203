@@ -89,8 +89,9 @@ pub trait KeyGen {
     ) -> Result<(Self::EncapsKey, Self::DecapsKey), &'static str>;
 
 
-    /// Performs validation between an encapsulation key and a decapsulation key (both in byte arrays). This function
-    /// is not intended to operate in constant-time. The function suffix will change in the forthcoming 0.2.0 release.
+    /// Performs validation between an encapsulation key and a decapsulation key (both in byte arrays), perhaps in the
+    /// scenario where both have been serialized, stored to disk, and then retrieved. This function is not intended
+    /// to operate in constant-time. The function suffix will change in the forthcoming 0.2.0 release.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;

@@ -1,8 +1,8 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use rand_core::{CryptoRng, RngCore};
-
 use fips203::traits::{Decaps, Encaps, KeyGen};
 use fips203::{ml_kem_1024, ml_kem_512, ml_kem_768};
+use rand_core::{CryptoRng, RngCore};
+
 
 // Simplistic RNG to regurgitate incremented values when 'asked'
 struct TestRng {
@@ -14,14 +14,12 @@ impl RngCore for TestRng {
 
     fn next_u64(&mut self) -> u64 { unimplemented!() }
 
-    fn fill_bytes(&mut self, out: &mut [u8]) {
+    fn fill_bytes(&mut self, _out: &mut [u8]) { unimplemented!() }
+
+    fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
         out.iter_mut().for_each(|b| *b = 0);
         out[0..4].copy_from_slice(&self.value.to_be_bytes());
         self.value = self.value.wrapping_add(1);
-    }
-
-    fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
-        self.fill_bytes(out);
         Ok(())
     }
 }

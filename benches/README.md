@@ -6,20 +6,20 @@ Near-obvious uplift can be had with more careful modular multiplication & additi
 using fewer reductions. Also, 'u16' arithmetic has a performance penalty.
 
 ~~~
-April 14, 2024
+April 24, 2024
 Intel® Core™ i7-7700K CPU @ 4.20GHz × 8  Circa 2017
 
 $ RUSTFLAGS="-C target-cpu=native" cargo bench
 
-ml_kem_512  KeyGen      time:   [28.662 µs 28.670 µs 28.676 µs]
-ml_kem_768  KeyGen      time:   [48.350 µs 48.358 µs 48.365 µs]
-ml_kem_1024 KeyGen      time:   [74.210 µs 74.267 µs 74.330 µs]
+ml_kem_512  KeyGen      time:   [29.536 µs 29.556 µs 29.585 µs]
+ml_kem_768  KeyGen      time:   [49.028 µs 49.070 µs 49.120 µs]
+ml_kem_1024 KeyGen      time:   [75.570 µs 75.942 µs 76.418 µs]
 
-ml_kem_512  Encaps      time:   [29.552 µs 29.571 µs 29.594 µs]
-ml_kem_768  Encaps      time:   [47.287 µs 47.323 µs 47.381 µs]
-ml_kem_1024 Encaps      time:   [70.049 µs 70.126 µs 70.210 µs]
+ml_kem_512  Encaps      time:   [30.290 µs 30.303 µs 30.321 µs]
+ml_kem_768  Encaps      time:   [47.582 µs 47.600 µs 47.627 µs]
+ml_kem_1024 Encaps      time:   [69.700 µs 69.741 µs 69.813 µs]
 
-ml_kem_512  Decaps      time:   [40.038 µs 40.085 µs 40.135 µs]
-ml_kem_768  Decaps      time:   [62.921 µs 63.354 µs 64.216 µs]
-ml_kem_1024 Decaps      time:   [87.703 µs 87.765 µs 87.828 µs]
+ml_kem_512  Decaps      time:   [40.703 µs 40.819 µs 41.022 µs]
+ml_kem_768  Decaps      time:   [63.069 µs 63.108 µs 63.163 µs]
+ml_kem_1024 Decaps      time:   [90.232 µs 90.287 µs 90.375 µs]
 ~~~
