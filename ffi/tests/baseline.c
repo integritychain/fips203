@@ -105,8 +105,8 @@ int main(int argc, const char **argv) {
   for (int i = 0; i < sizeof(decaps_weird.data); i++)
     decaps_weird.data[i] = 0xff;
   err = MLKEM_decaps (&decaps_weird, &ct, &ssk_a);
-  if (err != ML_KEM_DECAPSULATION_ERROR) {
-    fprintf (stderr, "decaps against a tampered decaps_key should have failed with decapsulation error, got %d\n", err);
+  if (err != ML_KEM_DESERIALIZATION_ERROR) {
+    fprintf (stderr, "decaps against a tampered decaps_key should have failed with deserialization error, got %d\n", err);
     return 1;
   } 
   

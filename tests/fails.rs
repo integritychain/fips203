@@ -28,9 +28,9 @@ fn fails_512() {
         assert!(bad_dk.is_err());
 
         // We can validate the non-correspondence of these serialized keypair
-        assert!(!ml_kem_512::KG::validate_keypair_vt(&bad_ek_bytes, &bad_dk_bytes));
+        assert!(!ml_kem_512::KG::validate_keypair_vartime(&bad_ek_bytes, &bad_dk_bytes));
 
-        // let bad_ssk_bytes = bad_dk.unwrap().try_decaps_vt(&bad_ct.unwrap());
+        // let bad_ssk_bytes = bad_dk.unwrap().try_decaps(&bad_ct.unwrap());
         // assert!(bad_ssk_bytes.is_err());
     }
 }

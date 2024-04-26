@@ -141,7 +141,7 @@ macro_rules! functionality {
             type EncapsByteArray = [u8; EK_LEN];
             type EncapsKey = EncapsKey;
 
-            fn try_keygen_with_rng_vt(
+            fn try_keygen_with_rng(
                 rng: &mut impl CryptoRngCore,
             ) -> Result<(EncapsKey, DecapsKey), &'static str> {
                 let (mut ek, mut dk) = ([0u8; EK_LEN], [0u8; DK_LEN]);
@@ -150,7 +150,9 @@ macro_rules! functionality {
             }
 
             #[allow(clippy::items_after_statements)] // Introduce A5Rng just when needed prior to encaps
-            fn validate_keypair_vt(ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray) -> bool {
+            fn validate_keypair_vartime(
+                ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray,
+            ) -> bool {
                 // Note that size is checked by only accepting a ref to a correctly sized byte array
                 let len_ek_pke = 384 * K + 32;
                 let len_dk_pke = 384 * K;
@@ -168,7 +170,7 @@ macro_rules! functionality {
                 if ek.is_err() || dk.is_err() {
                     return false;
                 };
-                // A dummy RNG for use in `try_encaps_with_rng_vt()` so that it doesn't require an external RNG
+                // A dummy RNG for use in `try_encaps_with_rng()` so that it doesn't require an external RNG
                 struct A5Rng();
                 impl RngCore for A5Rng {
                     fn next_u32(&mut self) -> u32 { unimplemented!() }
@@ -185,12 +187,12 @@ macro_rules! functionality {
                 impl CryptoRng for A5Rng {}
                 let mut a5rng = A5Rng {};
                 // 4. encaps should run without a problem
-                let ek_res = ek.unwrap().try_encaps_with_rng_vt(&mut a5rng);
+                let ek_res = ek.unwrap().try_encaps_with_rng(&mut a5rng);
                 if ek_res.is_err() {
                     return false;
                 };
                 // 5. decaps should run without a problem
-                let dk_res = dk.unwrap().try_decaps_vt(&ek_res.as_ref().unwrap().1);
+                let dk_res = dk.unwrap().try_decaps(&ek_res.as_ref().unwrap().1);
                 if dk_res.is_err() {
                     return false;
                 };
@@ -204,7 +206,7 @@ macro_rules! functionality {
             type CipherText = CipherText;
             type SharedSecretKey = SharedSecretKey;
 
-            fn try_encaps_with_rng_vt(
+            fn try_encaps_with_rng(
                 &self, rng: &mut impl CryptoRngCore,
             ) -> Result<(Self::SharedSecretKey, Self::CipherText), &'static str> {
                 let mut ct = [0u8; CT_LEN];
@@ -220,7 +222,7 @@ macro_rules! functionality {
             type CipherText = CipherText;
             type SharedSecretKey = SharedSecretKey;
 
-            fn try_decaps_vt(&self, ct: &CipherText) -> Result<SharedSecretKey, &'static str> {
+            fn try_decaps(&self, ct: &CipherText) -> Result<SharedSecretKey, &'static str> {
                 let ssk = ml_kem_decaps::<
                     K,
                     { ETA1 as usize * 64 },
@@ -299,10 +301,10 @@ macro_rules! functionality {
             fn smoke_test() {
                 let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
                 for _i in 0..100 {
-                    let (ek, dk) = KG::try_keygen_with_rng_vt(&mut rng).unwrap();
-                    let (ssk1, ct) = ek.try_encaps_with_rng_vt(&mut rng).unwrap();
-                    let ssk2 = dk.try_decaps_vt(&ct).unwrap();
-                    assert!(KG::validate_keypair_vt(
+                    let (ek, dk) = KG::try_keygen_with_rng(&mut rng).unwrap();
+                    let (ssk1, ct) = ek.try_encaps_with_rng(&mut rng).unwrap();
+                    let ssk2 = dk.try_decaps(&ct).unwrap();
+                    assert!(KG::validate_keypair_vartime(
                         &ek.clone().into_bytes(),
                         &dk.clone().into_bytes()
                     ));
@@ -324,13 +326,13 @@ pub mod ml_kem_512 {
     //! See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
     //!
     //! Typical usage flow entails:
-    //! 1. The originator runs `try_keygen_vt()` to get an encaps key `encapsKey` and decaps key `decapsKey`.
+    //! 1. The originator runs `try_keygen()` to get an encaps key `encapsKey` and decaps key `decapsKey`.
     //! 2. The originator serializes the encaps key via `encapsKey.into_bytes()` and sends to the remote party.
-    //! 3. The remote party deserializes the bytes via `try_from_bytes(<bytes>)` and runs `try_encaps_vt()` to get the
+    //! 3. The remote party deserializes the bytes via `try_from_bytes(<bytes>)` and runs `try_encaps()` to get the
     //!    shared secret key `ssk` and ciphertext `cipherText`.
     //! 4. The remote party serializes the cipertext via `cipherText.into_bytes()` and sends to the originator.
     //! 5. The originator deserializes the ciphertext via `try_from_bytes(<bytes>)` then
-    //!    runs `decapsKey.try_decaps_vt(cipherText)` to the get shared secret ket `ssk`.
+    //!    runs `decapsKey.try_decaps(cipherText)` to the get shared secret ket `ssk`.
     //! 6. Both the originator and remote party now have the same shared secret key `ssk`.
     //!
     //! **--> See [`traits`] for the keygen, encapsulation, decapsulation, and serialization/deserialization functionality.**
@@ -360,13 +362,13 @@ pub mod ml_kem_768 {
     //! See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
     //!
     //! Typical usage flow entails:
-    //! 1. The originator runs `try_keygen_vt()` to get an encaps key `encapsKey` and decaps key `decapsKey`.
+    //! 1. The originator runs `try_keygen()` to get an encaps key `encapsKey` and decaps key `decapsKey`.
     //! 2. The originator serializes the encaps key via `encapsKey.into_bytes()` and sends to the remote party.
-    //! 3. The remote party deserializes the bytes via `try_from_bytes(<bytes>)` and runs `try_encaps_vt()` to get the
+    //! 3. The remote party deserializes the bytes via `try_from_bytes(<bytes>)` and runs `try_encaps()` to get the
     //!    shared secret key `ssk` and ciphertext `cipherText`.
     //! 4. The remote party serializes the cipertext via `cipherText.into_bytes()` and sends to the originator.
     //! 5. The originator deserializes the ciphertext via `try_from_bytes(<bytes>)` then
-    //!    runs `decapsKey.try_decaps_vt(cipherText)` to the get shared secret ket `ssk`.
+    //!    runs `decapsKey.try_decaps(cipherText)` to the get shared secret ket `ssk`.
     //! 6. Both the originator and remote party now have the same shared secret key `ssk`.
     //!
     //! **--> See [`traits`] for the keygen, encapsulation, decapsulation, and serialization/deserialization functionality.**
@@ -395,13 +397,13 @@ pub mod ml_kem_1024 {
     //! See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
     //!
     //! Typical usage flow entails:
-    //! 1. The originator runs `try_keygen_vt()` to get an encaps key `encapsKey` and decaps key `decapsKey`.
+    //! 1. The originator runs `try_keygen()` to get an encaps key `encapsKey` and decaps key `decapsKey`.
     //! 2. The originator serializes the encaps key via `encapsKey.into_bytes()` and sends to the remote party.
-    //! 3. The remote party deserializes the bytes via `try_from_bytes(<bytes>)` and runs `try_encaps_vt()` to get the
+    //! 3. The remote party deserializes the bytes via `try_from_bytes(<bytes>)` and runs `try_encaps()` to get the
     //!    shared secret key `ssk` and ciphertext `cipherText`.
     //! 4. The remote party serializes the cipertext via `cipherText.into_bytes()` and sends to the originator.
     //! 5. The originator deserializes the ciphertext via `try_from_bytes(<bytes>)` then
-    //!    runs `decapsKey.try_decaps_vt(cipherText)` to the get shared secret ket `ssk`.
+    //!    runs `decapsKey.try_decaps(cipherText)` to the get shared secret ket `ssk`.
     //! 6. Both the originator and remote party now have the same shared secret key `ssk`.
     //!
     //! **--> See [`traits`] for the keygen, encapsulation, decapsulation, and serialization/deserialization functionality.**

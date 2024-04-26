@@ -100,7 +100,7 @@ fn test_keygen() {
     let mut rnd = TestRng::new();
     rnd.push(&d);
     rnd.push(&z);
-    let (ek_act, dk_act) = ml_kem_512::KG::try_keygen_with_rng_vt(&mut rnd).unwrap();
+    let (ek_act, dk_act) = ml_kem_512::KG::try_keygen_with_rng(&mut rnd).unwrap();
     assert_eq!(ek_exp, ek_act.into_bytes());
     assert_eq!(dk_exp, dk_act.into_bytes());
 
@@ -109,7 +109,7 @@ fn test_keygen() {
     let mut rnd = TestRng::new();
     rnd.push(&d);
     rnd.push(&z);
-    let (ek_act, dk_act) = ml_kem_768::KG::try_keygen_with_rng_vt(&mut rnd).unwrap();
+    let (ek_act, dk_act) = ml_kem_768::KG::try_keygen_with_rng(&mut rnd).unwrap();
     assert_eq!(ek_exp, ek_act.into_bytes());
     assert_eq!(dk_exp, dk_act.into_bytes());
 
@@ -118,7 +118,7 @@ fn test_keygen() {
     let mut rnd = TestRng::new();
     rnd.push(&d);
     rnd.push(&z);
-    let (ek_act, dk_act) = ml_kem_1024::KG::try_keygen_with_rng_vt(&mut rnd).unwrap();
+    let (ek_act, dk_act) = ml_kem_1024::KG::try_keygen_with_rng(&mut rnd).unwrap();
     assert_eq!(ek_exp, ek_act.into_bytes());
     assert_eq!(dk_exp, dk_act.into_bytes());
 }
@@ -130,7 +130,7 @@ fn test_encaps() {
     let mut rnd = TestRng::new();
     rnd.push(&m);
     let ek = ml_kem_512::EncapsKey::try_from_bytes(ek.try_into().unwrap()).unwrap();
-    let (ssk_act, ct_act) = ek.try_encaps_with_rng_vt(&mut rnd).unwrap();
+    let (ssk_act, ct_act) = ek.try_encaps_with_rng(&mut rnd).unwrap();
     assert_eq!(ssk_exp, ssk_act.into_bytes());
     assert_eq!(ct_exp, ct_act.into_bytes());
 
@@ -139,7 +139,7 @@ fn test_encaps() {
     let mut rnd = TestRng::new();
     rnd.push(&m);
     let ek = ml_kem_768::EncapsKey::try_from_bytes(ek.try_into().unwrap()).unwrap();
-    let (ssk_act, ct_act) = ek.try_encaps_with_rng_vt(&mut rnd).unwrap();
+    let (ssk_act, ct_act) = ek.try_encaps_with_rng(&mut rnd).unwrap();
     assert_eq!(ssk_exp, ssk_act.into_bytes());
     assert_eq!(ct_exp, ct_act.into_bytes());
 
@@ -148,7 +148,7 @@ fn test_encaps() {
     let mut rnd = TestRng::new();
     rnd.push(&m);
     let ek = ml_kem_1024::EncapsKey::try_from_bytes(ek.try_into().unwrap()).unwrap();
-    let (ssk_act, ct_act) = ek.try_encaps_with_rng_vt(&mut rnd).unwrap();
+    let (ssk_act, ct_act) = ek.try_encaps_with_rng(&mut rnd).unwrap();
     assert_eq!(ssk_exp, ssk_act.into_bytes());
     assert_eq!(ct_exp, ct_act.into_bytes());
 }
@@ -159,20 +159,20 @@ fn test_decaps() {
         get_decaps_vec("./tests/nist_vectors/Decapsulation -- ML-KEM-512.txt");
     let dk = ml_kem_512::DecapsKey::try_from_bytes(dk.try_into().unwrap()).unwrap();
     let c = ml_kem_512::CipherText::try_from_bytes(c.try_into().unwrap()).unwrap();
-    let kprime_act = dk.try_decaps_vt(&c).unwrap();
+    let kprime_act = dk.try_decaps(&c).unwrap();
     assert_eq!(kprime_exp, kprime_act.into_bytes());
 
     let (dk, c, kprime_exp) =
         get_decaps_vec("./tests/nist_vectors/Decapsulation -- ML-KEM-768.txt");
     let dk = ml_kem_768::DecapsKey::try_from_bytes(dk.try_into().unwrap()).unwrap();
     let c = ml_kem_768::CipherText::try_from_bytes(c.try_into().unwrap()).unwrap();
-    let kprime_act = dk.try_decaps_vt(&c).unwrap();
+    let kprime_act = dk.try_decaps(&c).unwrap();
     assert_eq!(kprime_exp, kprime_act.into_bytes());
 
     let (dk, c, kprime_exp) =
         get_decaps_vec("./tests/nist_vectors/Decapsulation -- ML-KEM-1024.txt");
     let dk = ml_kem_1024::DecapsKey::try_from_bytes(dk.try_into().unwrap()).unwrap();
     let c = ml_kem_1024::CipherText::try_from_bytes(c.try_into().unwrap()).unwrap();
-    let kprime_act = dk.try_decaps_vt(&c).unwrap();
+    let kprime_act = dk.try_decaps(&c).unwrap();
     assert_eq!(kprime_exp, kprime_act.into_bytes());
 }

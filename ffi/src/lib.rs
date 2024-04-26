@@ -37,7 +37,7 @@ pub extern "C" fn ml_kem_512_keygen(
     let (Some(encaps_out), Some(decaps_out)) = (encaps_out, decaps_out) else {
         return ML_KEM_NULL_PTR_ERROR;
     };
-    let Ok((ek, dk)) = fips203::ml_kem_512::KG::try_keygen_vt() else {
+    let Ok((ek, dk)) = fips203::ml_kem_512::KG::try_keygen() else {
         return ML_KEM_KEYGEN_ERROR;
     };
 
@@ -61,7 +61,7 @@ pub extern "C" fn ml_kem_512_encaps(
     let Ok(ek) = fips203::ml_kem_512::EncapsKey::try_from_bytes(encaps.data) else {
         return ML_KEM_DESERIALIZATION_ERROR;
     };
-    let Ok((ssk, ct)) = ek.try_encaps_vt() else {
+    let Ok((ssk, ct)) = ek.try_encaps() else {
         return ML_KEM_ENCAPSULATION_ERROR;
     };
 
@@ -88,7 +88,7 @@ pub extern "C" fn ml_kem_512_decaps(
     let Ok(ct) = fips203::ml_kem_512::CipherText::try_from_bytes(ciphertext.data) else {
         return ML_KEM_DESERIALIZATION_ERROR;
     };
-    let Ok(ssk) = dk.try_decaps_vt(&ct) else {
+    let Ok(ssk) = dk.try_decaps(&ct) else {
         return ML_KEM_DECAPSULATION_ERROR;
     };
 
@@ -120,7 +120,7 @@ pub extern "C" fn ml_kem_768_keygen(
     let (Some(encaps_out), Some(decaps_out)) = (encaps_out, decaps_out) else {
         return ML_KEM_NULL_PTR_ERROR;
     };
-    let Ok((ek, dk)) = fips203::ml_kem_768::KG::try_keygen_vt() else {
+    let Ok((ek, dk)) = fips203::ml_kem_768::KG::try_keygen() else {
         return ML_KEM_KEYGEN_ERROR;
     };
 
@@ -144,7 +144,7 @@ pub extern "C" fn ml_kem_768_encaps(
     let Ok(ek) = fips203::ml_kem_768::EncapsKey::try_from_bytes(encaps.data) else {
         return ML_KEM_DESERIALIZATION_ERROR;
     };
-    let Ok((ssk, ct)) = ek.try_encaps_vt() else {
+    let Ok((ssk, ct)) = ek.try_encaps() else {
         return ML_KEM_ENCAPSULATION_ERROR;
     };
 
@@ -171,7 +171,7 @@ pub extern "C" fn ml_kem_768_decaps(
     let Ok(ct) = fips203::ml_kem_768::CipherText::try_from_bytes(ciphertext.data) else {
         return ML_KEM_DESERIALIZATION_ERROR;
     };
-    let Ok(ssk) = dk.try_decaps_vt(&ct) else {
+    let Ok(ssk) = dk.try_decaps(&ct) else {
         return ML_KEM_DECAPSULATION_ERROR;
     };
 
@@ -204,7 +204,7 @@ pub extern "C" fn ml_kem_1024_keygen(
     let (Some(encaps_out), Some(decaps_out)) = (encaps_out, decaps_out) else {
         return ML_KEM_NULL_PTR_ERROR;
     };
-    let Ok((ek, dk)) = fips203::ml_kem_1024::KG::try_keygen_vt() else {
+    let Ok((ek, dk)) = fips203::ml_kem_1024::KG::try_keygen() else {
         return ML_KEM_KEYGEN_ERROR;
     };
 
@@ -228,7 +228,7 @@ pub extern "C" fn ml_kem_1024_encaps(
     let Ok(ek) = fips203::ml_kem_1024::EncapsKey::try_from_bytes(encaps.data) else {
         return ML_KEM_DESERIALIZATION_ERROR;
     };
-    let Ok((ssk, ct)) = ek.try_encaps_vt() else {
+    let Ok((ssk, ct)) = ek.try_encaps() else {
         return ML_KEM_ENCAPSULATION_ERROR;
     };
 
@@ -255,7 +255,7 @@ pub extern "C" fn ml_kem_1024_decaps(
     let Ok(ct) = fips203::ml_kem_1024::CipherText::try_from_bytes(ciphertext.data) else {
         return ML_KEM_DESERIALIZATION_ERROR;
     };
-    let Ok(ssk) = dk.try_decaps_vt(&ct) else {
+    let Ok(ssk) = dk.try_decaps(&ct) else {
         return ML_KEM_DECAPSULATION_ERROR;
     };
 

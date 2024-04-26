@@ -50,9 +50,9 @@ fuzz_target!(|data: [u8; 3328]| {
     rng.push(&data[start..start + RND_SIZE]);
     start += RND_SIZE;
 
-    // Fuzz input -> `try_keygen_with_rng_vt()` and `try_encaps_with_rng_vt()` via rng values
-    let (ek1, dk1) = ml_kem_512::KG::try_keygen_with_rng_vt(&mut rng).unwrap(); // consumes 2 rng values
-    let ct1 = ek1.try_encaps_with_rng_vt(&mut rng).unwrap().1; // consumes 1 rng value
+    // Fuzz input -> `try_keygen_with_rng()` and `try_encaps_with_rng()` via rng values
+    let (ek1, dk1) = ml_kem_512::KG::try_keygen_with_rng(&mut rng).unwrap(); // consumes 2 rng values
+    let ct1 = ek1.try_encaps_with_rng(&mut rng).unwrap().1; // consumes 1 rng value
     let ek1_bytes = ek1.clone().into_bytes();
     let dk1_bytes = dk1.clone().into_bytes();
     let ct1_bytes = ct1.clone().into_bytes();
@@ -74,8 +74,8 @@ fuzz_target!(|data: [u8; 3328]| {
 
     // If fuzz input deserialized into an acceptable ek, then run encaps
     if ek2.is_ok() {
-        // Fuzz input -> `EncapsKey::try_encaps_with_rng_vt()`
-        let _res = ek2.unwrap().try_encaps_with_rng_vt(&mut rng); // consumes 1 rng value
+        // Fuzz input -> `EncapsKey::try_encaps_with_rng()`
+        let _res = ek2.unwrap().try_encaps_with_rng(&mut rng); // consumes 1 rng value
     }
 
     // Extract candidate (xor) bytes for DK deserialization
@@ -89,8 +89,8 @@ fuzz_target!(|data: [u8; 3328]| {
     // Fuzz input -> `DecapsKey::try_from_bytes()`
     let dk2 = ml_kem_512::DecapsKey::try_from_bytes(dk2_bytes.try_into().unwrap());
 
-    // Fuzz input -> `KG::validate_keypair_vt()`
-    let _ok = ml_kem_512::KG::validate_keypair_vt(
+    // Fuzz input -> `KG::validate_keypair_vartime()`
+    let _ok = ml_kem_512::KG::validate_keypair_vartime(
         &ek2_bytes.try_into().unwrap(),
         &dk2_bytes.try_into().unwrap(),
     );
@@ -106,12 +106,12 @@ fuzz_target!(|data: [u8; 3328]| {
     // Fuzz input -> `CipherText::try_from_bytes()`
     let ct2 = ml_kem_512::CipherText::try_from_bytes(ct2_bytes.try_into().unwrap()).unwrap(); // always good
 
-    // Fuzz input -> `DecapsKey::try_decaps_vt()`
-    let _res = dk1.try_decaps_vt(&ct2);
+    // Fuzz input -> `DecapsKey::try_decaps()`
+    let _res = dk1.try_decaps(&ct2);
 
     if dk2.is_ok() {
-        // Fuzz input -> `DecapsKey::try_decaps_vt()`
-        let _res = dk2.unwrap().try_decaps_vt(&ct2);
+        // Fuzz input -> `DecapsKey::try_decaps()`
+        let _res = dk2.unwrap().try_decaps(&ct2);
     }
 
     assert_eq!(start, data.len()); // this doesn't appear to trigger (even when wrong)

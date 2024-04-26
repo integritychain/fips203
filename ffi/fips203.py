@@ -9,11 +9,11 @@ The following example shows using the standard ML-KEM algorithm to
 produce identical 32-byte shared secrets:
 
 ```
-from fips203 import ML_KEM_768
+from fips203 import ML_KEM_512
 
-(encapsulation_key, decapsulation_key) = ML_KEM_768.keygen()
+(encapsulation_key, decapsulation_key) = ML_KEM_512.keygen()
 (ciphertext, shared_secret_1) = encapsulation_key.encaps()
-shared_secret_2 = decapsulation_key.decaps(ct)
+shared_secret_2 = decapsulation_key.decaps(ciphertext)
 assert(shared_secret_1 == shared_secret_2)
 ```
 
@@ -255,6 +255,7 @@ class _ML_KEM():
             },
         }
     lib = ctypes.CDLL(ctypes.util.find_library('fips203'))
+    if not hasattr(lib, 'ml_kem_512_keygen'): lib = ctypes.CDLL("../target/debug/libfips203.so")
 
     # use Any below because i don't know how to specify the type of the FuncPtr
     ffi: Dict[int, Dict[str, Any]] = {}

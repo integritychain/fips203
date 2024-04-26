@@ -27,7 +27,7 @@ impl RngCore for TestRng {
 
     fn next_u64(&mut self) -> u64 { unimplemented!() }
 
-    fn fill_bytes(&mut self, out: &mut [u8]) { unimplemented!() }
+    fn fill_bytes(&mut self, _out: &mut [u8]) { unimplemented!() }
 
     fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
         out.iter_mut().for_each(|b| *b = 0);
@@ -68,9 +68,9 @@ fn main() -> ! {
         let start = DWT::cycle_count();
         asm::isb();
 
-        let (ek, dk) = ml_kem_512::KG::try_keygen_with_rng_vt(&mut rng).unwrap();
-        let (ssk1, ct) = ek.try_encaps_with_rng_vt(&mut rng).unwrap();
-        let ssk2 = dk.try_decaps_vt(&ct).unwrap();
+        let (ek, dk) = ml_kem_512::KG::try_keygen_with_rng(&mut rng).unwrap();
+        let (ssk1, ct) = ek.try_encaps_with_rng(&mut rng).unwrap();
+        let ssk2 = dk.try_decaps(&ct).unwrap();
         assert_eq!(ssk1.into_bytes(), ssk2.into_bytes());
 
         asm::isb();

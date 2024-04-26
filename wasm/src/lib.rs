@@ -16,7 +16,7 @@ pub fn run(seed: &str) -> String {
 
     // Alice runs `key_gen()` and then serializes the encaps key `ek` for Bob via `into_bytes().`
     let (alice_ek, alice_dk) =
-        ml_kem_512::KG::try_keygen_with_rng_vt(&mut rng).expect("keygen failed");
+        ml_kem_512::KG::try_keygen_with_rng(&mut rng).expect("keygen failed");
     let alice_ek_bytes = alice_ek.into_bytes();
 
     // Alice sends the encaps key `ek_bytes` to Bob.
@@ -25,9 +25,7 @@ pub fn run(seed: &str) -> String {
     // Bob deserializes the encaps `ek_bytes` and then runs `encaps() to get the shared secret
     // `ssk` and ciphertext `ct`. He serializes the ciphertext `ct` for Alice via `into_bytes()`.
     let bob_ek = ml_kem_512::EncapsKey::try_from_bytes(bob_ek_bytes).expect("ek deser failed");
-    let (bob_ssk, bob_ct) = bob_ek
-        .try_encaps_with_rng_vt(&mut rng)
-        .expect("encaps failed");
+    let (bob_ssk, bob_ct) = bob_ek.try_encaps_with_rng(&mut rng).expect("encaps failed");
     let bob_ct_bytes = bob_ct.into_bytes();
 
     // Bob sends the ciphertext `ct_bytes` to Alice.
@@ -35,7 +33,7 @@ pub fn run(seed: &str) -> String {
 
     // Alice deserializes the ciphertext `ct` and runs `decaps()` with her decaps key to get her `ssk`.
     let alice_ct = ml_kem_512::CipherText::try_from_bytes(alice_ct_bytes).expect("ct deser failed");
-    let alice_ssk = alice_dk.try_decaps_vt(&alice_ct).expect("decaps failed");
+    let alice_ssk = alice_dk.try_decaps(&alice_ct).expect("decaps failed");
 
     // Alice and Bob will now have the same secret key; deserialize to check the underlying byte array.
     assert_eq!(

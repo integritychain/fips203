@@ -27,8 +27,8 @@ The functionality is extremely simple to use, as demonstrated by the following e
 use fips203::ml_kem_512; // Could also be ml_kem_768 or ml_kem_1024. 
 use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
 
-// Alice runs `key_gen()` and then serializes the encaps key `ek` for Bob (to bytes).
-let (alice_ek, alice_dk) = ml_kem_512::KG::try_keygen_vt().unwrap();
+// Alice runs `try_keygen()` and then serializes the encaps key `ek` for Bob (to bytes).
+let (alice_ek, alice_dk) = ml_kem_512::KG::try_keygen().unwrap();
 let alice_ek_bytes = alice_ek.into_bytes();
 
 // Alice sends the encaps key `ek_bytes` to Bob.
@@ -37,7 +37,7 @@ let bob_ek_bytes = alice_ek_bytes;
 // Bob deserializes the encaps `ek_bytes` and then runs `encaps() to get the shared 
 // secret `ssk` and ciphertext `ct`. He serializes the ciphertext `ct` for Alice (to bytes).
 let bob_ek = ml_kem_512::EncapsKey::try_from_bytes(bob_ek_bytes).unwrap();
-let (bob_ssk_bytes, bob_ct) = bob_ek.try_encaps_vt().unwrap();
+let (bob_ssk_bytes, bob_ct) = bob_ek.try_encaps().unwrap();
 let bob_ct_bytes = bob_ct.into_bytes();
 
 // Bob sends the ciphertext `ct_bytes` to Alice
@@ -45,7 +45,7 @@ let alice_ct_bytes = bob_ct_bytes;
 
 // Alice deserializes the ciphertext `ct` and runs `decaps()` with her decaps key
 let alice_ct = ml_kem_512::CipherText::try_from_bytes(alice_ct_bytes).unwrap();
-let alice_ssk_bytes = alice_dk.try_decaps_vt(&alice_ct).unwrap();
+let alice_ssk_bytes = alice_dk.try_decaps(&alice_ct).unwrap();
 
 // Alice and Bob will now have the same secret key
 assert_eq!(bob_ssk_bytes, alice_ssk_bytes);
@@ -57,11 +57,11 @@ The Rust [Documentation][docs-link] lives under each **Module** corresponding to
 ## Notes
 
 * This crate is fully functional and corresponds to the first initial public draft of FIPS 203.
-* Constant-time operation targets the source-code level only, with confirmation via the embedded target and
-  the `dudect` dynamic tests. While the API uses a suffix of `_vt`, this will be changed in version 0.2.0.
+* Constant-time operation targets the source-code level only on MSRV, with confirmation via the 
+  embedded target and the `dudect` dynamic tests.
 * Note that FIPS 203 places specific requirements on randomness per section 3.3, hence the exposed `RNG`.
-* Requires Rust **1.70** or higher. The minimum supported Rust version may be changed in the future, but
-  it will be done with a minor version bump (when the major version is larger than 0).
+* Requires Rust **1.70** or higher. The minimum supported Rust version (MSRV) may be changed in the future,
+  but it will be done with a minor version bump (when the major version is larger than 0).
 * All on-by-default features of this library are covered by SemVer.
 * The FIPS 203 draft standard and this software is experimental -- USE AT YOUR OWN RISK!
 

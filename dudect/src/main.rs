@@ -53,9 +53,9 @@ fn full_flow(runner: &mut CtRunner, mut _rng: &mut BenchRng) {
             let mut rng = rng_r.clone();
             let mut spare_draw = [0u8; 32];
             for _ in 0..ITERATIONS_INNER {
-                let (ek, dk) = ml_kem_512::KG::try_keygen_with_rng_vt(&mut rng).unwrap(); // uses 2 rng
-                let (ssk1, ct) = ek.try_encaps_with_rng_vt(&mut rng).unwrap(); // uses 1 rng
-                let ssk2 = dk.try_decaps_vt(&ct).unwrap();
+                let (ek, dk) = ml_kem_512::KG::try_keygen_with_rng(&mut rng).unwrap(); // uses 2 rng
+                let (ssk1, ct) = ek.try_encaps_with_rng(&mut rng).unwrap(); // uses 1 rng
+                let ssk2 = dk.try_decaps(&ct).unwrap();
                 assert_eq!(ssk1, ssk2);
                 let _ = rng.try_fill_bytes(&mut spare_draw).unwrap(); // ease our lives; multiple of 4
             }
