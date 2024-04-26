@@ -4,7 +4,7 @@ use fips203::{ml_kem_1024, ml_kem_512, ml_kem_768};
 use rand_core::{CryptoRng, RngCore};
 
 
-// Simplistic RNG to regurgitate incremented values when 'asked'
+// Test RNG to regurgitate incremented values when 'asked'
 struct TestRng {
     value: u32,
 }

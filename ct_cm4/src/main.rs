@@ -15,7 +15,7 @@ use rtt_target::{rprintln, rtt_init_print};
 use subtle::{ConditionallySelectable, ConstantTimeEq};
 
 
-// Simplistic RNG to regurgitate incremented values when 'asked' except rho every i mod 4 == 1
+// Test RNG to regurgitate incremented values when 'asked' except rho every i mod 4 == 1
 #[derive(Clone)]
 struct TestRng {
     rho: u32,
@@ -64,6 +64,7 @@ fn main() -> ! {
         };
         i += 1;
 
+        ///////////////////// Start measurement period
         asm::isb();
         let start = DWT::cycle_count();
         asm::isb();
@@ -76,8 +77,9 @@ fn main() -> ! {
         asm::isb();
         let finish = DWT::cycle_count();
         asm::isb();
-        let _ = rng.try_fill_bytes(&mut spare_draw).unwrap(); // ease our lives; multiple of 4
+        ///////////////////// Finish measurement period
 
+        let _ = rng.try_fill_bytes(&mut spare_draw).unwrap(); // ease our lives; multiple of 4
         let count = finish - start;
 
         // each rho should have a fixed cycle count
