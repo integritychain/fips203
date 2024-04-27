@@ -17,11 +17,11 @@
 // See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
 
 // TODO Roadmap
-//   0. Stay current with FIPS 203 updates (due late summer 2024)
-//   1. Perf: optimize/minimize modular reductions, minimize u16 arith, consider avx2/aarch64
-//      (currently, code is 'optimized' for safety and change-support, with reasonable perf)
+//   1. Stay current with FIPS 203 updates (due late summer 2024)
 //   2. Expand test coverage, looping test w/ check, add report badge
-//   3. Slightly more intelligent fuzzing (e.g., as dk contains h(ek))
+//   3. Perf: optimize/minimize modular reductions, minimize u16 arith, consider avx2/aarch64
+//      (currently, code is 'optimized' for safety and change-support, with reasonable perf)
+//   4. Slightly more intelligent fuzzing (e.g., as dk contains h(ek))
 
 // Functionality map per FIPS 203 draft
 //

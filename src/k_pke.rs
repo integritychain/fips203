@@ -23,8 +23,7 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
 
     // 1: d ←− B^{32}    ▷ d is 32 random bytes (see Section 3.3)
     let mut d = [0u8; 32];
-    rng.try_fill_bytes(&mut d)
-        .map_err(|_| "Alg12: random number generator failed")?;
+    rng.try_fill_bytes(&mut d).map_err(|_| "Alg12: random number generator failed")?;
 
     // 2: (ρ, σ) ← G(d)    ▷ expand to two pseudorandom 32-byte seeds
     let (rho, sigma) = g(&[&d]);
@@ -129,11 +128,10 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     }
 
     // 3: ρ ← ekPKE [384k : 384k + 32]    ▷ extract 32-byte seed from ekPKE
-    let mut rho = [0u8; 32];
-    rho.copy_from_slice(&ek[384 * K..(384 * K + 32)]);
+    let rho = &ek[384 * K..(384 * K + 32)].try_into().unwrap();
 
     // Steps 4-8 in gen_a_hat() above
-    let a_hat = gen_a_hat(&rho);
+    let a_hat = gen_a_hat(rho);
 
     // 9: for (i ← 0; i < k; i ++)
     // 10: r[i] ← SamplePolyCBDη 1 (PRFη 1 (r, N))    ▷ r[i] ∈ Z^{256}_q sampled from CBD
