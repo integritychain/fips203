@@ -28,7 +28,6 @@ non-goals are:
 - better internal error handling
 - testing!
 - reduce symbol visibility in shared object
-- SONAME (bound to major version?)
 
 # Paths considered but discarded
 
