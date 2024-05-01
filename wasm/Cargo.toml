@@ -1,6 +1,6 @@
 [package]
 name = "fips203-wasm"
-version = "0.1.5"
+version = "0.2.1"
 authors = ["Eric Schorn <eschorn@integritychain.com>"]
 description = "Sample web page utilizing FIPS 203 code"
 repository = ""
