@@ -14,7 +14,7 @@ The goals of this implementation are:
 
 security-related goals:
 
-- constant-time operations (needs improvement in underlying Rust code)
+- constant-time operations
 - clean library RAM (objects should be zeroed out of any library-allocated memory before function exit)
 
 non-goals are:
