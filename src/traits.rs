@@ -71,7 +71,7 @@ pub trait KeyGen {
     /// let ek2_bytes = ek1_bytes;                           // Party 1 sends encaps bytes to party 2
     ///
     /// let ek2 = ml_kem_512::EncapsKey::try_from_bytes(ek2_bytes)?;  // Party 2 deserializes the encaps key
-    /// let (ssk2, ct2) = ek2.try_encaps()?;              // Party 2 generates shared secret and ciphertext
+    /// let (ssk2, ct2) = ek2.try_encaps_with_rng(&mut OsRng)?;       // Party 2 generates shared secret and ciphertext
     /// let ct2_bytes = ct2.into_bytes();                    // Party 2 serializes the ciphertext
     ///
     /// let ct1_bytes = ct2_bytes;                           // Party 2 sends the ciphertext to party 1
