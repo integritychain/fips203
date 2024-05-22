@@ -1,3 +1,4 @@
+#[cfg(feature = "ml-kem-512")]
 use fips203::ml_kem_512;
 use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
 use hex_literal::hex;
@@ -5,6 +6,7 @@ use rand_core::SeedableRng;
 
 
 #[test]
+#[cfg(feature = "ml-kem-512")]
 fn wasm_match() {
     let seed = 123; // Note: this should match the value giving in the web form
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(seed);

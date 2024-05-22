@@ -1,9 +1,15 @@
 use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
-use fips203::{ml_kem_1024, ml_kem_512, ml_kem_768};
+#[cfg(feature = "ml-kem-512")]
+use fips203::ml_kem_512;
+#[cfg(feature = "ml-kem-768")]
+use fips203::ml_kem_768;
+#[cfg(feature = "ml-kem-1024")]
+use fips203::ml_kem_1024;
 use rand_chacha::rand_core::SeedableRng;
 
 
 #[test]
+#[cfg(feature = "ml-kem-512")]
 fn test_expected_flow_512() {
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
     for _i in 0..100 {
@@ -37,6 +43,7 @@ fn test_expected_flow_512() {
 
 
 #[test]
+#[cfg(feature = "ml-kem-768")]
 fn test_expected_flow_768() {
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(456);
     for _i in 0..100 {
@@ -70,6 +77,7 @@ fn test_expected_flow_768() {
 
 
 #[test]
+#[cfg(feature = "ml-kem-1024")]
 fn test_expected_flow_1024() {
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(789);
     for _i in 0..100 {
@@ -105,6 +113,7 @@ fn test_expected_flow_1024() {
 // $ cargo test -- --ignored
 #[ignore]
 #[test]
+#[cfg(feature = "ml-kem-512")]
 fn test_forever() {
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
     for i in 0..u64::MAX {
