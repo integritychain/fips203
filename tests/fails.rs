@@ -1,3 +1,4 @@
+#[cfg(feature = "ml-kem-512")]
 use fips203::ml_kem_512;
 use fips203::traits::{KeyGen, SerDes};
 use rand_chacha::rand_core::SeedableRng;
@@ -5,6 +6,7 @@ use rand_core::RngCore;
 
 // Highlights potential validation opportunities
 #[test]
+#[cfg(feature = "ml-kem-512")]
 fn fails_512() {
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
     for _i in 0..100 {

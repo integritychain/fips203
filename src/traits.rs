@@ -26,6 +26,7 @@ pub trait KeyGen {
     /// ```rust
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # #[cfg(feature = "ml-kem-512")] {
     /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
     ///
@@ -44,6 +45,7 @@ pub trait KeyGen {
     /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
     ///
     /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// # }
     /// # Ok(())}
     /// ```
     #[cfg(feature = "default-rng")]
@@ -61,6 +63,7 @@ pub trait KeyGen {
     /// ```rust
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
     /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
@@ -71,7 +74,7 @@ pub trait KeyGen {
     /// let ek2_bytes = ek1_bytes;                           // Party 1 sends encaps bytes to party 2
     ///
     /// let ek2 = ml_kem_512::EncapsKey::try_from_bytes(ek2_bytes)?;  // Party 2 deserializes the encaps key
-    /// let (ssk2, ct2) = ek2.try_encaps()?;              // Party 2 generates shared secret and ciphertext
+    /// let (ssk2, ct2) = ek2.try_encaps_with_rng(&mut OsRng)?;       // Party 2 generates shared secret and ciphertext
     /// let ct2_bytes = ct2.into_bytes();                    // Party 2 serializes the ciphertext
     ///
     /// let ct1_bytes = ct2_bytes;                           // Party 2 sends the ciphertext to party 1
@@ -80,6 +83,7 @@ pub trait KeyGen {
     /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
     ///
     /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// # }
     /// # Ok(())}
     /// ```
     fn try_keygen_with_rng(
@@ -94,6 +98,7 @@ pub trait KeyGen {
     /// ```rust
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
     /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
@@ -103,6 +108,7 @@ pub trait KeyGen {
     /// let dk_bytes = dk.into_bytes();    // Serialize and perhaps store-then-restore decaps key
     /// assert!(ml_kem_512::KG::validate_keypair_vartime(&ek_bytes, &dk_bytes));  // Validate their correspondence
     ///
+    /// # }
     /// # Ok(())}
     /// ```
     fn validate_keypair_vartime(ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray) -> bool;
@@ -126,6 +132,7 @@ pub trait Encaps {
     /// ```rust
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
     /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
@@ -145,6 +152,7 @@ pub trait Encaps {
     /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
     ///
     /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// # }
     /// # Ok(())}
     /// ```
     #[cfg(feature = "default-rng")]
@@ -162,6 +170,7 @@ pub trait Encaps {
     /// ```rust
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
     /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
@@ -181,6 +190,7 @@ pub trait Encaps {
     /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
     ///
     /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// # }
     /// # Ok(())}
     /// ```
     fn try_encaps_with_rng(
@@ -205,6 +215,7 @@ pub trait Decaps {
     /// ```rust
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
     /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
@@ -224,6 +235,7 @@ pub trait Decaps {
     /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
     ///
     /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// # }
     /// # Ok(())}
     /// ```
     fn try_decaps(&self, ct: &Self::CipherText) -> Result<Self::SharedSecretKey, &'static str>;
@@ -241,6 +253,7 @@ pub trait SerDes {
     /// ```rust
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
     /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
@@ -260,6 +273,7 @@ pub trait SerDes {
     /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
     ///
     /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// # }
     /// # Ok(())}
     /// ```
     fn into_bytes(self) -> Self::ByteArray;
@@ -272,6 +286,7 @@ pub trait SerDes {
     /// ```rust
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
     /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
@@ -291,6 +306,7 @@ pub trait SerDes {
     /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
     ///
     /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// # }
     /// # Ok(())}
     /// ```
     fn try_from_bytes(ba: Self::ByteArray) -> Result<Self, &'static str>

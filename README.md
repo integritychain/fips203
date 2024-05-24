@@ -23,6 +23,7 @@ See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf> for a full de
 The functionality is extremely simple to use, as demonstrated by the following example.
 
 ~~~rust
+# #[cfg(all(feature = "ml-kem-512", feature = "default-rng"))] {
 // Use the desired target parameter set.
 use fips203::ml_kem_512; // Could also be ml_kem_768 or ml_kem_1024. 
 use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
@@ -49,6 +50,7 @@ let alice_ssk_bytes = alice_dk.try_decaps(&alice_ct).unwrap();
 
 // Alice and Bob will now have the same secret key
 assert_eq!(bob_ssk_bytes, alice_ssk_bytes);
+# }
 ~~~
 
 The Rust [Documentation][docs-link] lives under each **Module** corresponding to the desired

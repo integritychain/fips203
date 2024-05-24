@@ -6,7 +6,12 @@ use hex::decode;
 use regex::Regex;
 
 use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
-use fips203::{ml_kem_1024, ml_kem_512, ml_kem_768};
+#[cfg(feature = "ml-kem-512")]
+use fips203::ml_kem_512;
+#[cfg(feature = "ml-kem-768")]
+use fips203::ml_kem_768;
+#[cfg(feature = "ml-kem-1024")]
+use fips203::ml_kem_1024;
 
 use super::TestRng;
 
@@ -42,6 +47,7 @@ fn get_intermediate_vec(
 }
 
 #[test]
+#[cfg(feature = "ml-kem-512")]
 pub fn test_intermediate_512() {
     let (d, z, ek_exp, dk_exp, m, k_exp, c_exp) =
         get_intermediate_vec("./tests/cctv_vectors/ML-KEM/intermediate/ML-KEM-512.txt");
@@ -60,6 +66,7 @@ pub fn test_intermediate_512() {
 }
 
 #[test]
+#[cfg(feature = "ml-kem-768")]
 pub fn test_intermediate_768() {
     let (d, z, ek_exp, dk_exp, m, k_exp, c_exp) =
         get_intermediate_vec("./tests/cctv_vectors/ML-KEM/intermediate/ML-KEM-768.txt");
@@ -78,6 +85,7 @@ pub fn test_intermediate_768() {
 }
 
 #[test]
+#[cfg(feature = "ml-kem-1024")]
 pub fn test_intermediate_1024() {
     let (d, z, ek_exp, dk_exp, m, k_exp, c_exp) =
         get_intermediate_vec("./tests/cctv_vectors/ML-KEM/intermediate/ML-KEM-1024.txt");
@@ -108,6 +116,7 @@ fn get_strcmp_vec(filename: &str) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
 }
 
 #[test]
+#[cfg(feature = "ml-kem-512")]
 pub fn test_strcmp_512() {
     let (dk_exp, k_exp, c_exp) =
         get_strcmp_vec("./tests/cctv_vectors/ML-KEM/strcmp/ML-KEM-512.txt");
@@ -118,6 +127,7 @@ pub fn test_strcmp_512() {
 }
 
 #[test]
+#[cfg(feature = "ml-kem-768")]
 pub fn test_strcmp_768() {
     let (dk_exp, k_exp, c_exp) =
         get_strcmp_vec("./tests/cctv_vectors/ML-KEM/strcmp/ML-KEM-768.txt");
@@ -128,6 +138,7 @@ pub fn test_strcmp_768() {
 }
 
 #[test]
+#[cfg(feature = "ml-kem-1024")]
 pub fn test_strcmp_1024() {
     let (dk_exp, k_exp, c_exp) =
         get_strcmp_vec("./tests/cctv_vectors/ML-KEM/strcmp/ML-KEM-1024.txt");
@@ -138,6 +149,7 @@ pub fn test_strcmp_1024() {
 }
 
 #[test]
+#[cfg(feature = "ml-kem-512")]
 pub fn test_unlucky_512() {
     let (d, z, ek_exp, dk_exp, m, k_exp, c_exp) =
         get_intermediate_vec("./tests/cctv_vectors/ML-KEM/unluckysample/ML-KEM-512.txt");
@@ -156,6 +168,7 @@ pub fn test_unlucky_512() {
 }
 
 #[test]
+#[cfg(feature = "ml-kem-768")]
 pub fn test_unlucky_768() {
     let (d, z, ek_exp, dk_exp, m, k_exp, c_exp) =
         get_intermediate_vec("./tests/cctv_vectors/ML-KEM/unluckysample/ML-KEM-768.txt");
@@ -174,6 +187,7 @@ pub fn test_unlucky_768() {
 }
 
 #[test]
+#[cfg(feature = "ml-kem-1024")]
 pub fn test_unlucky_1024() {
     let (d, z, ek_exp, dk_exp, m, k_exp, c_exp) =
         get_intermediate_vec("./tests/cctv_vectors/ML-KEM/unluckysample/ML-KEM-1024.txt");
@@ -192,6 +206,7 @@ pub fn test_unlucky_1024() {
 }
 
 #[test]
+#[cfg(feature = "ml-kem-512")]
 fn test_modulus_512() {
     let gz = fs::read("./tests/cctv_vectors/ML-KEM/modulus/ML-KEM-512.txt.gz").unwrap();
     let mut d = GzDecoder::new(&gz[..]);
@@ -205,6 +220,7 @@ fn test_modulus_512() {
 }
 
 #[test]
+#[cfg(feature = "ml-kem-768")]
 fn test_modulus_768() {
     let gz = fs::read("./tests/cctv_vectors/ML-KEM/modulus/ML-KEM-768.txt.gz").unwrap();
     let mut d = GzDecoder::new(&gz[..]);
@@ -218,6 +234,7 @@ fn test_modulus_768() {
 }
 
 #[test]
+#[cfg(feature = "ml-kem-1024")]
 fn test_modulus_1024() {
     let gz = fs::read("./tests/cctv_vectors/ML-KEM/modulus/ML-KEM-1024.txt.gz").unwrap();
     let mut d = GzDecoder::new(&gz[..]);
