@@ -1,4 +1,4 @@
-use fips203;
+//use fips203;
 
 #[repr(C)]
 pub struct ml_kem_shared_secret {
@@ -43,7 +43,7 @@ pub extern "C" fn ml_kem_512_keygen(
 
     encaps_out.data = ek.into_bytes();
     decaps_out.data = dk.into_bytes();
-    return ML_KEM_OK;
+    ML_KEM_OK
 }
 
 #[no_mangle]
@@ -67,7 +67,7 @@ pub extern "C" fn ml_kem_512_encaps(
 
     shared_secret_out.data = ssk.into_bytes();
     ciphertext_out.data = ct.into_bytes();
-    return ML_KEM_OK;
+    ML_KEM_OK
 }
 
 #[no_mangle]
@@ -93,7 +93,7 @@ pub extern "C" fn ml_kem_512_decaps(
     };
 
     shared_secret_out.data = ssk.into_bytes();
-    return ML_KEM_OK;
+    ML_KEM_OK
 }
 
 // ML-KEM-768
@@ -126,7 +126,7 @@ pub extern "C" fn ml_kem_768_keygen(
 
     encaps_out.data = ek.into_bytes();
     decaps_out.data = dk.into_bytes();
-    return ML_KEM_OK;
+    ML_KEM_OK
 }
 
 #[no_mangle]
@@ -150,7 +150,7 @@ pub extern "C" fn ml_kem_768_encaps(
 
     shared_secret_out.data = ssk.into_bytes();
     ciphertext_out.data = ct.into_bytes();
-    return ML_KEM_OK;
+    ML_KEM_OK
 }
 
 #[no_mangle]
@@ -176,7 +176,7 @@ pub extern "C" fn ml_kem_768_decaps(
     };
 
     shared_secret_out.data = ssk.into_bytes();
-    return ML_KEM_OK;
+    ML_KEM_OK
 }
 
 // ML-KEM-1024
@@ -210,7 +210,7 @@ pub extern "C" fn ml_kem_1024_keygen(
 
     encaps_out.data = ek.into_bytes();
     decaps_out.data = dk.into_bytes();
-    return ML_KEM_OK;
+    ML_KEM_OK
 }
 
 #[no_mangle]
@@ -234,7 +234,7 @@ pub extern "C" fn ml_kem_1024_encaps(
 
     shared_secret_out.data = ssk.into_bytes();
     ciphertext_out.data = ct.into_bytes();
-    return ML_KEM_OK;
+    ML_KEM_OK
 }
 
 #[no_mangle]
@@ -260,5 +260,5 @@ pub extern "C" fn ml_kem_1024_decaps(
     };
 
     shared_secret_out.data = ssk.into_bytes();
-    return ML_KEM_OK;
+    ML_KEM_OK
 }

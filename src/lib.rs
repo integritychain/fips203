@@ -319,10 +319,10 @@ macro_rules! functionality {
 }
 
 
-/// Functionality for the ML-KEM-512 security parameter set, which is claimed to be in security category 1, see
-/// table 2 & 3 on page 33 of spec.
 #[cfg(feature = "ml-kem-512")]
 pub mod ml_kem_512 {
+    //! Functionality for the ML-KEM-512 security parameter set, which is claimed to be in security category 1, see
+    //! table 2 & 3 on page 33 of spec.
     //!
     //! See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
     //!
@@ -336,7 +336,7 @@ pub mod ml_kem_512 {
     //!    runs `decapsKey.try_decaps(cipherText)` to the get shared secret ket `ssk`.
     //! 6. Both the originator and remote party now have the same shared secret key `ssk`.
     //!
-    //! **--> See [`traits`] for the keygen, encapsulation, decapsulation, and serialization/deserialization functionality.**
+    //! **--> See [`crate::traits`] for the keygen, encapsulation, decapsulation, and serialization/deserialization functionality.**
 
     const K: usize = 2;
     const ETA1: u32 = 3;
@@ -355,10 +355,10 @@ pub mod ml_kem_512 {
 }
 
 
-/// Functionality for the ML-KEM-768 security parameter set, which is claimed to be in security category 3, see
-/// table 2 & 3 on page 33 of spec.
 #[cfg(feature = "ml-kem-768")]
 pub mod ml_kem_768 {
+    //! Functionality for the ML-KEM-768 security parameter set, which is claimed to be in security category 3, see
+    //! table 2 & 3 on page 33 of spec.
     //!
     //! See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
     //!
@@ -372,7 +372,7 @@ pub mod ml_kem_768 {
     //!    runs `decapsKey.try_decaps(cipherText)` to the get shared secret ket `ssk`.
     //! 6. Both the originator and remote party now have the same shared secret key `ssk`.
     //!
-    //! **--> See [`traits`] for the keygen, encapsulation, decapsulation, and serialization/deserialization functionality.**
+    //! **--> See [`crate::traits`] for the keygen, encapsulation, decapsulation, and serialization/deserialization functionality.**
 
     const K: usize = 3;
     const ETA1: u32 = 2;
@@ -390,10 +390,10 @@ pub mod ml_kem_768 {
     functionality!();
 }
 
-/// Functionality for the ML-KEM-1024 security parameter set, which is claimed to be in security category 5, see
-/// table 2 & 3 on page 33 of spec.
 #[cfg(feature = "ml-kem-1024")]
 pub mod ml_kem_1024 {
+    //! Functionality for the ML-KEM-1024 security parameter set, which is claimed to be in security category 5, see
+    //! table 2 & 3 on page 33 of spec.
     //!
     //! See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
     //!
@@ -407,7 +407,7 @@ pub mod ml_kem_1024 {
     //!    runs `decapsKey.try_decaps(cipherText)` to the get shared secret ket `ssk`.
     //! 6. Both the originator and remote party now have the same shared secret key `ssk`.
     //!
-    //! **--> See [`traits`] for the keygen, encapsulation, decapsulation, and serialization/deserialization functionality.**
+    //! **--> See [`crate::traits`] for the keygen, encapsulation, decapsulation, and serialization/deserialization functionality.**
 
     const K: usize = 4;
     const ETA1: u32 = 2;
