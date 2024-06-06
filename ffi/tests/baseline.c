@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "../fips203.h"
+#include <fips203.h>
 
 int main(int argc, const char **argv) {
   MLKEM_encaps_key encaps;
