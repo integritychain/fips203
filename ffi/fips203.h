@@ -9,7 +9,8 @@
   The shared object backing this interface has no internal state
   between calls, and should be completely reentrant.
 
-  These functions return true on success, false on error.
+  These functions return 0 (ML_KEM_OK) on success, or a more specific
+  non-zero octet on error.
 */
 #include <stdint.h>
 
