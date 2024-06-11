@@ -14,15 +14,15 @@ SONAME = 0
 
 all: check
 
-# adjustments for testing the local debug build:
+# adjustments for testing the local debug or release build:
 ifneq ($(AS_INSTALLED),true)
-SO_LOCATION = ../../target/debug
-$(SO_LOCATION)/libfips203.so.$(SONAME): $(SO_LOCATION)/libfips203.so
-	ln -s $< $@
-EXTRA_CLEANUP=$(SO_LOCATION)/libfips203.so.$(SONAME)
-COMPILE_FLAGS = -L $(SO_LOCATION) -I ..
+SO_LOCATIONS = $(foreach w,.. ../..,$(foreach x,release debug,$w/target/$x $w/target/*/$x))
+SO_LOCATION = $(dir $(firstword $(foreach d,$(SO_LOCATIONS),$(wildcard $d/libfips203.so))))
+$(SO_LOCATION)libfips203.so.$(SONAME): $(SO_LOCATION)libfips203.so
+	ln $< $@
+COMPILE_FLAGS = -L $(SO_LOCATION) -I..
 RUN_PREFIX = LD_LIBRARY_PATH=$(SO_LOCATION)
-runtest-%: $(SO_LOCATION)/libfips203.so.$(SONAME)
+ADDITIONAL_RUN_DEPENDS = $(SO_LOCATION)libfips203.so.$(SONAME)
 endif
 
 BASELINES=$(foreach sz, $(SIZES), baseline-$(sz))
@@ -30,13 +30,13 @@ CHECKS=$(foreach sz, $(SIZES), runtest-$(sz))
 
 check: $(CHECKS)
 
-runtest-%: baseline-%
+runtest-%: baseline-% $(ADDITIONAL_RUN_DEPENDS)
 	$(RUN_PREFIX) ./$<
 
 baseline-%: baseline.c ../fips203.h
 	$(CC) -o $@ -g -D MLKEM_size=$* $(foreach v, $(FRAMES),-D MLKEM_$(v)=ml_kem_$*_$(v)) -Werror -Wall -pedantic $< -Wall $(COMPILE_FLAGS) -lfips203
 
 clean:
-	rm -f $(BASELINES) $(EXTRA_CLEANUP)
+	rm -f $(BASELINES) $(ADDITIONAL_RUN_DEPENDS)
 
 .PHONY: clean check all
