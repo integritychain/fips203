@@ -3,6 +3,9 @@
 This Python module provides an implementation of FIPS 203, the
 Module-Lattice-based Key Encapsulation Mechanism Standard.
 
+The underlying mechanism is intended to offer "post-quantum"
+asymmetric encryption and decryption.
+
 ## Example
 
 The following example shows using the standard ML-KEM algorithm to
@@ -62,14 +65,23 @@ This is a wrapper around libfips203, built from the Rust fips203-ffi crate.
 If that library is not installed in the expected path for libraries on
 your system, any attempt to use this module will fail.
 
+This module should have reasonable type annotations and docstrings for
+the public interface.  If you discover a problem with type
+annotations, or see a way that this kind of documentation could be
+improved, please report it!
+
 ## See Also
 
 - https://doi.org/10.6028/NIST.FIPS.203.ipd
 - https://github.com/integritychain/fips203
 
+## Bug Reporting
+
+Please report issues at https://github.com/integritychain/fips203/issues
 '''
 
-__version__ = '0.1'
+'''__version__ should track package.version from  ../Cargo.toml'''
+__version__ = '0.2.1'
 __author__ = 'Daniel Kahn Gillmor <dkg@fifthhorseman.net>'
 __all__ = [
     'ML_KEM_512',
