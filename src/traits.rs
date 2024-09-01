@@ -1,4 +1,4 @@
-use rand_core::CryptoRngCore;
+use rand_core::{CryptoRng, CryptoRngCore, RngCore};
 
 
 #[cfg(feature = "default-rng")]
@@ -89,6 +89,72 @@ pub trait KeyGen {
     fn try_keygen_with_rng(
         rng: &mut impl CryptoRngCore,
     ) -> Result<(Self::EncapsKey, Self::DecapsKey), &'static str>;
+
+
+    /// Generates an encapsulation and decapsulation key key pair specific to this security parameter set
+    /// based on a provided seed. <br>
+    /// This function is intended to operate in constant time outside of `rho` which crosses the trust
+    /// boundary in the clear.
+    /// # Examples
+    /// ```rust
+    /// # use std::error::Error;
+    /// # use crate::fips203::RngCore;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # #[cfg(feature = "ml-kem-512")] {
+    /// use rand_core::OsRng;
+    /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
+    /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
+    ///
+    /// let (mut d, mut z) = ([0u8; 32], [0u8; 32]);         // Note that (d,z) are secret values
+    /// rand::thread_rng().fill_bytes(&mut d);
+    /// rand::thread_rng().fill_bytes(&mut z);
+    ///
+    /// let (ek1, dk1) = ml_kem_512::KG::keygen_with_seed(d, z);   // Party 1 generates both encaps and decaps keys
+    /// let ek1_bytes = ek1.into_bytes();                    // Party 1 serializes the encaps key
+    ///
+    /// let ek2_bytes = ek1_bytes;                           // Party 1 sends encaps bytes to party 2
+    ///
+    /// let ek2 = ml_kem_512::EncapsKey::try_from_bytes(ek2_bytes)?;  // Party 2 deserializes the encaps key
+    /// let (ssk2, ct2) = ek2.try_encaps_with_rng(&mut OsRng)?;       // Party 2 generates shared secret and ciphertext
+    /// let ct2_bytes = ct2.into_bytes();                    // Party 2 serializes the ciphertext
+    ///
+    /// let ct1_bytes = ct2_bytes;                           // Party 2 sends the ciphertext to party 1
+    ///
+    /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?; // Party 1 deserializes the ciphertext
+    /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
+    ///
+    /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// # }
+    /// # Ok(())}
+    /// ```
+    #[must_use]
+    fn keygen_with_seed(d: [u8; 32], z: [u8; 32]) -> (Self::EncapsKey, Self::DecapsKey) {
+        // A little hacky, but we preserve the illusion of a CryptoRng in this special case...
+
+        struct DummyRng {
+            data: [[u8; 32]; 2],
+            i: usize,
+        }
+
+        impl RngCore for DummyRng {
+            fn next_u32(&mut self) -> u32 { unimplemented!() }
+
+            fn next_u64(&mut self) -> u64 { unimplemented!() }
+
+            fn fill_bytes(&mut self, _out: &mut [u8]) { unimplemented!() }
+
+            fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
+                out.copy_from_slice(&self.data[self.i]);
+                self.i = 1;
+                Ok(())
+            }
+        }
+
+        impl CryptoRng for DummyRng {}
+
+        let mut rnd = DummyRng { data: [z, d], i: 0 };
+        Self::try_keygen_with_rng(&mut rnd).expect("rnd will not fail")
+    }
 
 
     /// Performs validation between an encapsulation key and a decapsulation key (both in byte arrays), perhaps in the

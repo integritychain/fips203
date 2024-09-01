@@ -2,7 +2,7 @@
 name = "fips203-ct_cm4"
 version = "0.2.1"
 license = "MIT OR Apache-2.0"
-description = "Cortex-M4 testbench for FIPS 203 (draft) ML-KEM"
+description = "Cortex-M4 testbench for FIPS 203 ML-KEM"
 authors = ["Eric Schorn <eschorn@integritychain.com>"]
 publish = false
 edition = "2021"

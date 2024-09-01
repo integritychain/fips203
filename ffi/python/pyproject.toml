@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fips203"
 dynamic = ["version"]
-description = "ML-KEM (FIPS203) -- asymmetric, quantum-secure encryption (Initial Public Draft)"
+description = "ML-KEM (FIPS203) -- asymmetric, quantum-secure encryption"
 authors = [{name = "Daniel Kahn Gillmor", email = "dkg@fifthhorseman.net"}]
 keywords = [
  "cryptography",

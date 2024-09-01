@@ -13,17 +13,16 @@
 //
 #![doc = include_str!("../README.md")]
 
-// Implements FIPS 203 draft Module-Lattice-based Key-Encapsulation Mechanism Standard.
-// See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
+// Implements FIPS 203 Module-Lattice-based Key-Encapsulation Mechanism Standard.
+// See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf>
 
 // TODO Roadmap
-//   1. Stay current with FIPS 203 updates (due late summer 2024)
-//   2. Expand test coverage, looping test w/ check, add report badge
-//   3. Perf: optimize/minimize modular reductions, minimize u16 arith, consider avx2/aarch64
+//   1. Expand test coverage, looping test w/ check, add report badge
+//   2. Perf: optimize/minimize modular reductions, minimize u16 arith, consider avx2/aarch64
 //      (currently, code is 'optimized' for safety and change-support, with reasonable perf)
-//   4. Slightly more intelligent fuzzing (e.g., as dk contains h(ek))
+//   3. Slightly more intelligent fuzzing (e.g., as dk contains h(ek))
 
-// Functionality map per FIPS 203 draft
+// Functionality map per FIPS 203
 //
 // Algorithm 2 BitsToBytes(b) on page 17                    --> optimized out (byte_fns.rs)
 // Algorithm 3 BytesToBits(B) on page 18                    --> optimized out (byte_fns.rs)

@@ -21,9 +21,10 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
     debug_assert_eq!(ek_pke.len(), 384 * K + 32, "Alg12: ek_pke not 384 * K + 32");
     debug_assert_eq!(dk_pke.len(), 384 * K, "Alg12: dk_pke not 384 * K");
 
-    // 1: d ←− B^{32}    ▷ d is 32 random bytes (see Section 3.3)
-    let mut d = [0u8; 32];
-    rng.try_fill_bytes(&mut d).map_err(|_| "Alg12: random number generator failed")?;
+    // 1: d ←− B^{32}    ▷ expand 32+1 bytes to two pseudorandom 32-byte seeds
+    let mut d = [0u8; 33]; // Last byte is 'final' FIPS 203 fix
+    rng.try_fill_bytes(&mut d[0..32]).map_err(|_| "Alg12: random number generator failed")?;
+    d[32] = K.try_into().unwrap();
 
     // 2: (ρ, σ) ← G(d)    ▷ expand to two pseudorandom 32-byte seeds
     let (rho, sigma) = g(&[&d]);
@@ -91,7 +92,8 @@ fn gen_a_hat<const K: usize>(rho: &[u8; 32]) -> [[[Z; 256]; K]; K] {
         for (j, entry) in row.iter_mut().enumerate().take(K) {
             //
             // 6: A_hat[i, j] ← SampleNTT(XOF(ρ, i, j))    ▷ each entry of Â uniform in NTT domain
-            // See page 21 regarding transpose of i, j -? j, i in XOF() https://csrc.nist.gov/files/pubs/fips/203/ipd/docs/fips-203-initial-public-comments-2023.pdf
+            // Note transpose of i, j -> j, i in XOF() was fixed prior to final FIPS 203
+            // See https://csrc.nist.gov/files/pubs/fips/203/ipd/docs/fips-203-initial-public-comments-2023.pdf
             *entry = sample_ntt(xof(rho, j.to_le_bytes()[0], i.to_le_bytes()[0]));
 
             // 7: end for

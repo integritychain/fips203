@@ -2,10 +2,10 @@ workspace = { members = ['ffi'], exclude = ["ct_cm4", "dudect", "fuzz", "wasm"] 
 
 [package]
 name = "fips203"
-version = "0.2.1"
+version = "0.4.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-description = "FIPS 203 (draft): Module-Lattice-Based Key-Encapsulation Mechanism"
+description = "FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism"
 authors = ["Eric Schorn <eschorn@integritychain.com>"]
 documentation = "https://docs.rs/fips203"
 categories = ["cryptography", "no-std"]
@@ -32,13 +32,14 @@ zeroize = { version = "1.6.0", default-features = false, features = ["zeroize_de
 
 
 [dev-dependencies]  # Some are marginally outdated to retain MSRV 1.70
-rand = "0.8.5"
-regex = "1.10.2"
-hex = "0.4.3"
-rand_chacha = "0.3.1"
 criterion = "0.4.0"
 flate2 = "1.0.27"
+hex = "0.4.3"
 hex-literal = "0.4.1"
+rand = "0.8.5"
+rand_chacha = "0.3.1"
+regex = "1.10.2"
+serde_json = {version = "1.0.127", features = []}
 
 
 [[bench]]
@@ -48,9 +49,6 @@ harness = false
 
 [profile.dev]
 debug = true
-#lto = true
-#opt-level = 3
-#codegen-units = 1
 
 
 [profile.release]
