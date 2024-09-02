@@ -1,10 +1,10 @@
-use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
+#[cfg(feature = "ml-kem-1024")]
+use fips203::ml_kem_1024;
 #[cfg(feature = "ml-kem-512")]
 use fips203::ml_kem_512;
 #[cfg(feature = "ml-kem-768")]
 use fips203::ml_kem_768;
-#[cfg(feature = "ml-kem-1024")]
-use fips203::ml_kem_1024;
+use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
 use rand_chacha::rand_core::SeedableRng;
 
 

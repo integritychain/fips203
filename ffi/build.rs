@@ -3,8 +3,10 @@ use std::fs;
 use std::path::Path;
 
 fn main() {
-    println!("cargo:rustc-cdylib-link-arg=-Wl,-soname,libfips203.so.{}",
-             std::env::var("CARGO_PKG_VERSION_MAJOR").unwrap());
+    println!(
+        "cargo:rustc-cdylib-link-arg=-Wl,-soname,libfips203.so.{}",
+        std::env::var("CARGO_PKG_VERSION_MAJOR").unwrap()
+    );
 
     // Write minimal pkg-config file:
     let out_dir = env::var("OUT_DIR").unwrap();
@@ -18,10 +20,16 @@ fn main() {
     let url = std::env::var("CARGO_PKG_REPOSITORY").unwrap();
     let pc_dest_path = Path::new(&out_dir).join(format!("{libname}.pc"));
 
-    fs::write(pc_dest_path, format!("Name: {libname}
+    fs::write(
+        pc_dest_path,
+        format!(
+            "Name: {libname}
 Description: {desc}
 Version: {version}
 URL: {url}
 Libs: -l{libname}
-")).unwrap()
+"
+        ),
+    )
+    .unwrap()
 }

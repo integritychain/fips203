@@ -1,5 +1,4 @@
-use rand_core::{CryptoRng, CryptoRngCore, RngCore};
-
+use rand_core::CryptoRngCore;
 
 #[cfg(feature = "default-rng")]
 use rand_core::OsRng;
@@ -128,33 +127,7 @@ pub trait KeyGen {
     /// # Ok(())}
     /// ```
     #[must_use]
-    fn keygen_with_seed(d: [u8; 32], z: [u8; 32]) -> (Self::EncapsKey, Self::DecapsKey) {
-        // A little hacky, but we preserve the illusion of a CryptoRng in this special case...
-
-        struct DummyRng {
-            data: [[u8; 32]; 2],
-            i: usize,
-        }
-
-        impl RngCore for DummyRng {
-            fn next_u32(&mut self) -> u32 { unimplemented!() }
-
-            fn next_u64(&mut self) -> u64 { unimplemented!() }
-
-            fn fill_bytes(&mut self, _out: &mut [u8]) { unimplemented!() }
-
-            fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
-                out.copy_from_slice(&self.data[self.i]);
-                self.i = 1;
-                Ok(())
-            }
-        }
-
-        impl CryptoRng for DummyRng {}
-
-        let mut rnd = DummyRng { data: [z, d], i: 0 };
-        Self::try_keygen_with_rng(&mut rnd).expect("rnd will not fail")
-    }
+    fn keygen_with_seed(d: [u8; 32], z: [u8; 32]) -> (Self::EncapsKey, Self::DecapsKey);
 
 
     /// Performs validation between an encapsulation key and a decapsulation key (both in byte arrays), perhaps in the

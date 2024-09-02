@@ -7,27 +7,25 @@ use rand_core::CryptoRngCore;
 use subtle::{ConditionallySelectable, ConstantTimeEq};
 
 
-/// Algorithm 15 `ML-KEM.KeyGen()` on page 29.
-/// Generates an encapsulation key and a corresponding decapsulation key.
+/// Algorithm 16 `ML-KEM.KeyGen_internal(d,z)` on page 32.
+/// Uses randomness to generate an encapsulation key and a corresponding decapsulation key.
 ///
-/// Output: Encapsulation key `ek` ∈ `B^{384·k+32}` <br>
-/// Output: Decapsulation key `dk` ∈ `B^{768·k+96}`
-pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
-    rng: &mut impl CryptoRngCore, ek: &mut [u8], dk: &mut [u8],
-) -> Result<(), &'static str> {
-    debug_assert_eq!(ek.len(), 384 * K + 32, "Alg 15: ek len not 384 * K + 32");
-    debug_assert_eq!(dk.len(), 768 * K + 96, "Alg 15: dk len not 768 * K + 96");
+/// Input:  randomness `𝑑 ∈ 𝔹^{32}`.
+/// Input:  randomness `𝑧 ∈ 𝔹^{32}`.
+/// Output: encapsulation key `ek ∈ 𝔹^{384·𝑘+32}`.
+/// Output: decapsulation key `dk ∈ 𝔹^{768·𝑘+96}`.
+pub(crate) fn ml_kem_key_gen_internal<const K: usize, const ETA1_64: usize>(
+    d: [u8; 32], z: [u8; 32], ek: &mut [u8], dk: &mut [u8],
+) {
+    debug_assert_eq!(ek.len(), 384 * K + 32, "Alg 16: ek len not 384 * K + 32");
+    debug_assert_eq!(dk.len(), 768 * K + 96, "Alg 16: dk len not 768 * K + 96");
 
-    // 1: z ←− B32    ▷ z is 32 random bytes (see Section 3.3)
-    let mut z = [0u8; 32];
-    rng.try_fill_bytes(&mut z)
-        .map_err(|_| "Alg 15: Random number generator failed")?;
-
-    // 2: (ek_{PKE}, dk_{PKE}) ← K-PKE.KeyGen()    ▷ run key generation for K-PKE
+    // 1: (ek_PKE , dk_PKE ) ← K-PKE.KeyGen(𝑑)    ▷ run key generation for K-PKE
+    // 2: ek ← ek_PKE    ▷ KEM encaps key is just the PKE encryption key
     let p1 = 384 * K;
-    k_pke_key_gen::<K, ETA1_64>(rng, ek, &mut dk[..p1])?; // 3: ek ← ekPKE
+    k_pke_key_gen::<K, ETA1_64>(d, ek, &mut dk[..p1]); // writes ek and part of dk
 
-    // 4: dk ← (dkPKE ∥ek∥H(ek)∥z)  (first concat element is done above alongside ek)
+    // 3: dk ← (dk_PKE ‖ ek ‖ H(ek) ‖ 𝑧)    ▷ KEM decaps key includes PKE decryption key
     let h_ek = h(ek);
     let p2 = p1 + ek.len();
     let p3 = p2 + h_ek.len();
@@ -35,7 +33,37 @@ pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
     dk[p2..p3].copy_from_slice(&h_ek);
     dk[p3..].copy_from_slice(&z);
 
-    // 5: return (ek, dk)
+    // 4: return (ek, dk)
+}
+
+
+/// Algorithm 19 `ML-KEM.KeyGen()` on page 35.
+/// Generates an encapsulation key and a corresponding decapsulation key.
+///
+/// Output: Encapsulation key `ek` ∈ `B^{384·k+32}` <br>
+/// Output: Decapsulation key `dk` ∈ `B^{768·k+96}`
+pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
+    rng: &mut impl CryptoRngCore, ek: &mut [u8], dk: &mut [u8],
+) -> Result<(), &'static str> {
+    debug_assert_eq!(ek.len(), 384 * K + 32, "Alg 19: ek len not 384 * K + 32");
+    debug_assert_eq!(dk.len(), 768 * K + 96, "Alg 19: dk len not 768 * K + 96");
+
+    // 1: z ←− B^{32}    ▷ z is 32 random bytes (see Section 3.3)
+    let mut z = [0u8; 32];
+    rng.try_fill_bytes(&mut z).map_err(|_| "Alg 19: Random number generator failed for z")?;
+
+    // 2: d ←− B32    ▷ d is 32 random bytes (see Section 3.3)
+    let mut d = [0u8; 32];
+    rng.try_fill_bytes(&mut d).map_err(|_| "Alg 19: Random number generator failed for d")?;
+
+    // 3: if 𝑑 == NULL or 𝑧 == NULL then
+    // 4:   return ⊥    ▷ return an error indication if random bit generation failed
+    // 5: end if
+
+    // 6: (ek, dk) ← ML-KEM.KeyGen_internal(𝑑, 𝑧)    ▷ run internal key generation algorithm
+    ml_kem_key_gen_internal::<K, ETA1_64>(d, z, ek, dk);
+
+    // 7: return (ek, dk)
     Ok(())
 }
 
@@ -77,8 +105,7 @@ pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64:
 
     // 1: m ←− B32          ▷ m is 32 random bytes (see Section 3.3)
     let mut m = [0u8; 32];
-    rng.try_fill_bytes(&mut m)
-        .map_err(|_| "Alg16: random number generator failed")?;
+    rng.try_fill_bytes(&mut m).map_err(|_| "Alg16: random number generator failed")?;
 
     // 2: (K, r) ← G(m∥H(ek))    ▷ derive shared secret key K and randomness r
     let h_ek = h(ek);

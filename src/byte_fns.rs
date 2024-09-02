@@ -3,23 +3,24 @@ use crate::types::Z;
 use crate::Q;
 
 
-// Note: Algorithm 2 and 3 have been "optimized away" as they had a lot of overhead
-// and made memory allocations tricky. The definitions are left here for reference.
+// Note: Algorithms 1 and 2 are examples only, so have not been implemented. Algorithms
+// 3 and 4 have been "optimized away" as they had a lot of overhead and made memory
+// allocations tricky. The definitions are left here for reference.
 
-// /// Algorithm 2 `BitsToBytes(b)` on page 17.
-// /// Converts a bit string (of length a multiple of eight) into an array of bytes.
+// /// Algorithm 3 `BitsToBytes(b)` on page 20.
+// /// Converts a bit array (of a length that is a multiple of eight) into an array of bytes.
 // ///
 // /// Input: bit array b ∈ {0,1}^{8·ℓ} <br>
 // /// Output: byte array B ∈ B^ℓ
 
-// /// Algorithm 3 `BytesToBits(B)` on page 18.
+// /// Algorithm 4 `BytesToBits(B)` on page 20.
 // /// Performs the inverse of `BitsToBytes`, converting a byte array into a bit array.
 // ///
 // /// Input: byte array B ∈ B^ℓ <br>
 // /// Output: bit array b ∈ {0,1}^{8·ℓ}
 
 
-/// Algorithm 4 `ByteEncode_d(F)` on page 19.
+/// Algorithm 5 `ByteEncode_d(F)` on page 22.
 /// Encodes an array of `d`-bit integers into a byte array, for `1 ≤ d ≤ 12`.
 /// This is an optimized variant (which does not use individual bit functions).
 ///
@@ -28,10 +29,8 @@ use crate::Q;
 pub(crate) fn byte_encode(d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8]) {
     debug_assert_eq!(bytes_b.len(), 32 * d as usize, "Alg 4: bytes_b len is not 32 * d");
     debug_assert!(
-        integers_f
-            .iter()
-            .all(|f| f.get_u16() <= if d < 12 { 1 << d } else { Q }),
-        "Alg 4: integers_f out of range"
+        integers_f.iter().all(|f| f.get_u16() <= if d < 12 { 1 << d } else { Q }),
+        "Alg 5: integers_f out of range"
     );
     //
     // Our "working" register, from which to drop bytes out of
@@ -65,7 +64,7 @@ pub(crate) fn byte_encode(d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8]) {
 }
 
 
-/// Algorithm 5 `ByteDecode_d(B)` on page 19.
+/// Algorithm 6 `ByteDecode_d(B)` on page 22.
 /// Decodes a byte array into an array of d-bit integers, for 1 ≤ d ≤ 12.
 /// This is an optimized variant (which does not use individual bit functions).
 ///
@@ -74,7 +73,7 @@ pub(crate) fn byte_encode(d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8]) {
 pub(crate) fn byte_decode(
     d: u32, bytes_b: &[u8], integers_f: &mut [Z; 256],
 ) -> Result<(), &'static str> {
-    debug_assert_eq!(bytes_b.len(), 32 * d as usize, "Alg 5: bytes len is not 32 * d");
+    debug_assert_eq!(bytes_b.len(), 32 * d as usize, "Alg 6: bytes len is not 32 * d");
     //
     // Our "working" register
     let mut temp = 0u32;
@@ -107,7 +106,7 @@ pub(crate) fn byte_decode(
 
     // Supports modulus check per FIPS 203 section 6.2.2
     let m = if d < 12 { 1 << d } else { u32::from(Q) };
-    ensure!(integers_f.iter().all(|e| e.get_u32() < m), "Alg 5: integers out of range");
+    ensure!(integers_f.iter().all(|e| e.get_u32() < m), "Alg 6: integers out of range");
     Ok(())
 }
 

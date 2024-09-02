@@ -115,7 +115,9 @@ macro_rules! functionality {
     () => {
         use crate::byte_fns::byte_decode;
         use crate::helpers::{ensure, h};
-        use crate::ml_kem::{ml_kem_decaps, ml_kem_encaps, ml_kem_key_gen};
+        use crate::ml_kem::{
+            ml_kem_decaps, ml_kem_encaps, ml_kem_key_gen, ml_kem_key_gen_internal,
+        };
         use crate::traits::{Decaps, Encaps, KeyGen, SerDes};
         use crate::types::Z;
         use crate::SharedSecretKey;
@@ -147,6 +149,12 @@ macro_rules! functionality {
                 let (mut ek, mut dk) = ([0u8; EK_LEN], [0u8; DK_LEN]);
                 ml_kem_key_gen::<K, { ETA1 as usize * 64 }>(rng, &mut ek, &mut dk)?;
                 Ok((EncapsKey { 0: ek }, DecapsKey { 0: dk }))
+            }
+
+            fn keygen_with_seed(d: [u8; 32], z: [u8; 32]) -> (EncapsKey, DecapsKey) {
+                let (mut ek, mut dk) = ([0u8; EK_LEN], [0u8; DK_LEN]);
+                ml_kem_key_gen_internal::<K, { ETA1 as usize * 64 }>(d, z, &mut ek, &mut dk);
+                (EncapsKey { 0: ek }, DecapsKey { 0: dk })
             }
 
             #[allow(clippy::items_after_statements)] // Introduce A5Rng just when needed prior to encaps
