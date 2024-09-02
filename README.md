@@ -64,7 +64,7 @@ The Rust [Documentation][docs-link] lives under each **Module** corresponding to
 * Note that FIPS 203 places specific requirements on randomness per section 3.3, hence the exposed `RNG`.
 * Requires Rust **1.70** or higher. The minimum supported Rust version (MSRV) may be changed in the future,
   but it will be done with a minor version bump (when the major version is larger than 0).
-* All on-by-default features of this library are covered by SemVer.
+* All on-by-default features of this library are covered by `SemVer`.
 * The FIPS 203 standard is 'new' and so this software is experimental -- USE AT YOUR OWN RISK!
 
 ## License
