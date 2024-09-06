@@ -1,7 +1,7 @@
 #![no_std]
 #![deny(clippy::pedantic, warnings, missing_docs, unsafe_code)]
 // Most of the 'allow' category...
-#![deny(absolute_paths_not_starting_with_crate, box_pointers, dead_code)]
+#![deny(absolute_paths_not_starting_with_crate, dead_code)]
 #![deny(elided_lifetimes_in_paths, explicit_outlives_requirements, keyword_idents)]
 #![deny(let_underscore_drop, macro_use_extern_crate, meta_variable_misuse, missing_abi)]
 #![deny(non_ascii_idents, rust_2021_incompatible_closure_captures)]

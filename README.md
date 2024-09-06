@@ -79,7 +79,7 @@ defined in the Apache-2.0 license, shall be dual licensed as above without any a
 
 [//]: # (badges)
 
-[crate-image]: https://buildstats.info/crate/fips203
+[crate-image]: https://img.shields.io/crates/v/fips203
 
 [crate-link]: https://crates.io/crates/fips203
 
