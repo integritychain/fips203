@@ -5,19 +5,19 @@ use crate::Q;
 
 // Note: Algorithms 1 and 2 are examples only, so have not been implemented. Algorithms
 // 3 and 4 have been "optimized away" as they had a lot of overhead and made memory
-// allocations tricky. The definitions are left here for reference.
+// allocations tricky. The definitions of the latter two are left here for reference.
 
 // /// Algorithm 3 `BitsToBytes(b)` on page 20.
 // /// Converts a bit array (of a length that is a multiple of eight) into an array of bytes.
 // ///
-// /// Input: bit array b ∈ {0,1}^{8·ℓ} <br>
-// /// Output: byte array B ∈ B^ℓ
+// /// Input: bit array `b ∈ {0,1}^{8·ℓ}` <br>
+// /// Output: byte array `B ∈ B^ℓ`
 
 // /// Algorithm 4 `BytesToBits(B)` on page 20.
 // /// Performs the inverse of `BitsToBytes`, converting a byte array into a bit array.
 // ///
-// /// Input: byte array B ∈ B^ℓ <br>
-// /// Output: bit array b ∈ {0,1}^{8·ℓ}
+// /// Input: byte array `B ∈ B^ℓ` <br>
+// /// Output: bit array `b ∈ {0,1}^{8·ℓ}`
 
 
 /// Algorithm 5 `ByteEncode_d(F)` on page 22.
@@ -25,11 +25,11 @@ use crate::Q;
 /// This is an optimized variant (which does not use individual bit functions).
 ///
 /// Input: integer array `F ∈ Z^{256}_m`, where `m = 2^d if d < 12` and `m = q if d = 12` <br>
-/// Output: byte array B ∈ B^{32·d}
+/// Output: byte array `B ∈ B^{32·d}`
 pub(crate) fn byte_encode(d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8]) {
-    debug_assert_eq!(bytes_b.len(), 32 * d as usize, "Alg 4: bytes_b len is not 32 * d");
+    debug_assert_eq!(bytes_b.len(), 32 * d as usize, "Alg 5: bytes_b len is not 32 * d");
     debug_assert!(
-        integers_f.iter().all(|f| f.get_u16() <= if d < 12 { 1 << d } else { Q }),
+        integers_f.iter().all(|f| f.get_u32() <= if d < 12 { 1 << d } else { u32::from(Q) }),
         "Alg 5: integers_f out of range"
     );
     //
@@ -68,7 +68,7 @@ pub(crate) fn byte_encode(d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8]) {
 /// Decodes a byte array into an array of d-bit integers, for 1 ≤ d ≤ 12.
 /// This is an optimized variant (which does not use individual bit functions).
 ///
-/// Input: byte array B ∈ B^{32·d} <br>
+/// Input: byte array `B ∈ B^{32·d}` <br>
 /// Output: integer array `F ∈ Z^256_m`, where `m = 2^d if d < 12` and `m = q if d = 12`
 pub(crate) fn byte_decode(
     d: u32, bytes_b: &[u8], integers_f: &mut [Z; 256],

@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.4.0 (2024-09-XX)
 
-- Updated to final release of FIPS 203 as of August 13, 2024
+- Updated to final release of FIPS 203 as of August 13, 2024; Passes NIST tests
+- Added `keygen_from_seed(d, z)` API
 
 ## 0.2.1 (2024-05-01)
 

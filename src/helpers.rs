@@ -17,7 +17,7 @@ macro_rules! ensure {
 pub(crate) use ensure; // make available throughout crate
 
 
-/// Vector addition; See bottom of page 9, second row: `z_hat` = `u_hat` + `v_hat`
+/// Vector addition; See commentary on 2.11 page 10: `z_hat` = `u_hat` + `v_hat`
 #[must_use]
 pub(crate) fn add_vecs<const K: usize>(
     vec_a: &[[Z; 256]; K], vec_b: &[[Z; 256]; K],
@@ -32,7 +32,7 @@ pub(crate) fn add_vecs<const K: usize>(
 }
 
 
-/// Matrix by vector multiplication; See top of page 10, first row: `w_hat` = `A_hat` mul `u_hat`
+/// Matrix by vector multiplication; See commentary on 2.12 page 10: `w_hat` = `A_hat` mul `u_hat`
 #[must_use]
 pub(crate) fn mul_mat_vec<const K: usize>(
     a_hat: &[[[Z; 256]; K]; K], u_hat: &[[Z; 256]; K],
@@ -51,7 +51,7 @@ pub(crate) fn mul_mat_vec<const K: usize>(
 }
 
 
-/// Matrix transpose by vector multiplication; See top of page 10, second row: `y_hat` = `A_hat^T` mul `u_hat`
+/// Matrix transpose by vector multiplication; See commentary on 2.13 page 10: `y_hat` = `A_hat^T` mul `u_hat`
 #[must_use]
 pub(crate) fn mul_mat_t_vec<const K: usize>(
     a_hat: &[[[Z; 256]; K]; K], u_hat: &[[Z; 256]; K],
@@ -61,7 +61,7 @@ pub(crate) fn mul_mat_t_vec<const K: usize>(
     for i in 0..K {
         #[allow(clippy::needless_range_loop)] // alternative is harder to understand
         for j in 0..K {
-            let tmp = multiply_ntts(&a_hat[j][i], &u_hat[j]);
+            let tmp = multiply_ntts(&a_hat[j][i], &u_hat[j]); // i,j swapped vs above fn
             for n in 0..256 {
                 y_hat[i][n] = y_hat[i][n].add(tmp[n]);
             }
@@ -71,7 +71,7 @@ pub(crate) fn mul_mat_t_vec<const K: usize>(
 }
 
 
-/// Vector dot product; See top of page 10, third row: `z_hat` = `u_hat^T` mul `v_hat`
+/// Vector dot product; See commentary on 2.14 page 10: `z_hat` = `u_hat^T` mul `v_hat`
 #[must_use]
 pub(crate) fn dot_t_prod<const K: usize>(u_hat: &[[Z; 256]; K], v_hat: &[[Z; 256]; K]) -> [Z; 256] {
     let mut result = [Z::default(); 256];
@@ -85,7 +85,7 @@ pub(crate) fn dot_t_prod<const K: usize>(u_hat: &[[Z; 256]; K], v_hat: &[[Z; 256
 }
 
 
-/// Function PRF on page 16 (4.1).
+/// Function PRF on page 18 (4.3).
 #[must_use]
 pub(crate) fn prf<const ETA_64: usize>(s: &[u8; 32], b: u8) -> [u8; ETA_64] {
     let mut hasher = Shake256::default();
@@ -98,7 +98,7 @@ pub(crate) fn prf<const ETA_64: usize>(s: &[u8; 32], b: u8) -> [u8; ETA_64] {
 }
 
 
-/// Function XOF on page 16 (4.2), used with 32-byte `rho`
+/// Function XOF on page 19 (4.6), used with 32-byte `rho`
 #[must_use]
 pub(crate) fn xof(rho: &[u8; 32], i: u8, j: u8) -> impl XofReader {
     //debug_assert_eq!(rho.len(), 32);
@@ -110,7 +110,7 @@ pub(crate) fn xof(rho: &[u8; 32], i: u8, j: u8) -> impl XofReader {
 }
 
 
-/// Function G on page 17 (4.4). <br>
+/// Function G on page 19 (4.5). <br>
 /// `g()` is utilized in several different fashions: on a single array as well
 /// as on two concatenated arrays. The single signature here has sufficient
 /// flexibility for reuse and avoiding an unnecessary prior concatenation.
@@ -124,7 +124,7 @@ pub(crate) fn g(bytes: &[&[u8]]) -> ([u8; 32], [u8; 32]) {
 }
 
 
-/// Function H on page 17 (4.3). <br>
+/// Function H on page 18 (4.4). <br>
 /// `h()` is used on a variable-length ek, so the signature here is a slice.
 #[must_use]
 pub(crate) fn h(bytes: &[u8]) -> [u8; 32] {
@@ -135,7 +135,7 @@ pub(crate) fn h(bytes: &[u8]) -> [u8; 32] {
 }
 
 
-/// Function J n page 17 (4.4). <br>
+/// Function J n page 18 (4.4). <br>
 /// `j()` is similar to `g()` above in that the second operand is a variable
 /// length `ct`. The signature here is for ease of use.
 #[must_use]
@@ -150,7 +150,7 @@ pub(crate) fn j(z: &[u8; 32], ct: &[u8]) -> [u8; 32] {
 }
 
 
-/// Compress<d> from page 18 (4.5).
+/// Compress<d> from page 21 (4.7).
 /// x → ⌈(2^d/q) · x⌋
 /// `d` comes from fixed security parameter, `inout` saves some allocation.
 /// This works for all odd q = 17 to 6307, d = 0 to 11, and x = 0 to q-1.
@@ -165,7 +165,7 @@ pub(crate) fn compress_vector(d: u32, inout: &mut [Z]) {
 }
 
 
-/// Decompress<d> from page 18 (4.6).
+/// Decompress<d> from page 21 (4.8).
 /// y → ⌈(q/2^d) · y⌋
 /// `d` comes from fixed security parameter, `inout` saves some allocation
 #[allow(clippy::cast_possible_truncation)] // last line

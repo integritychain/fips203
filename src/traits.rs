@@ -108,7 +108,7 @@ pub trait KeyGen {
     /// rand::thread_rng().fill_bytes(&mut d);
     /// rand::thread_rng().fill_bytes(&mut z);
     ///
-    /// let (ek1, dk1) = ml_kem_512::KG::keygen_with_seed(d, z);   // Party 1 generates both encaps and decaps keys
+    /// let (ek1, dk1) = ml_kem_512::KG::keygen_from_seed(d, z);   // Party 1 generates both encaps and decaps keys
     /// let ek1_bytes = ek1.into_bytes();                    // Party 1 serializes the encaps key
     ///
     /// let ek2_bytes = ek1_bytes;                           // Party 1 sends encaps bytes to party 2
@@ -127,7 +127,7 @@ pub trait KeyGen {
     /// # Ok(())}
     /// ```
     #[must_use]
-    fn keygen_with_seed(d: [u8; 32], z: [u8; 32]) -> (Self::EncapsKey, Self::DecapsKey);
+    fn keygen_from_seed(d: [u8; 32], z: [u8; 32]) -> (Self::EncapsKey, Self::DecapsKey);
 
 
     /// Performs validation between an encapsulation key and a decapsulation key (both in byte arrays), perhaps in the

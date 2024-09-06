@@ -64,14 +64,14 @@ fn test_keygen() {
             let ek_exp = decode(test["ek"].as_str().unwrap()).unwrap();
             let dk_exp = decode(test["dk"].as_str().unwrap()).unwrap();
             let mut rnd = TestRng::new();
-            rnd.push(&d);
             rnd.push(&z);
+            rnd.push(&d);
 
             #[cfg(feature = "ml-kem-512")]
             if test_group["parameterSet"] == "ML-KEM-512" {
                 // Following line picks up seed API
                 let (ek_act, dk_act) =
-                    ml_kem_512::KG::keygen_with_seed(d.try_into().unwrap(), z.try_into().unwrap());
+                    ml_kem_512::KG::keygen_from_seed(d.try_into().unwrap(), z.try_into().unwrap());
                 assert_eq!(ek_exp, ek_act.into_bytes());
                 assert_eq!(dk_exp, dk_act.into_bytes());
             }

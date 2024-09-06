@@ -8,7 +8,7 @@ use sha3::digest::XofReader;
 /// This implementation takes the `XofReader` directly.
 ///
 /// Input: byte stream `B ∈ B^{34}`     ▷ a 32-byte seed along with two indices <br>
-/// Output: array `a_hat` ∈ `Z^{256}_q`    ▷ the coefficients of the NTT of a polynomial
+/// Output: array `a_hat ∈ Z^{256}_q`    ▷ the coefficients of the NTT of a polynomial
 pub(crate) fn sample_ntt(mut xof_reader: impl XofReader) -> [Z; 256] {
     //
     let mut array_a_hat = [Z::default(); 256];
@@ -24,37 +24,36 @@ pub(crate) fn sample_ntt(mut xof_reader: impl XofReader) -> [Z; 256] {
     // This rejection sampling loop is solely dependent upon rho which crosses a trust boundary
     // in the clear. Thus, it does not need to be constant time.
     // 4: while j < 256 do
-    #[allow(clippy::cast_possible_truncation)] // d1 as u16, d2 as u16
     while j < 256 {
         //
         // 5: (ctx, 𝐶) ← XOF.Squeeze(ctx, 3)    ▷ get a fresh 3-byte array 𝐶 from XOF
         xof_reader.read(&mut c); // Draw 3 bytes
 
         // 6: 𝑑1 ← 𝐶[0] + 256 ⋅ (𝐶[1] mod 16)    ▷ 0 ≤ 𝑑1 < 2^{12}
-        let d1 = u32::from(c[0]) + 256 * (u32::from(c[1]) & 0x0F);
+        let d1 = u16::from(c[0]) + 256 * (u16::from(c[1]) & 0x0F);
 
         // 7: 𝑑2 ← ⌊𝐶[1]/16⌋ + 16 ⋅ 𝐶[2]    ▷ 0 ≤ 𝑑2 < 2^{12}
-        let d2 = (u32::from(c[1]) >> 4) + 16 * u32::from(c[2]);
+        let d2 = (u16::from(c[1]) >> 4) + 16 * u16::from(c[2]);
 
         // 8: if d1 < q then
-        if d1 < u32::from(Q) {
+        if d1 < Q {
             //
             // 9: a_hat[j] ← d1         ▷ a_hat ∈ Z256
-            array_a_hat[j].set_u16(d1 as u16);
+            array_a_hat[j].set_u16(d1);
 
-            // 10: j ← j+1
+            // 10: j ← j + 1
             j += 1;
 
             // 11: end if
         }
 
         // 12: if d2 < q and j < 256 then
-        if (d2 < u32::from(Q)) & (j < 256) {
+        if (d2 < Q) & (j < 256) {
             //
             // 13: a_hat[j] ← d2
-            array_a_hat[j].set_u16(d2 as u16);
+            array_a_hat[j].set_u16(d2);
 
-            // 14: j ← j+1
+            // 14: j ← j + 1
             j += 1;
 
             // 15: end if
@@ -68,9 +67,9 @@ pub(crate) fn sample_ntt(mut xof_reader: impl XofReader) -> [Z; 256] {
 }
 
 
-/// Algorithm 8 `SamplePolyCBDη(B)` on page 23.
+/// Algorithm 8 `SamplePolyCBD_η(B)` on page 23.
 /// Takes a seed as input and outputs a pseudorandom sample from the distribution `D_𝜂(𝑅_𝑞)`. <br>
-/// This function is an optimized version that avoids the `BytesToBits` function (algorithm 3).
+/// This function is an optimized version that avoids the `BytesToBits` function (algorithm 4).
 ///
 /// Input: byte array `B ∈ B^{64·η}` <br>
 /// Output: array `f ∈ Z^{256}_q`

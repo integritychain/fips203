@@ -23,7 +23,7 @@ pub(crate) fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
         // 4: for (start ← 0; start < 256; start ← start + 2 · len)
         for start in (0..256).step_by(2 * len) {
             //
-            // 5: zeta ← ζ^{BitRev7(i)} mod q
+            // 5: zeta ← ζ^{BitRev_7(i)} mod q
             let mut zeta = Z::default();
             zeta.set_u16(ZETA_TABLE[i << 1]);
 
@@ -33,13 +33,13 @@ pub(crate) fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
             // 7: for ( j ← start; j < start + len; j ++)
             for j in start..(start + len) {
                 //
-                // 8: t ← zeta · f_hat[ j + len]    ▷ steps 8-10 done modulo q
+                // 8: t ← zeta · f_hat[j + len]    ▷ steps 8-10 done modulo q
                 let t = f_hat[j + len].mul(zeta);
 
-                // 9: f_hat[ j + len] ← f_hat [ j] − t
+                // 9: f_hat[j + len] ← f_hat [j] − t
                 f_hat[j + len] = f_hat[j].sub(t);
 
-                // 10: f_hat[ j] ← f_hat[ j] + t
+                // 10: f_hat[j] ← f_hat[j] + t
                 f_hat[j] = f_hat[j].add(t);
 
                 // 11: end for
@@ -59,11 +59,12 @@ pub(crate) fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
 /// Algorithm 10 `NTTinv(f)` on page 26.
 /// Computes the polynomial `f ∈ R_q` corresponding to the given NTT representation `f_hat ∈ T_q`.
 ///
-/// Input: array `f_hat` ∈ `Z^{256}`    ▷ the coefficients of input NTT representation <br>
-/// Output: array `f` ∈ `Z^{256}`    ▷ the coefficients of the inverse-NTT of the input
+/// Input: array `f_hat ∈ Z^{256}`    ▷ the coefficients of input NTT representation <br>
+/// Output: array `f ∈ Z^{256}`    ▷ the coefficients of the inverse-NTT of the input
 #[must_use]
 #[allow(clippy::module_name_repetitions)]
 pub(crate) fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
+    //
     // 1: f ← f_hat    ▷ will compute in-place on a copy of input array
     let mut f: [Z; 256] = core::array::from_fn(|i| f_hat[i]);
 
@@ -76,7 +77,7 @@ pub(crate) fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
         // 4: for (start ← 0; start < 256; start ← start + 2 · len)
         for start in (0..256).step_by(2 * len) {
             //
-            // 5: zeta ← ζ^{BitRev7(i)} mod q
+            // 5: zeta ← ζ^{BitRev_7(i)} mod q
             let mut zeta = Z::default();
             zeta.set_u16(ZETA_TABLE[i << 1]);
 
@@ -86,13 +87,13 @@ pub(crate) fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
             // 7: for ( j ← start; j < start + len; j ++)
             for j in start..(start + len) {
                 //
-                // 8: t ← f [ j]
+                // 8: t ← f[j]
                 let t = f[j];
 
-                // 9: f [ j] ← t + f [ j + len]    ▷ steps 9-10 done modulo q
+                // 9: f[j] ← t + f[j + len]    ▷ steps 9-10 done modulo q
                 f[j] = t.add(f[j + len]);
 
-                // 10: f [ j + len] ← zeta · ( f [ j + len] − t)
+                // 10: f[j + len] ← zeta · ( f[j + len] − t)
                 f[j + len] = zeta.mul(f[j + len].sub(t));
 
                 // 11: end for
@@ -115,7 +116,7 @@ pub(crate) fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
 
 
 /// Algorithm 11 `MultiplyNTTs(f_hat, g_hat)` on page 27.
-/// Computes the product (in the ring `T_q` ) of two NTT representations.
+/// Computes the product (in the ring `T_q`) of two NTT representations.
 ///
 /// Input: Two arrays `f_hat ∈ Z^{256}_q` and `g_hat ∈ Z^{256}_q`    ▷ the coefficients of two NTT representations <br>
 /// Output: An array `h_hat ∈ Z^{256}_q`    ▷ the coefficients of the product of the inputs
@@ -151,10 +152,10 @@ pub(crate) fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
 #[must_use]
 pub(crate) fn base_case_multiply(a0: Z, a1: Z, b0: Z, b1: Z, gamma: Z) -> (Z, Z) {
     // 1: c0 ← a0 · b0 + a1 · b1 · γ    ▷ steps 1-2 done modulo q
-    let c0 = a0.mul(b0).add(a1.mul(b1).mul(gamma));
+    let c0 = a0.mul(b0).add(a1.mul(b1).mul(gamma)); // TODO: optimize?
 
     // 2: c1 ← a0 · b1 + a1 · b0
-    let c1 = a0.mul(b1).add(a1.mul(b0));
+    let c1 = a0.mul(b1).add(a1.mul(b0)); // TODO: optimize?
 
     // 3: return c0, c1
     (c0, c1)

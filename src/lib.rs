@@ -24,43 +24,48 @@
 
 // Functionality map per FIPS 203
 //
-// Algorithm 2 BitsToBytes(b) on page 17                    --> optimized out (byte_fns.rs)
-// Algorithm 3 BytesToBits(B) on page 18                    --> optimized out (byte_fns.rs)
-// Algorithm 4 ByteEncode_d(F) on page 19                   --> byte_fns.rs
-// Algorithm 5 ByteDecode_d(B) on page 19                   --> byte_fns.rs
-// Algorithm 6 SampleNTT(B) on page 20                      --> sampling.rs
-// Algorithm 7 SamplePolyCBDη(B) on page 20                 --> sampling.rs
-// Algorithm 8 NTT(f) on page 22                            --> ntt.rs
-// Algorithm 9 NTT−1(fˆ) on page 23                         --> ntt.rs
-// Algorithm 10 MultiplyNTTs(fˆ,ĝ) on page 24               --> ntt.rs
-// Algorithm 11 BaseCaseMultiply(a0,a1,b0,b1,γ) on page 24  --> ntt.rs
-// Algorithm 12 K-PKE.KeyGen() on page 26                   --> k_pke.rs
-// Algorithm 13 K-PKE.Encrypt(ekPKE,m,r) on page 27         --> k_pke.rs
-// Algorithm 14 K-PKE.Decrypt(dkPKE,c) on page 28           --> k_pke.rs
-// Algorithm 15 ML-KEM.KeyGen() on page 29                  --> ml_kem.rs
-// Algorithm 16 ML-KEM.Encaps(ek) on page 30                --> ml_kem.rs
-// Algorithm 17 ML-KEM.Decaps(c,dk) on page 32              --> ml_kem.rs
-// PRF and XOF on page 16                                   --> helpers.rs
-// Three hash functions: G, H, J on page 17                 --> helpers.rs
-// Compress and Decompress on page 18                       --> helpers.rs
+// Algorithm 1 ForExample()                                 --> example only  (byte_fns.rs)
+// Algorithm 2 SHAKE128example(str1, …, str𝑚, 𝑏_1, …, 𝑏_ℓ)  --> example only  (byte_fns.rs)
+// Algorithm 3 BitsToBytes(b) on page 20                    --> optimized out (byte_fns.rs)
+// Algorithm 4 BytesToBits(B) on page 20                    --> optimized out (byte_fns.rs)
+// Algorithm 5 ByteEncode_d(F) on page 22                   --> byte_fns.rs
+// Algorithm 6 ByteDecode_d(B) on page 22                   --> byte_fns.rs
+// Algorithm 7 SampleNTT(B) on page 23                      --> sampling.rs
+// Algorithm 8 SamplePolyCBD_η(B) on page 23                --> sampling.rs
+// Algorithm 9 NTT(f) on page 26                            --> ntt.rs
+// Algorithm 10 NTT−1(fˆ) on page 26                        --> ntt.rs
+// Algorithm 11 MultiplyNTTs(fˆ,ĝ) on page 27               --> ntt.rs
+// Algorithm 12 BaseCaseMultiply(a0,a1,b0,b1,γ) on page 27  --> ntt.rs
+// Algorithm 13 K-PKE.KeyGen() on page 29                   --> k_pke.rs
+// Algorithm 14 K-PKE.Encrypt(ek_PKE,m,r) on page 30        --> k_pke.rs
+// Algorithm 15 K-PKE.Decrypt(dk_PKE,c) on page 31          --> k_pke.rs
+// Algorithm 16 ML-KEM.KeyGen_internal(d,z) on page 32      --> ml_kem.rs
+// Algorithm 17 ML-KEM.Encaps_internal(ek,m) on page 33     --> ml_kem.rs
+// Algorithm 18 ML-KEM.Decaps_internal(dk,c) on page 34     --> ml_kem.rs
+// Algorithm 19 ML-KEM.KeyGen() on page 35                  --> ml_kem.rs
+// Algorithm 20 ML-KEM.Encaps(ek) on page 37                --> ml_kem.rs
+// Algorithm 21 ML-KEM.Decaps(dk,c) on page 38              --> ml_kem.rs
+// PRF and XOF on page 18/19                                --> helpers.rs
+// Three hash functions: G, H, J on page 18/19              --> helpers.rs
+// Compress and Decompress on page 21                       --> helpers.rs
 //
-// The three parameter sets are modules in this file with injected macro code that connects
-// them into the functionality in ml_kem.rs. Some of the 'obtuse' coding style is driven by
-// `clippy pedantic`. While the API suggests the code is not constant-time, this has been
-// confirmed as constant-time (outside of rho) by both /fips203/dudect and /fips203/ct_cm4
-// functionality.
+// The three security parameter sets are modules in this file with injected macro code that
+// connects them into the functionality in ml_kem.rs. Some of the 'obtuse' coding style is
+// driven by `clippy pedantic`. While the API may suggest the code is not constant-time,
+// this has been confirmed as constant-time (outside of rho) by both /fips203/dudect and
+// /fips203/ct_cm4 functionality (other than the `validate_keypair_vartime()` functions).
 //
 // Note that the use of generics has been constrained to storage allocation purposes,
-// e.g. `[0u8; EK_LEN];` (where arithmetic expressions are not allowed), while the remainder
-// of the security parameters are generally passed as normal function parameters.
+// only e.g. `[0u8; EK_LEN];` (where arithmetic expressions are not allowed), while the
+// remainder of the security parameters are generally passed as normal function parameters.
 //
 // The ensure!() instances are for validation purposes and cannot be turned off. The
 // debug_assert!() instances are (effectively) targeted by the fuzzer in /fips203/fuzz and
-// will support quicker future changes from the FIPS 203 specification update.
+// will support quicker future changes from any FIPS 203 specification update.
 
 
-/// The `rand_core` types are re-exported so that users of fips203 do not
-/// have to worry about using the exact correct version of `rand_core`.
+/// These `rand_core` types are re-exported so that users of fips203 do not
+/// have to worry about using the exactly correct version of `rand_core`.
 pub use rand_core::{CryptoRng, Error as RngError, RngCore};
 
 use crate::traits::SerDes;
@@ -96,15 +101,16 @@ impl SerDes for SharedSecretKey {
 
     fn into_bytes(self) -> Self::ByteArray { self.0 }
 
+    // While this function never fails for `SharedSecretKey`, it includes the `try_` prefix
+    // to maintain alignment with the SerDes trait (alongside all the other objects) and to
+    // retains the opportunity for future validation.
     fn try_from_bytes(ssk: Self::ByteArray) -> Result<Self, &'static str> {
-        // The `try_` is not really needed but implemented for symmetry/consistency, e.g., there
-        // is no opportunity for validation (yet), but using a Result for the future possibility
         Ok(SharedSecretKey(ssk))
     }
 }
 
 
-// Conservative (constant-time) support...
+// Conservative constant-time support
 impl PartialEq for SharedSecretKey {
     fn eq(&self, other: &Self) -> bool { bool::from(self.0.ct_eq(&other.0)) }
 }
@@ -151,7 +157,7 @@ macro_rules! functionality {
                 Ok((EncapsKey { 0: ek }, DecapsKey { 0: dk }))
             }
 
-            fn keygen_with_seed(d: [u8; 32], z: [u8; 32]) -> (EncapsKey, DecapsKey) {
+            fn keygen_from_seed(d: [u8; 32], z: [u8; 32]) -> (EncapsKey, DecapsKey) {
                 let (mut ek, mut dk) = ([0u8; EK_LEN], [0u8; DK_LEN]);
                 ml_kem_key_gen_internal::<K, { ETA1 as usize * 64 }>(d, z, &mut ek, &mut dk);
                 (EncapsKey { 0: ek }, DecapsKey { 0: dk })
@@ -329,9 +335,9 @@ macro_rules! functionality {
 #[cfg(feature = "ml-kem-512")]
 pub mod ml_kem_512 {
     //! Functionality for the ML-KEM-512 security parameter set, which is claimed to be in security category 1, see
-    //! table 2 & 3 on page 33 of spec.
+    //! table 2 & 3 on page 39 of spec.
     //!
-    //! See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
+    //! See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf>
     //!
     //! Typical usage flow entails:
     //! 1. The originator runs `try_keygen()` to get an encaps key `encapsKey` and decaps key `decapsKey`.
@@ -365,9 +371,9 @@ pub mod ml_kem_512 {
 #[cfg(feature = "ml-kem-768")]
 pub mod ml_kem_768 {
     //! Functionality for the ML-KEM-768 security parameter set, which is claimed to be in security category 3, see
-    //! table 2 & 3 on page 33 of spec.
+    //! table 2 & 3 on page 39 of spec.
     //!
-    //! See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
+    //! See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf>
     //!
     //! Typical usage flow entails:
     //! 1. The originator runs `try_keygen()` to get an encaps key `encapsKey` and decaps key `decapsKey`.
@@ -400,9 +406,9 @@ pub mod ml_kem_768 {
 #[cfg(feature = "ml-kem-1024")]
 pub mod ml_kem_1024 {
     //! Functionality for the ML-KEM-1024 security parameter set, which is claimed to be in security category 5, see
-    //! table 2 & 3 on page 33 of spec.
+    //! table 2 & 3 on page 39 of spec.
     //!
-    //! See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf>
+    //! See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf>
     //!
     //! Typical usage flow entails:
     //! 1. The originator runs `try_keygen()` to get an encaps key `encapsKey` and decaps key `decapsKey`.

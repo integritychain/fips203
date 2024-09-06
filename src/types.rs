@@ -26,13 +26,12 @@ pub struct CipherText<const CT_LEN: usize>(pub(crate) [u8; CT_LEN]);
 
 /// Stored as u16 for space, but arithmetic as u32 for perf
 #[derive(Clone, Copy, Default)]
+#[repr(align(8))]
 pub(crate) struct Z(u16);
 
 
 #[allow(clippy::inline_always)]
 impl Z {
-    pub(crate) fn get_u16(self) -> u16 { self.0 }
-
     pub(crate) fn get_u32(self) -> u32 { u32::from(self.0) }
 
     pub(crate) fn set_u16(&mut self, a: u16) { self.0 = a }
