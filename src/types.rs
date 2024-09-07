@@ -60,11 +60,11 @@ impl Z {
     }
 
     #[inline(always)]
-    #[allow(clippy::items_after_statements, clippy::cast_possible_truncation)] // rem as u16; for perf
+    #[allow(clippy::cast_possible_truncation)] // rem as u16; for perf
     pub(crate) fn mul(self, other: Self) -> Self {
+        const M: u64 = ((1u64 << 36) + Q as u64 - 1) / Q as u64;
         debug_assert!(self.0 < Q);
         debug_assert!(other.0 < Q);
-        const M: u64 = ((1u64 << 36) + Q as u64 - 1) / Q as u64;
         let prod = u32::from(self.0) * u32::from(other.0); // * debug=strict, release=wrapping
         let quot = ((u64::from(prod) * M) >> 36) as u32;
         let rem = prod - quot * u32::from(Q); // further reduction is not needed

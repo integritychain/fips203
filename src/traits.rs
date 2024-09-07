@@ -26,24 +26,24 @@ pub trait KeyGen {
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// # #[cfg(feature = "ml-kem-512")] {
-    /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
+    /// use fips203::ml_kem_512;  // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
     ///
-    /// let (ek1, dk1) = ml_kem_512::KG::try_keygen()?;   // Party 1 generates both encaps and decaps keys
-    /// let ek1_bytes = ek1.into_bytes();                    // Party 1 serializes the encaps key
+    /// let (ek1, dk1) = ml_kem_512::KG::try_keygen()?;  // Party 1 generates both encaps and decaps keys
+    /// let ek1_bytes = ek1.into_bytes();  // Party 1 serializes the encaps key
     ///
-    /// let ek2_bytes = ek1_bytes;                           // Party 1 sends encaps bytes to party 2
+    /// let ek2_bytes = ek1_bytes;  // Party 1 sends encaps bytes to party 2
     ///
     /// let ek2 = ml_kem_512::EncapsKey::try_from_bytes(ek2_bytes)?;  // Party 2 deserializes the encaps key
-    /// let (ssk2, ct2) = ek2.try_encaps()?;              // Party 2 generates shared secret and ciphertext
-    /// let ct2_bytes = ct2.into_bytes();                    // Party 2 serializes the ciphertext
+    /// let (ssk2, ct2) = ek2.try_encaps()?;  // Party 2 generates shared secret and ciphertext
+    /// let ct2_bytes = ct2.into_bytes();  // Party 2 serializes the ciphertext
     ///
-    /// let ct1_bytes = ct2_bytes;                           // Party 2 sends the ciphertext to party 1
+    /// let ct1_bytes = ct2_bytes;  // Party 2 sends the ciphertext to party 1
     ///
-    /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?; // Party 1 deserializes the ciphertext
-    /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
+    /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?;  // Party 1 deserializes the ciphertext
+    /// let ssk1 = dk1.try_decaps(&ct1)?;  // Party 1 runs decaps to generate the shared secret
     ///
-    /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// assert_eq!(ssk1, ssk2);  // Each party has the same shared secret
     /// # }
     /// # Ok(())}
     /// ```
@@ -64,24 +64,24 @@ pub trait KeyGen {
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
-    /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
+    /// use fips203::ml_kem_512;  // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
     ///
-    /// let (ek1, dk1) = ml_kem_512::KG::try_keygen_with_rng(&mut OsRng)?;   // Party 1 generates both encaps and decaps keys
-    /// let ek1_bytes = ek1.into_bytes();                    // Party 1 serializes the encaps key
+    /// let (ek1, dk1) = ml_kem_512::KG::try_keygen_with_rng(&mut OsRng)?;  // Party 1 generates both encaps and decaps keys
+    /// let ek1_bytes = ek1.into_bytes();  // Party 1 serializes the encaps key
     ///
-    /// let ek2_bytes = ek1_bytes;                           // Party 1 sends encaps bytes to party 2
+    /// let ek2_bytes = ek1_bytes;  // Party 1 sends encaps bytes to party 2
     ///
     /// let ek2 = ml_kem_512::EncapsKey::try_from_bytes(ek2_bytes)?;  // Party 2 deserializes the encaps key
-    /// let (ssk2, ct2) = ek2.try_encaps_with_rng(&mut OsRng)?;       // Party 2 generates shared secret and ciphertext
-    /// let ct2_bytes = ct2.into_bytes();                    // Party 2 serializes the ciphertext
+    /// let (ssk2, ct2) = ek2.try_encaps_with_rng(&mut OsRng)?;  // Party 2 generates shared secret and ciphertext
+    /// let ct2_bytes = ct2.into_bytes();  // Party 2 serializes the ciphertext
     ///
-    /// let ct1_bytes = ct2_bytes;                           // Party 2 sends the ciphertext to party 1
+    /// let ct1_bytes = ct2_bytes;  // Party 2 sends the ciphertext to party 1
     ///
-    /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?; // Party 1 deserializes the ciphertext
-    /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
+    /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?;  // Party 1 deserializes the ciphertext
+    /// let ssk1 = dk1.try_decaps(&ct1)?;  // Party 1 runs decaps to generate the shared secret
     ///
-    /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// assert_eq!(ssk1, ssk2);  // Each party has the same shared secret
     /// # }
     /// # Ok(())}
     /// ```
@@ -97,32 +97,33 @@ pub trait KeyGen {
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
-    /// # use crate::fips203::RngCore;
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
-    /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
+    /// use crate::fips203::RngCore;
+    /// use fips203::ml_kem_512;  // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
     ///
-    /// let (mut d, mut z) = ([0u8; 32], [0u8; 32]);         // Note that (d,z) are secret values
-    /// rand::thread_rng().fill_bytes(&mut d);
-    /// rand::thread_rng().fill_bytes(&mut z);
+    /// // Party 1 gets the d and z seeds from the OS random number generator
+    /// let mut d_z = [0u8; 64];
+    /// OsRng.fill_bytes(&mut d_z);
     ///
-    /// let (ek1, dk1) = ml_kem_512::KG::keygen_from_seed(d, z);   // Party 1 generates both encaps and decaps keys
-    /// let ek1_bytes = ek1.into_bytes();                    // Party 1 serializes the encaps key
+    /// // Party 1 supplies the d and z seeds to key generation to obtain both encaps and decaps keys
+    /// let (ek1, dk1) = ml_kem_512::KG::keygen_from_seed(d_z[0..32].try_into().unwrap(), d_z[32..64].try_into().unwrap());
+    /// let ek1_bytes = ek1.into_bytes();  // Party 1 serializes the encaps key
     ///
-    /// let ek2_bytes = ek1_bytes;                           // Party 1 sends encaps bytes to party 2
+    /// let ek2_bytes = ek1_bytes;  // Party 1 sends encaps bytes to party 2
     ///
     /// let ek2 = ml_kem_512::EncapsKey::try_from_bytes(ek2_bytes)?;  // Party 2 deserializes the encaps key
-    /// let (ssk2, ct2) = ek2.try_encaps_with_rng(&mut OsRng)?;       // Party 2 generates shared secret and ciphertext
-    /// let ct2_bytes = ct2.into_bytes();                    // Party 2 serializes the ciphertext
+    /// let (ssk2, ct2) = ek2.try_encaps_with_rng(&mut OsRng)?;  // Party 2 generates shared secret and ciphertext
+    /// let ct2_bytes = ct2.into_bytes();  // Party 2 serializes the ciphertext
     ///
-    /// let ct1_bytes = ct2_bytes;                           // Party 2 sends the ciphertext to party 1
+    /// let ct1_bytes = ct2_bytes;  // Party 2 sends the ciphertext to party 1
     ///
     /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?; // Party 1 deserializes the ciphertext
-    /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
+    /// let ssk1 = dk1.try_decaps(&ct1)?;  // Party 1 runs decaps to generate the shared secret
     ///
-    /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// assert_eq!(ssk1, ssk2);  // Each party has the same shared secret
     /// # }
     /// # Ok(())}
     /// ```
@@ -139,12 +140,12 @@ pub trait KeyGen {
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
-    /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
+    /// use fips203::ml_kem_512;  // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
     ///
     /// let (ek, dk) = ml_kem_512::KG::try_keygen_with_rng(&mut OsRng)?;
-    /// let ek_bytes = ek.into_bytes();    // Serialize and perhaps store-then-restore encaps key
-    /// let dk_bytes = dk.into_bytes();    // Serialize and perhaps store-then-restore decaps key
+    /// let ek_bytes = ek.into_bytes();  // Serialize and perhaps store-then-restore encaps key
+    /// let dk_bytes = dk.into_bytes();  // Serialize and perhaps store-then-restore decaps key
     /// assert!(ml_kem_512::KG::validate_keypair_vartime(&ek_bytes, &dk_bytes));  // Validate their correspondence
     ///
     /// # }
@@ -173,24 +174,24 @@ pub trait Encaps {
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
-    /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
+    /// use fips203::ml_kem_512;  // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
     ///
-    /// let (ek1, dk1) = ml_kem_512::KG::try_keygen_with_rng(&mut OsRng)?;   // Party 1 generates both encaps and decaps keys
-    /// let ek1_bytes = ek1.into_bytes();                    // Party 1 serializes the encaps key
+    /// let (ek1, dk1) = ml_kem_512::KG::try_keygen_with_rng(&mut OsRng)?;  // Party 1 generates both encaps and decaps keys
+    /// let ek1_bytes = ek1.into_bytes();  // Party 1 serializes the encaps key
     ///
-    /// let ek2_bytes = ek1_bytes;                           // Party 1 sends encaps bytes to party 2
+    /// let ek2_bytes = ek1_bytes;  // Party 1 sends encaps bytes to party 2
     ///
     /// let ek2 = ml_kem_512::EncapsKey::try_from_bytes(ek2_bytes)?;  // Party 2 deserializes the encaps key
-    /// let (ssk2, ct2) = ek2.try_encaps()?;              // Party 2 generates shared secret and ciphertext
-    /// let ct2_bytes = ct2.into_bytes();                    // Party 2 serializes the ciphertext
+    /// let (ssk2, ct2) = ek2.try_encaps()?;  // Party 2 generates shared secret and ciphertext
+    /// let ct2_bytes = ct2.into_bytes();  // Party 2 serializes the ciphertext
     ///
-    /// let ct1_bytes = ct2_bytes;                           // Party 2 sends the ciphertext to party 1
+    /// let ct1_bytes = ct2_bytes;  // Party 2 sends the ciphertext to party 1
     ///
-    /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?; // Party 1 deserializes the ciphertext
-    /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
+    /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?;  // Party 1 deserializes the ciphertext
+    /// let ssk1 = dk1.try_decaps(&ct1)?;  // Party 1 runs decaps to generate the shared secret
     ///
-    /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// assert_eq!(ssk1, ssk2);  // Each party has the same shared secret
     /// # }
     /// # Ok(())}
     /// ```
@@ -211,24 +212,24 @@ pub trait Encaps {
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
-    /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
+    /// use fips203::ml_kem_512;  // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
     ///
-    /// let (ek1, dk1) = ml_kem_512::KG::try_keygen_with_rng(&mut OsRng)?;   // Party 1 generates both encaps and decaps keys
-    /// let ek1_bytes = ek1.into_bytes();                    // Party 1 serializes the encaps key
+    /// let (ek1, dk1) = ml_kem_512::KG::try_keygen_with_rng(&mut OsRng)?;  // Party 1 generates both encaps and decaps keys
+    /// let ek1_bytes = ek1.into_bytes();  // Party 1 serializes the encaps key
     ///
-    /// let ek2_bytes = ek1_bytes;                           // Party 1 sends encaps bytes to party 2
+    /// let ek2_bytes = ek1_bytes;  // Party 1 sends encaps bytes to party 2
     ///
     /// let ek2 = ml_kem_512::EncapsKey::try_from_bytes(ek2_bytes)?;  // Party 2 deserializes the encaps key
-    /// let (ssk2, ct2) = ek2.try_encaps_with_rng(&mut OsRng)?;    // Party 2 generates shared secret and ciphertext
-    /// let ct2_bytes = ct2.into_bytes();                    // Party 2 serializes the ciphertext
+    /// let (ssk2, ct2) = ek2.try_encaps_with_rng(&mut OsRng)?;  // Party 2 generates shared secret and ciphertext
+    /// let ct2_bytes = ct2.into_bytes();  // Party 2 serializes the ciphertext
     ///
-    /// let ct1_bytes = ct2_bytes;                           // Party 2 sends the ciphertext to party 1
+    /// let ct1_bytes = ct2_bytes;  // Party 2 sends the ciphertext to party 1
     ///
-    /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?; // Party 1 deserializes the ciphertext
-    /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
+    /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?;  // Party 1 deserializes the ciphertext
+    /// let ssk1 = dk1.try_decaps(&ct1)?;  // Party 1 runs decaps to generate the shared secret
     ///
-    /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// assert_eq!(ssk1, ssk2);  // Each party has the same shared secret
     /// # }
     /// # Ok(())}
     /// ```
@@ -256,24 +257,24 @@ pub trait Decaps {
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
-    /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
+    /// use fips203::ml_kem_512;  // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
     ///
-    /// let (ek1, dk1) = ml_kem_512::KG::try_keygen_with_rng(&mut OsRng)?;   // Party 1 generates both encaps and decaps keys
-    /// let ek1_bytes = ek1.into_bytes();                    // Party 1 serializes the encaps key
+    /// let (ek1, dk1) = ml_kem_512::KG::try_keygen_with_rng(&mut OsRng)?;  // Party 1 generates both encaps and decaps keys
+    /// let ek1_bytes = ek1.into_bytes();  // Party 1 serializes the encaps key
     ///
-    /// let ek2_bytes = ek1_bytes;                           // Party 1 sends encaps bytes to party 2
+    /// let ek2_bytes = ek1_bytes;  // Party 1 sends encaps bytes to party 2
     ///
     /// let ek2 = ml_kem_512::EncapsKey::try_from_bytes(ek2_bytes)?;  // Party 2 deserializes the encaps key
-    /// let (ssk2, ct2) = ek2.try_encaps_with_rng(&mut OsRng)?;    // Party 2 generates shared secret and ciphertext
-    /// let ct2_bytes = ct2.into_bytes();                    // Party 2 serializes the ciphertext
+    /// let (ssk2, ct2) = ek2.try_encaps_with_rng(&mut OsRng)?;  // Party 2 generates shared secret and ciphertext
+    /// let ct2_bytes = ct2.into_bytes();  // Party 2 serializes the ciphertext
     ///
-    /// let ct1_bytes = ct2_bytes;                           // Party 2 sends the ciphertext to party 1
+    /// let ct1_bytes = ct2_bytes;  // Party 2 sends the ciphertext to party 1
     ///
     /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?; // Party 1 deserializes the ciphertext
-    /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
+    /// let ssk1 = dk1.try_decaps(&ct1)?;  // Party 1 runs decaps to generate the shared secret
     ///
-    /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// assert_eq!(ssk1, ssk2);  // Each party has the same shared secret
     /// # }
     /// # Ok(())}
     /// ```
@@ -294,24 +295,24 @@ pub trait SerDes {
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
-    /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
+    /// use fips203::ml_kem_512;  // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
     ///
-    /// let (ek1, dk1) = ml_kem_512::KG::try_keygen_with_rng(&mut OsRng)?;   // Party 1 generates both encaps and decaps keys
-    /// let ek1_bytes = ek1.into_bytes();                    // Party 1 serializes the encaps key
+    /// let (ek1, dk1) = ml_kem_512::KG::try_keygen_with_rng(&mut OsRng)?;  // Party 1 generates both encaps and decaps keys
+    /// let ek1_bytes = ek1.into_bytes();  // Party 1 serializes the encaps key
     ///
-    /// let ek2_bytes = ek1_bytes;                           // Party 1 sends encaps bytes to party 2
+    /// let ek2_bytes = ek1_bytes;  // Party 1 sends encaps bytes to party 2
     ///
     /// let ek2 = ml_kem_512::EncapsKey::try_from_bytes(ek2_bytes)?;  // Party 2 deserializes the encaps key
-    /// let (ssk2, ct2) = ek2.try_encaps_with_rng(&mut OsRng)?;    // Party 2 generates shared secret and ciphertext
-    /// let ct2_bytes = ct2.into_bytes();                    // Party 2 serializes the ciphertext
+    /// let (ssk2, ct2) = ek2.try_encaps_with_rng(&mut OsRng)?;  // Party 2 generates shared secret and ciphertext
+    /// let ct2_bytes = ct2.into_bytes();  // Party 2 serializes the ciphertext
     ///
-    /// let ct1_bytes = ct2_bytes;                           // Party 2 sends the ciphertext to party 1
+    /// let ct1_bytes = ct2_bytes;  // Party 2 sends the ciphertext to party 1
     ///
-    /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?; // Party 1 deserializes the ciphertext
-    /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
+    /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?;  // Party 1 deserializes the ciphertext
+    /// let ssk1 = dk1.try_decaps(&ct1)?;  // Party 1 runs decaps to generate the shared secret
     ///
-    /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// assert_eq!(ssk1, ssk2);  // Each party has the same shared secret
     /// # }
     /// # Ok(())}
     /// ```
@@ -327,24 +328,24 @@ pub trait SerDes {
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
-    /// use fips203::ml_kem_512;                             // Could also be ml_kem_768 or ml_kem_1024.
+    /// use fips203::ml_kem_512;  // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
     ///
-    /// let (ek1, dk1) = ml_kem_512::KG::try_keygen_with_rng(&mut OsRng)?;   // Party 1 generates both encaps and decaps keys
-    /// let ek1_bytes = ek1.into_bytes();                    // Party 1 serializes the encaps key
+    /// let (ek1, dk1) = ml_kem_512::KG::try_keygen_with_rng(&mut OsRng)?;  // Party 1 generates both encaps and decaps keys
+    /// let ek1_bytes = ek1.into_bytes();  // Party 1 serializes the encaps key
     ///
-    /// let ek2_bytes = ek1_bytes;                           // Party 1 sends encaps bytes to party 2
+    /// let ek2_bytes = ek1_bytes;  // Party 1 sends encaps bytes to party 2
     ///
     /// let ek2 = ml_kem_512::EncapsKey::try_from_bytes(ek2_bytes)?;  // Party 2 deserializes the encaps key
-    /// let (ssk2, ct2) = ek2.try_encaps_with_rng(&mut OsRng)?;    // Party 2 generates shared secret and ciphertext
-    /// let ct2_bytes = ct2.into_bytes();                    // Party 2 serializes the ciphertext
+    /// let (ssk2, ct2) = ek2.try_encaps_with_rng(&mut OsRng)?;  // Party 2 generates shared secret and ciphertext
+    /// let ct2_bytes = ct2.into_bytes();  // Party 2 serializes the ciphertext
     ///
-    /// let ct1_bytes = ct2_bytes;                           // Party 2 sends the ciphertext to party 1
+    /// let ct1_bytes = ct2_bytes;  // Party 2 sends the ciphertext to party 1
     ///
-    /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?; // Party 1 deserializes the ciphertext
-    /// let ssk1 = dk1.try_decaps(&ct1)?;                 // Party 1 runs decaps to generate the shared secret
+    /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?;  // Party 1 deserializes the ciphertext
+    /// let ssk1 = dk1.try_decaps(&ct1)?;  // Party 1 runs decaps to generate the shared secret
     ///
-    /// assert_eq!(ssk1, ssk2);                              // Each party has the same shared secret
+    /// assert_eq!(ssk1, ssk2);  // Each party has the same shared secret
     /// # }
     /// # Ok(())}
     /// ```

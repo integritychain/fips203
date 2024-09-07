@@ -47,31 +47,7 @@ pub(crate) fn ml_kem_key_gen_internal<const K: usize, const ETA1_64: usize>(
 fn ml_kem_encaps_internal<const K: usize, const ETA1_64: usize, const ETA2_64: usize>(
     du: u32, dv: u32, m: &[u8; 32], ek: &[u8], ct: &mut [u8],
 ) -> Result<SharedSecretKey, &'static str> {
-    debug_assert_eq!(ek.len(), 384 * K + 32, "Alg 17: ek len not 384 * K + 32"); // also: size check at top level
-    debug_assert_eq!(
-        ct.len(),
-        32 * (du as usize * K + dv as usize),
-        "Alg 17: ct len not 32*(DU*K+DV)"
-    ); // also: size check at top level
-
-    // modulus check: perform/confirm the computation ek ← ByteEncode12(ByteDecode12(ek_tilde).
-    // Note: An *external* ek can only arrive via try_from_bytes() which does this validation already.
-    // As such, this check is redundant but is left in for caution and as a fuzz target, as it is
-    // removed in release builds anyway. It also supports quicker changes if the spec moves...
-    debug_assert!(
-        {
-            let mut pass = true;
-            let mut ek_hat = [Z::default(); 256];
-            for i in 0..K {
-                let mut ek_tilde = [0u8; 384];
-                byte_decode(12, &ek[384 * i..384 * (i + 1)], &mut ek_hat).unwrap(); // btw, going to panic
-                byte_encode(12, &ek_hat, &mut ek_tilde);
-                pass &= ek_tilde == ek[384 * i..384 * (i + 1)];
-            }
-            pass
-        },
-        "Alg 17: ek fails modulus check"
-    );
+    // Note: this is only called via ml_kem_encaps() which validates slice sizes and correct decode
 
     // 1: (K, r) ← G(m ∥ H(ek))    ▷ derive shared secret key K and randomness r
     let h_ek = h(ek);

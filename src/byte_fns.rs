@@ -61,6 +61,7 @@ pub(crate) fn byte_encode(d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8]) {
             bit_index -= 8;
         }
     }
+    debug_assert_eq!(byte_index, bytes_b.len(), "Alg 5: left over bytes_b");
 }
 
 
@@ -103,6 +104,8 @@ pub(crate) fn byte_decode(
             int_index += 1;
         }
     }
+
+    debug_assert_eq!(int_index, integers_f.len(), "Alg 6: left over integers");
 
     // Supports modulus check per FIPS 203 section 6.2.2
     let m = if d < 12 { 1 << d } else { u32::from(Q) };
