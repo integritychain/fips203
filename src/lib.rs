@@ -127,7 +127,7 @@ macro_rules! functionality {
         use crate::traits::{Decaps, Encaps, KeyGen, SerDes};
         use crate::types::Z;
         use crate::SharedSecretKey;
-        use rand_core::{CryptoRng, CryptoRngCore, RngCore};
+        use rand_core::CryptoRngCore;
 
 
         /// Correctly sized encapsulation key specific to the target security parameter set.
@@ -164,8 +164,9 @@ macro_rules! functionality {
             }
 
             #[allow(clippy::items_after_statements)] // Introduce A5Rng just when needed prior to encaps
-            fn validate_keypair_vartime(
-                ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray,
+            fn validate_keypair_with_rng_vartime(
+                rng: &mut impl CryptoRngCore, ek: &Self::EncapsByteArray,
+                dk: &Self::DecapsByteArray,
             ) -> bool {
                 // Note that size is checked by only accepting a ref to a correctly sized byte array
                 let len_ek_pke = 384 * K + 32;
@@ -184,24 +185,8 @@ macro_rules! functionality {
                 if ek.is_err() || dk.is_err() {
                     return false;
                 };
-                // A dummy RNG for use in `try_encaps_with_rng()` so that it doesn't require an external RNG
-                struct A5Rng();
-                impl RngCore for A5Rng {
-                    fn next_u32(&mut self) -> u32 { unimplemented!() }
-
-                    fn next_u64(&mut self) -> u64 { unimplemented!() }
-
-                    fn fill_bytes(&mut self, _out: &mut [u8]) { unimplemented!() }
-
-                    fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
-                        out.iter_mut().for_each(|b| *b = 0xa5);
-                        Ok(())
-                    }
-                }
-                impl CryptoRng for A5Rng {}
-                let mut a5rng = A5Rng {};
                 // 4. encaps should run without a problem
-                let ek_res = ek.unwrap().try_encaps_with_rng(&mut a5rng);
+                let ek_res = ek.unwrap().try_encaps_with_rng(rng);
                 if ek_res.is_err() {
                     return false;
                 };
@@ -318,7 +303,8 @@ macro_rules! functionality {
                     let (ek, dk) = KG::try_keygen_with_rng(&mut rng).unwrap();
                     let (ssk1, ct) = ek.try_encaps_with_rng(&mut rng).unwrap();
                     let ssk2 = dk.try_decaps(&ct).unwrap();
-                    assert!(KG::validate_keypair_vartime(
+                    assert!(KG::validate_keypair_with_rng_vartime(
+                        &mut rng,
                         &ek.clone().into_bytes(),
                         &dk.clone().into_bytes()
                     ));

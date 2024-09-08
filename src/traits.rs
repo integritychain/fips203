@@ -139,19 +139,23 @@ pub trait KeyGen {
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// # #[cfg(feature = "ml-kem-512")] {
+    /// use fips203::ml_kem_512; // Could also be ml_kem_768 or ml_kem_1024.
+    /// use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
     /// use rand_core::OsRng;
-    /// use fips203::ml_kem_512;  // Could also be ml_kem_768 or ml_kem_1024.
-    /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
     ///
     /// let (ek, dk) = ml_kem_512::KG::try_keygen_with_rng(&mut OsRng)?;
-    /// let ek_bytes = ek.into_bytes();  // Serialize and perhaps store-then-restore encaps key
-    /// let dk_bytes = dk.into_bytes();  // Serialize and perhaps store-then-restore decaps key
-    /// assert!(ml_kem_512::KG::validate_keypair_vartime(&ek_bytes, &dk_bytes));  // Validate their correspondence
+    /// let ek_bytes = ek.into_bytes(); // Serialize and perhaps store-then-restore encaps key
+    /// let dk_bytes = dk.into_bytes(); // Serialize and perhaps store-then-restore decaps key
+    /// assert!(ml_kem_512::KG::validate_keypair_with_rng_vartime(
+    ///     &mut OsRng, &ek_bytes, &dk_bytes
+    /// )); // Validate their correspondence
     ///
     /// # }
     /// # Ok(())}
     /// ```
-    fn validate_keypair_vartime(ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray) -> bool;
+    fn validate_keypair_with_rng_vartime(
+        rng: &mut impl CryptoRngCore, ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray,
+    ) -> bool;
 }
 
 

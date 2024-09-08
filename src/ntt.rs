@@ -152,10 +152,10 @@ pub(crate) fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
 #[must_use]
 pub(crate) fn base_case_multiply(a0: Z, a1: Z, b0: Z, b1: Z, gamma: Z) -> (Z, Z) {
     // 1: c0 ← a0 · b0 + a1 · b1 · γ    ▷ steps 1-2 done modulo q
-    let c0 = a0.mul(b0).add(a1.mul(b1).mul(gamma)); // TODO: optimize?
+    let c0 = a0.base_mul(a1, b0, b1, gamma);
 
     // 2: c1 ← a0 · b1 + a1 · b0
-    let c1 = a0.mul(b1).add(a1.mul(b0)); // TODO: optimize?
+    let c1 = a0.base_mul2(a1, b0, b1);
 
     // 3: return c0, c1
     (c0, c1)

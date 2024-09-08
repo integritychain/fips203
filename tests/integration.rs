@@ -37,7 +37,11 @@ fn test_expected_flow_512() {
 
         // Double check the correspondence of the serialized keypair (we already have alice_ek)
         let alice_dk_bytes = alice_dk.into_bytes();
-        assert!(ml_kem_512::KG::validate_keypair_vartime(&alice_ek_bytes, &alice_dk_bytes));
+        assert!(ml_kem_512::KG::validate_keypair_with_rng_vartime(
+            &mut rng,
+            &alice_ek_bytes,
+            &alice_dk_bytes
+        ));
     }
 }
 
@@ -71,7 +75,11 @@ fn test_expected_flow_768() {
 
         // Double check the correspondence of the serialized keypair (we already have alice_ek)
         let alice_dk_bytes = alice_dk.into_bytes();
-        assert!(ml_kem_768::KG::validate_keypair_vartime(&alice_ek_bytes, &alice_dk_bytes));
+        assert!(ml_kem_768::KG::validate_keypair_with_rng_vartime(
+            &mut rng,
+            &alice_ek_bytes,
+            &alice_dk_bytes
+        ));
     }
 }
 
@@ -105,7 +113,11 @@ fn test_expected_flow_1024() {
 
         // Double check the correspondence of the serialized keypair (we already have alice_ek)
         let alice_dk_bytes = alice_dk.into_bytes();
-        assert!(ml_kem_1024::KG::validate_keypair_vartime(&alice_ek_bytes, &alice_dk_bytes));
+        assert!(ml_kem_1024::KG::validate_keypair_with_rng_vartime(
+            &mut rng,
+            &alice_ek_bytes,
+            &alice_dk_bytes
+        ));
     }
 }
 
@@ -141,6 +153,10 @@ fn test_forever() {
 
         // Double check the correspondence of the serialized keypair (we already have alice_ek)
         let alice_dk_bytes = alice_dk.into_bytes();
-        assert!(ml_kem_512::KG::validate_keypair_vartime(&alice_ek_bytes, &alice_dk_bytes));
+        assert!(ml_kem_512::KG::validate_keypair_with_rng_vartime(
+            &mut rng,
+            &alice_ek_bytes,
+            &alice_dk_bytes
+        ));
     }
 }
