@@ -8,7 +8,7 @@
 
 [FIPS 203] Module-Lattice-Based Key-Encapsulation Mechanism Standard written in pure Rust for server, desktop, browser 
 and embedded applications. The source repository includes examples demonstrating benchmarking, code provenance, an 
-embedded target, constant-time statistical measurements, fuzzing, WASM execution, C FFI and Python bindings.
+embedded target, constant-time statistical measurements, fuzzing harness, WASM execution, C FFI and Python bindings.
 
 This crate implements the **released** FIPS 203 standard in pure Rust with minimal and mainstream dependencies, **and 
 without any unsafe code**. All three security parameter sets are fully supported and tested. The implementation operates
@@ -59,8 +59,8 @@ The Rust [Documentation][docs-link] lives under each **Module** corresponding to
 ## Notes
 
 * This crate is fully functional and corresponds to the first **release** of FIPS 203.
-* Constant-time operation targets the source-code level only on MSRV, with confirmation via 
-  manual review/inspection, the embedded target, and the `dudect` dynamic tests.
+* Constant-time operation targets the source-code level only on latest version of Rust, with 
+  confirmation via manual review/inspection, the embedded target, and the `dudect` dynamic tests.
 * Note that FIPS 203 places specific requirements on randomness per section 3.3, hence the exposed `RNG`.
 * Requires Rust **1.70** or higher. The minimum supported Rust version (MSRV) may be changed in the future,
   but it will be done with a minor version bump (when the major version is larger than 0).

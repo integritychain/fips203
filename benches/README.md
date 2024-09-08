@@ -4,7 +4,7 @@ Note that constant-time restrictions on the implementation do impact performance
 Additional performance optimizations will follow ...
 
 ~~~
-September 7, 2024
+September 7, 2024 (FIPS 203 'final')
 Intel® Core™ i7-7700K CPU @ 4.20GHz × 8  Circa 2017 w/ Rust 1.81
 
 $ RUSTFLAGS="-C target-cpu=native" cargo bench

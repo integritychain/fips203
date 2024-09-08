@@ -12,7 +12,6 @@ rust-version = "1.70"
 fips203 = { path = "..", default-features = false, features = ["ml-kem-512"] }
 dudect-bencher = "0.6"
 rand_core = { version = "0.6.4", default-features = false }
-subtle = { version = "2.5.0", default-features = false, features = ['const-generics'] }
 
 
 [profile.bench]
