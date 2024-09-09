@@ -90,7 +90,9 @@ fuzz_target!(|data: [u8; 3328]| {
     let dk2 = ml_kem_512::DecapsKey::try_from_bytes(dk2_bytes.try_into().unwrap());
 
     // Fuzz input -> `KG::validate_keypair_vartime()`
-    let _ok = ml_kem_512::KG::validate_keypair_vartime(
+    rng.push(&data[start..start + RND_SIZE]); // reuse for the moment; TODO 'expand'
+    let _ok = ml_kem_512::KG::validate_keypair_with_rng_vartime(
+        &mut rng,
         &ek2_bytes.try_into().unwrap(),
         &dk2_bytes.try_into().unwrap(),
     );

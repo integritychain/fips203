@@ -13,13 +13,14 @@ $ mkdir -p corpus/fuzz_all
 $ dd if=/dev/zero bs=1 count=3328 > corpus/fuzz_all/seed0
 $ for i in $(seq 1 2); do head -c 3328 </dev/urandom > corpus/fuzz_all/seed$i; done
 $ dd if=/dev/zero bs=1 count=3328 | tr '\0x00' '\377' > corpus/fuzz_all/seed3
-$ cargo fuzz run fuzz_all -j 4
+$ cargo fuzz run fuzz_all -j 4 -- -max_total_time=1000
 ~~~
 
-Coverage status of ml_kem_512 is robust, see:
+Coverage status of ml_kem_512 is robust (run last step above twice), see:
 
 ~~~
-#30756: cov: 7503 ft: 5982 corp: 73 exec/s 9 oom/timeout/crash: 0/0/0 time: 960s job: 84 dft_time: 0
+#60523: cov: 5990 ft: 4165 corp: 65 exec/s 16 oom/timeout/crash: 0/0/0 time: 982s job: 85 dft_time: 0
+
 
 # Warning: the following tools are tricky to install/configure
 $ cargo install cargo-cov
