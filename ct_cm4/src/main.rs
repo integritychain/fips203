@@ -15,7 +15,7 @@ use rtt_target::{rprintln, rtt_init_print};
 use subtle::{ConditionallySelectable, ConstantTimeEq};
 
 
-// Test RNG to regurgitate incremented values when 'asked' except rho every i mod 4 == 1
+// Test RNG to regurgitate incremented values when 'asked' except rho every i mod 4 == 0 (seed d)
 #[derive(Clone)]
 struct TestRng {
     rho: u32,
@@ -31,7 +31,7 @@ impl RngCore for TestRng {
 
     fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
         out.iter_mut().for_each(|b| *b = 0);
-        let supply_rho = (self.value & 0x03).ct_eq(&1);
+        let supply_rho = (self.value & 0x03).ct_eq(&0);
         let target = u32::conditional_select(&self.value, &self.rho, supply_rho);
         out[0..4].copy_from_slice(&target.to_be_bytes());
         self.value = self.value.wrapping_add(1);
