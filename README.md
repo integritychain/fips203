@@ -59,8 +59,8 @@ The Rust [Documentation][docs-link] lives under each **Module** corresponding to
 ## Notes
 
 * This crate is fully functional and corresponds to the first **release** of FIPS 203.
-* Constant-time operation targets the source-code level only on latest version of Rust, with 
-  confirmation via manual review/inspection, the embedded target, and the `dudect` dynamic tests.
+* Constant-time operation targets the source-code level only on the latest version of Rust, with 
+  confirmation via manual review/inspection, the embedded target, and the `dudect` dynamic measurements.
 * Note that FIPS 203 places specific requirements on randomness per section 3.3, hence the exposed `RNG`.
 * Requires Rust **1.70** or higher. The minimum supported Rust version (MSRV) may be changed in the future,
   but it will be done with a minor version bump (when the major version is larger than 0).

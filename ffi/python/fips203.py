@@ -267,7 +267,7 @@ class _ML_KEM():
             },
         }
     lib = ctypes.CDLL(ctypes.util.find_library('fips203'))
-    if not hasattr(lib, 'ml_kem_512_keygen'): lib = ctypes.CDLL("../target/debug/libfips203.so")
+    if not hasattr(lib, 'ml_kem_512_keygen'): lib = ctypes.CDLL("../../target/debug/libfips203.so")
 
     # use Any below because i don't know how to specify the type of the FuncPtr
     ffi: Dict[int, Dict[str, Any]] = {}

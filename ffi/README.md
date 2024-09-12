@@ -40,6 +40,7 @@ non-goals are:
 $ cd ffi   # this directory
 $ cargo build
 $ (cd tests && make)
+$ cd python
 $ python3
 >>> from fips203 import ML_KEM_512
 >>> 
