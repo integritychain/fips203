@@ -1,8 +1,14 @@
 //use fips203;
+use rand_core::{OsRng, RngCore};
 
 #[repr(C)]
 pub struct ml_kem_shared_secret {
     data: [u8; fips203::SSK_LEN],
+}
+
+#[repr(C)]
+pub struct ml_kem_seed {
+    data: [u8; 64],
 }
 
 pub const ML_KEM_OK: u8 = 0;
@@ -12,6 +18,15 @@ pub const ML_KEM_DESERIALIZATION_ERROR: u8 = 3;
 pub const ML_KEM_KEYGEN_ERROR: u8 = 4;
 pub const ML_KEM_ENCAPSULATION_ERROR: u8 = 5;
 pub const ML_KEM_DECAPSULATION_ERROR: u8 = 6;
+
+#[no_mangle]
+pub extern "C" fn ml_kem_populate_seed(seed_out: Option<&mut ml_kem_seed>) -> u8 {
+    let Some(seed_out) = seed_out else {
+        return ML_KEM_NULL_PTR_ERROR;
+    };
+    OsRng.fill_bytes(&mut seed_out.data);
+    ML_KEM_OK
+}
 
 // ML-KEM-512
 
@@ -40,6 +55,27 @@ pub extern "C" fn ml_kem_512_keygen(
     let Ok((ek, dk)) = fips203::ml_kem_512::KG::try_keygen() else {
         return ML_KEM_KEYGEN_ERROR;
     };
+
+    encaps_out.data = ek.into_bytes();
+    decaps_out.data = dk.into_bytes();
+    ML_KEM_OK
+}
+
+#[no_mangle]
+pub extern "C" fn ml_kem_512_keygen_from_seed(
+    seed: Option<&ml_kem_seed>,
+    encaps_out: Option<&mut ml_kem_512_encaps_key>,
+    decaps_out: Option<&mut ml_kem_512_decaps_key>,
+) -> u8 {
+    use fips203::traits::{KeyGen, SerDes};
+
+    let (Some(encaps_out), Some(decaps_out), Some(seed)) = (encaps_out, decaps_out, seed) else {
+        return ML_KEM_NULL_PTR_ERROR;
+    };
+    let (ek, dk) = fips203::ml_kem_512::KG::keygen_from_seed(
+        seed.data[0..32].try_into().unwrap(),
+        seed.data[32..64].try_into().unwrap(),
+    );
 
     encaps_out.data = ek.into_bytes();
     decaps_out.data = dk.into_bytes();
@@ -130,6 +166,27 @@ pub extern "C" fn ml_kem_768_keygen(
 }
 
 #[no_mangle]
+pub extern "C" fn ml_kem_768_keygen_from_seed(
+    seed: Option<&ml_kem_seed>,
+    encaps_out: Option<&mut ml_kem_768_encaps_key>,
+    decaps_out: Option<&mut ml_kem_768_decaps_key>,
+) -> u8 {
+    use fips203::traits::{KeyGen, SerDes};
+
+    let (Some(encaps_out), Some(decaps_out), Some(seed)) = (encaps_out, decaps_out, seed) else {
+        return ML_KEM_NULL_PTR_ERROR;
+    };
+    let (ek, dk) = fips203::ml_kem_768::KG::keygen_from_seed(
+        seed.data[0..32].try_into().unwrap(),
+        seed.data[32..64].try_into().unwrap(),
+    );
+
+    encaps_out.data = ek.into_bytes();
+    decaps_out.data = dk.into_bytes();
+    ML_KEM_OK
+}
+
+#[no_mangle]
 pub extern "C" fn ml_kem_768_encaps(
     encaps: Option<&ml_kem_768_encaps_key>, ciphertext_out: Option<&mut ml_kem_768_ciphertext>,
     shared_secret_out: Option<&mut ml_kem_shared_secret>,
@@ -207,6 +264,27 @@ pub extern "C" fn ml_kem_1024_keygen(
     let Ok((ek, dk)) = fips203::ml_kem_1024::KG::try_keygen() else {
         return ML_KEM_KEYGEN_ERROR;
     };
+
+    encaps_out.data = ek.into_bytes();
+    decaps_out.data = dk.into_bytes();
+    ML_KEM_OK
+}
+
+#[no_mangle]
+pub extern "C" fn ml_kem_1024_keygen_from_seed(
+    seed: Option<&ml_kem_seed>,
+    encaps_out: Option<&mut ml_kem_1024_encaps_key>,
+    decaps_out: Option<&mut ml_kem_1024_decaps_key>,
+) -> u8 {
+    use fips203::traits::{KeyGen, SerDes};
+
+    let (Some(encaps_out), Some(decaps_out), Some(seed)) = (encaps_out, decaps_out, seed) else {
+        return ML_KEM_NULL_PTR_ERROR;
+    };
+    let (ek, dk) = fips203::ml_kem_1024::KG::keygen_from_seed(
+        seed.data[0..32].try_into().unwrap(),
+        seed.data[32..64].try_into().unwrap(),
+    );
 
     encaps_out.data = ek.into_bytes();
     decaps_out.data = dk.into_bytes();
