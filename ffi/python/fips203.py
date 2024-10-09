@@ -81,7 +81,7 @@ Please report issues at https://github.com/integritychain/fips203/issues
 '''
 
 '''__version__ should track package.version from  ../Cargo.toml'''
-__version__ = '0.2.1'
+__version__ = '0.4.0'
 __author__ = 'Daniel Kahn Gillmor <dkg@fifthhorseman.net>'
 __all__ = [
     'ML_KEM_512',
