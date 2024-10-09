@@ -1,4 +1,3 @@
-//use fips203;
 use rand_core::{OsRng, RngCore};
 
 #[repr(C)]
