@@ -338,6 +338,12 @@ class _ML_KEM():
                                       ctypes.POINTER(_DecapsKey)]
             ffi['keygen'].restype = ctypes.c_uint8
 
+            ffi['keygen_from_seed'] = cls.lib[f'ml_kem_{level}_keygen_from_seed']
+            ffi['keygen_from_seed'].argtypes = [ctypes.POINTER(_Seed),
+                                                ctypes.POINTER(_EncapsKey),
+                                                ctypes.POINTER(_DecapsKey)]
+            ffi['keygen_from_seed'].restype = ctypes.c_uint8
+
             ffi['encaps'] = cls.lib[f'ml_kem_{level}_encaps']
             ffi['encaps'].argtypes = [ctypes.POINTER(_EncapsKey),
                                       ctypes.POINTER(_Ciphertext),
@@ -380,6 +386,22 @@ class _ML_KEM():
         return (ek, dk)
 
 
+    @classmethod
+    def _keygen_from_seed(cls, strength: int, seed: Seed) -> Tuple[EncapsulationKey,
+                                                                   DecapsulationKey]:
+        ek = EncapsulationKey(strength)
+        dk = DecapsulationKey(strength)
+
+        ret = Err(cls.strength(strength)['keygen_from_seed'](
+            ctypes.byref(seed._seed),
+            ctypes.byref(ek._ek),
+            ctypes.byref(dk._dk)
+        ))
+        if ret is not Err.OK:
+            raise Exception(f"ml_kem_{strength}_keygen() returned "
+                            f"{ret} ({ret.name})")
+        return (ek, dk)
+
 class ML_KEM(ABC):
     '''Abstract base class for all ML-KEM (FIPS 203) parameter sets.'''
 
@@ -390,9 +412,15 @@ class ML_KEM(ABC):
     SS_SIZE: int = 32
 
     @classmethod
-    def keygen(cls) -> Tuple[EncapsulationKey, DecapsulationKey]:
-        '''Generate a pair of Encapsulation and Decapsulation Keys.'''
-        return _ML_KEM._keygen(cls._strength)
+    def keygen(cls, seed: Optional[Seed]) -> Tuple[EncapsulationKey, DecapsulationKey]:
+        '''Generate a pair of Encapsulation and Decapsulation Keys.
+
+        If a Seed is supplied, do a deterministic generation from the seed.
+        Otherwise, randomly generate the key.'''
+        if seed is None:
+            return _ML_KEM._keygen(cls._strength)
+        else:
+            return _ML_KEM._keygen_from_seed(cls._strength, seed)
 
 
 class ML_KEM_512(ML_KEM):
