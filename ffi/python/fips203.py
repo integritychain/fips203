@@ -108,18 +108,22 @@ __all__ = [
     'Ciphertext',
     'EncapsulationKey',
     'DecapsulationKey',
+    'Seed',
 ]
 
 import ctypes
 import ctypes.util
 import enum
-from typing import Tuple, Dict, Any, Union
+import secrets
+from typing import Tuple, Dict, Any, Union, Optional
 from abc import ABC
 
 
 class _SharedSecret(ctypes.Structure):
     _fields_ = [('data', ctypes.c_uint8 * 32)]
 
+class _Seed(ctypes.Structure):
+    _fields_ = [('data', ctypes.c_uint8 * 64)]
 
 class Err(enum.IntEnum):
     OK = 0
@@ -130,6 +134,29 @@ class Err(enum.IntEnum):
     ENCAPSULATION_ERROR = 5
     DECAPSULATION_ERROR = 6
 
+
+class Seed():
+    '''ML-KEM Seed
+
+    This seed can be used to generate an ML-KEM keypair
+    '''
+    def __init__(self, data: Optional[bytes] = None) -> None:
+        '''If initialized with None, the seed will be randomly populated.'''
+        self._seed = _Seed()
+        if data is None:
+            # FIXME: perhaps use ml_kem_populate_seed instead?
+            data = secrets.token_bytes(len(self._seed.data))
+        if len(data) != len(self._seed.data):
+            raise ValueError(f"Expected {len(self._seed.data)} bytes, "
+                             f"got {len(data)}.")
+        for i in range(len(data)):
+            self._seed.data[i] = data[i]
+
+    def __repr__(self) -> str:
+        return '<ML-KEM Seed>'
+
+    def __bytes__(self) -> bytes:
+        return bytes(self._seed.data)
 
 class Ciphertext():
     '''ML-KEM Ciphertext
