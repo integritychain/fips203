@@ -20,8 +20,23 @@ shared_secret_2 = decapsulation_key.decaps(ciphertext)
 assert(shared_secret_1 == shared_secret_2)
 ```
 
-Encapsulation keys, decapsulation keys, and ciphertexts can all be
-serialized by accessing them as `bytes`, and deserialized by
+
+Key generation can also be done deterministically, by passing a
+`SEED_SIZE`-byte seed (the concatenation of d and z) to `keygen`:
+
+```
+from fips203 import ML_KEM_512, Seed
+
+seed1 = Seed()  # Generate a random seed
+(ek1, dk1) = ML_KEM_512.keygen(seed1)
+
+seed2 = Seed(b'\x00'*ML_KEM_512.SEED_SIZE)  # This seed is clearly not a secret!
+(ek2, dk2) = ML_KEM_512.keygen(seed2)
+```
+
+
+Encapsulation keys, decapsulation keys, seeds, and ciphertexts can all
+be serialized by accessing them as `bytes`, and deserialized by
 initializing them with the appropriate size bytes object.
 
 A serialization example:
@@ -29,11 +44,14 @@ A serialization example:
 ```
 from fips203 import ML_KEM_768
 
-(ek,dk) = ML_KEM_768.keygen()
+seed = Seed()
+(ek,dk) = ML_KEM_768.keygen(seed)
 with open('encapskey.bin', 'wb') as f:
     f.write(bytes(ek))
 with open('decapskey.bin', 'wb') as f:
     f.write(bytes(dk))
+with open('seed.bin', 'wb') as f:
+    f.write(bytes(seed)
 ```
 
 A deserialization example, followed by use:
@@ -50,7 +68,7 @@ ek = fips203.EncapsulationKey(ekdata)
 
 The expected sizes (in bytes) of the different objects in each
 parameter set can be accessed with `EK_SIZE`, `DK_SIZE`, `CT_SIZE`,
-and `SS_SIZE`:
+`SEED_SIZE`, and `SS_SIZE`:
 
 ```
 from fips203 import ML_KEM_768
