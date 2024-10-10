@@ -97,6 +97,7 @@ improved, please report it!
 
 Please report issues at https://github.com/integritychain/fips203/issues
 '''
+from __future__ import annotations
 
 '''__version__ should track package.version from  ../Cargo.toml'''
 __version__ = '0.4.0'
@@ -157,6 +158,12 @@ class Seed():
 
     def __bytes__(self) -> bytes:
         return bytes(self._seed.data)
+
+    def keygen(self, strength: int) -> Tuple[EncapsulationKey, DecapsulationKey]:
+        for kt in ML_KEM_512, ML_KEM_768, ML_KEM_1024:
+            if kt._strength == strength:
+                return kt.keygen(self)
+        raise Exception(f"Unknown strength: {strength}, must be 512, 768, or 1024.")
 
 class Ciphertext():
     '''ML-KEM Ciphertext
