@@ -29,6 +29,10 @@ typedef struct ml_kem_shared_secret {
   uint8_t data[32];
 } ml_kem_shared_secret;
 
+typedef struct ml_kem_seed {
+  uint8_t data[64];
+} ml_kem_seed;
+
 
 typedef struct ml_kem_512_encaps_key {
   uint8_t data[800];
@@ -70,8 +74,15 @@ typedef struct ml_kem_1024_ciphertext {
 extern "C" {
 #endif
 
+
+ml_kem_err ml_kem_populate_seed(ml_kem_seed *seed_out);
+
 ml_kem_err ml_kem_512_keygen(ml_kem_512_encaps_key *encaps_out,
                              ml_kem_512_decaps_key *decaps_out);
+
+ml_kem_err ml_kem_512_keygen_from_seed(const ml_kem_seed *d_z,
+                                       ml_kem_512_encaps_key *encaps_out,
+                                       ml_kem_512_decaps_key *decaps_out);
 
 ml_kem_err ml_kem_512_encaps(const ml_kem_512_encaps_key *encaps,
                              ml_kem_512_ciphertext *ciphertext_out,
@@ -84,6 +95,10 @@ ml_kem_err ml_kem_512_decaps(const ml_kem_512_decaps_key *decaps,
 ml_kem_err ml_kem_768_keygen(ml_kem_768_encaps_key *encaps_out,
                              ml_kem_768_decaps_key *decaps_out);
 
+ml_kem_err ml_kem_768_keygen_from_seed(const ml_kem_seed *d_z,
+                                       ml_kem_768_encaps_key *encaps_out,
+                                       ml_kem_768_decaps_key *decaps_out);
+
 ml_kem_err ml_kem_768_encaps(const ml_kem_768_encaps_key *encaps,
                              ml_kem_768_ciphertext *ciphertext_out,
                              ml_kem_shared_secret *shared_secret_out);
@@ -94,6 +109,10 @@ ml_kem_err ml_kem_768_decaps(const ml_kem_768_decaps_key *decaps,
 
 ml_kem_err ml_kem_1024_keygen(ml_kem_1024_encaps_key *encaps_out,
                               ml_kem_1024_decaps_key *decaps_out);
+
+ml_kem_err ml_kem_1024_keygen_from_seed(const ml_kem_seed *d_z,
+                                        ml_kem_1024_encaps_key *encaps_out,
+                                        ml_kem_1024_decaps_key *decaps_out);
 
 ml_kem_err ml_kem_1024_encaps(const ml_kem_1024_encaps_key *encaps,
                               ml_kem_1024_ciphertext *ciphertext_out,

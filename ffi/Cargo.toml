@@ -16,6 +16,9 @@ crate-type = ["staticlib", "cdylib"]
 bench = false
 name = "fips203"
 
+[dependencies]
+rand_core = { version = "0.6.4", features = ["getrandom"] }
+
 [dependencies.fips203]
 path = ".."
 version = "0.4.0"

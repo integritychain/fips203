@@ -8,7 +8,7 @@
 #  (cd tests && make AS_INSTALLED=true)
 
 SIZES = 512 768 1024
-FRAMES = encaps_key decaps_key ciphertext encaps decaps keygen
+FRAMES = encaps_key decaps_key ciphertext encaps decaps keygen keygen_from_seed
 # should derive SONAME somehow, e.g. from CARGO_PKG_VERSION_MAJOR
 SONAME = 0
 
