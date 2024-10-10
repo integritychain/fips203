@@ -410,6 +410,7 @@ class ML_KEM(ABC):
     DK_SIZE: int
     CT_SIZE: int
     SS_SIZE: int = 32
+    SEED_SIZE: int = 64
 
     @classmethod
     def keygen(cls, seed: Optional[Seed]) -> Tuple[EncapsulationKey, DecapsulationKey]:

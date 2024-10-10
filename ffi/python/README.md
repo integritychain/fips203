@@ -68,7 +68,7 @@ ek = fips203.EncapsulationKey(ekdata)
 
 The expected sizes (in bytes) of the different objects in each
 parameter set can be accessed with `EK_SIZE`, `DK_SIZE`, `CT_SIZE`,
-and `SS_SIZE`:
+`SEED_SIZE`, and `SS_SIZE`:
 
 ```
 from fips203 import ML_KEM_768
