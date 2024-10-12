@@ -22,13 +22,7 @@ pub(crate) use ensure; // make available throughout crate
 pub(crate) fn add_vecs<const K: usize>(
     vec_a: &[[Z; 256]; K], vec_b: &[[Z; 256]; K],
 ) -> [[Z; 256]; K] {
-    let mut result = [[Z::default(); 256]; K];
-    for i in 0..K {
-        for n in 0..256 {
-            result[i][n] = vec_a[i][n].add(vec_b[i][n]);
-        }
-    }
-    result
+    core::array::from_fn(|k| core::array::from_fn(|n| vec_a[k][n].add(vec_b[k][n])))
 }
 
 
@@ -42,9 +36,7 @@ pub(crate) fn mul_mat_vec<const K: usize>(
         #[allow(clippy::needless_range_loop)] // alternative is harder to understand
         for j in 0..K {
             let tmp = multiply_ntts(&a_hat[i][j], &u_hat[j]);
-            for n in 0..256 {
-                w_hat[i][n] = w_hat[i][n].add(tmp[n]);
-            }
+            w_hat[i] = add_vecs(&[w_hat[i]], &[tmp])[0];
         }
     }
     w_hat
@@ -62,9 +54,7 @@ pub(crate) fn mul_mat_t_vec<const K: usize>(
         #[allow(clippy::needless_range_loop)] // alternative is harder to understand
         for j in 0..K {
             let tmp = multiply_ntts(&a_hat[j][i], &u_hat[j]); // i,j swapped vs above fn
-            for n in 0..256 {
-                y_hat[i][n] = y_hat[i][n].add(tmp[n]);
-            }
+            y_hat[i] = add_vecs(&[y_hat[i]], &[tmp])[0];
         }
     }
     y_hat
@@ -77,9 +67,7 @@ pub(crate) fn dot_t_prod<const K: usize>(u_hat: &[[Z; 256]; K], v_hat: &[[Z; 256
     let mut result = [Z::default(); 256];
     for j in 0..K {
         let tmp = multiply_ntts(&u_hat[j], &v_hat[j]);
-        for n in 0..256 {
-            result[n] = result[n].add(tmp[n]);
-        }
+        result = add_vecs(&[result], &[tmp])[0];
     }
     result
 }

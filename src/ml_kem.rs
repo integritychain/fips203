@@ -1,7 +1,6 @@
 use crate::byte_fns::{byte_decode, byte_encode};
 use crate::helpers::{g, h, j};
 use crate::k_pke::{k_pke_decrypt, k_pke_encrypt, k_pke_key_gen};
-use crate::types::Z;
 use crate::SharedSecretKey;
 use rand_core::CryptoRngCore;
 use subtle::{ConditionallySelectable, ConstantTimeEq};
@@ -182,10 +181,9 @@ pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64:
     debug_assert!(
         {
             let mut pass = true;
-            let mut ek_hat = [Z::default(); 256];
             for i in 0..K {
                 let mut ek_tilde = [0u8; 384];
-                byte_decode(12, &ek[384 * i..384 * (i + 1)], &mut ek_hat).unwrap(); // btw, going to panic
+                let ek_hat = byte_decode(12, &ek[384 * i..384 * (i + 1)]).unwrap(); // btw, going to panic
                 byte_encode(12, &ek_hat, &mut ek_tilde);
                 pass &= ek_tilde == ek[384 * i..384 * (i + 1)];
             }

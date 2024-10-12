@@ -24,7 +24,7 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
     // 1: (𝜌, 𝜎) ← G(𝑑 ‖ 𝑘)    ▷ expand 32+1 bytes to two pseudorandom 32-byte seeds
     let mut dk = [0u8; 33]; // Last byte is 'final' FIPS 203 fix; 'domain' separator
     dk[0..32].copy_from_slice(&d);
-    dk[32] = K.try_into().unwrap();
+    dk[32] = K.to_le_bytes()[0];
     let (rho, sigma) = g(&[&dk]);
 
     // 2: N ← 0
@@ -64,14 +64,14 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
     let t_hat = add_vecs(&as_hat, &e_hat);
 
     // 19: ek_PKE ← ByteEncode_12(t̂) ∥ ρ    ▷ run ByteEncode12 𝑘 times, then append 𝐀-seed
-    for i in 0..K {
-        byte_encode(12, &t_hat[i], &mut ek_pke[i * 384..(i + 1) * 384]);
+    for (i, chunk) in ek_pke[0..K * 384].chunks_mut(384).enumerate() {
+        byte_encode(12, &t_hat[i], chunk);
     }
     ek_pke[K * 384..].copy_from_slice(&rho);
 
     // 20: dk_PKE ← ByteEncode_12(ŝ)    ▷ run ByteEncode12 𝑘 times
-    for i in 0..K {
-        byte_encode(12, &s_hat[i], &mut dk_pke[i * 384..(i + 1) * 384]);
+    for (i, chunk) in dk_pke.chunks_mut(384).enumerate() {
+        byte_encode(12, &s_hat[i], chunk);
     }
 
     // 21: return (ek_PKE , dk_PKE )
@@ -82,22 +82,13 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
 fn gen_a_hat<const K: usize>(rho: &[u8; 32]) -> [[[Z; 256]; K]; K] {
     //
     // 3: for (i ← 0; i < k; i++)    ▷ generate matrix A ∈ (Z^{256}_q)^{k×k}
-    let mut a_hat = [[[Z::default(); 256]; K]; K];
-    for (i, row) in a_hat.iter_mut().enumerate().take(K) {
-        //
-        // 4: for (j ← 0; j < k; j++)
-        for (j, entry) in row.iter_mut().enumerate().take(K) {
-            //
-            // 5: A_hat[i, j] ← SampleNTT(𝜌‖𝑗‖𝑖)    ▷ 𝑗 and 𝑖 are bytes 33 and 34 of the input
-            *entry = sample_ntt(xof(rho, j.to_le_bytes()[0], i.to_le_bytes()[0]));
-
-            // 6: end for
-        }
-
-        // 7: end for
-    }
-
-    a_hat
+    // 4:   for (j ← 0; j < k; j++)
+    // 5:     A_hat[i, j] ← SampleNTT(𝜌‖𝑗‖𝑖)    ▷ 𝑗 and 𝑖 are bytes 33 and 34 of the input
+    // 6:   end for
+    // 7: end for
+    core::array::from_fn(|i| {
+        core::array::from_fn(|j| sample_ntt(xof(rho, j.to_le_bytes()[0], i.to_le_bytes()[0])))
+    })
 }
 
 
@@ -120,8 +111,8 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
 
     // 2: t̂ ← ByteDecode_12 (ek_PKE [0 : 384k])    ▷ run ByteDecode_12 𝑘 times to decode `𝐭  ∈ (ℤ^{256}_𝑞)^k`
     let mut t_hat = [[Z::default(); 256]; K];
-    for i in 0..K {
-        byte_decode(12, &ek_pke[384 * i..384 * (i + 1)], &mut t_hat[i])?;
+    for (i, chunk) in ek_pke[0..K * 384].chunks(384).enumerate() {
+        t_hat[i] = byte_decode(12, chunk)?;
     }
 
     // 3: ρ ← ek_PKE [384k : 384k + 32]    ▷ extract 32-byte seed from ek_PKE
@@ -164,8 +155,8 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     u = add_vecs(&u, &e1);
 
     // 20: µ ← Decompress1(ByteDecode_1(m)))
-    let mut mu = [Z::default(); 256];
-    byte_decode(1, m, &mut mu)?;
+    let mut mu; // = [Z::default(); 256];
+    mu = byte_decode(1, m)?;
     decompress_vector(1, &mut mu);
 
     // 21: v ← NTT−1 (t̂⊺ ◦ r̂) + e2 + µ    ▷ encode plaintext m into polynomial v.
@@ -213,19 +204,18 @@ pub(crate) fn k_pke_decrypt<const K: usize>(
     // 3: 𝐮′ ← Decompress_𝑑(ByteDecode_𝑑(𝑐1))   ▷ run Decompress𝑑 and ByteDecode𝑑 𝑘 times
     let mut u = [[Z::default(); 256]; K];
     for i in 0..K {
-        byte_decode(du, &c1[32 * du as usize * i..32 * du as usize * (i + 1)], &mut u[i])?;
+        u[i] = byte_decode(du, &c1[32 * du as usize * i..32 * du as usize * (i + 1)])?;
         decompress_vector(du, &mut u[i]);
     }
 
     // 4: v ← Decompress_{dv}(ByteDecode_dv(c_2))
-    let mut v = [Z::default(); 256];
-    byte_decode(dv, c2, &mut v)?;
+    let mut v = byte_decode(dv, c2)?;
     decompress_vector(dv, &mut v);
 
     // 5: s_hat ← ByteDecode_12(dk_PKE)
     let mut s_hat = [[Z::default(); 256]; K];
-    for i in 0..K {
-        byte_decode(12, &dk_pke[384 * i..384 * (i + 1)], &mut s_hat[i])?;
+    for (i, chunk) in dk_pke.chunks(384).enumerate() {
+        s_hat[i] = byte_decode(12, chunk)?;
     }
 
     // 6: 𝑤 ← 𝑣 − NTT (𝐬 ̂ ∘ NTT(𝐮))    ▷ run NTT 𝑘 times; run NTT^{−1} once

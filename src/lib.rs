@@ -51,9 +51,9 @@
 //
 // The three security parameter sets are modules in this file with injected macro code that
 // connects them into the functionality in ml_kem.rs. Some of the 'obtuse' coding style is
-// driven by `clippy pedantic`. While the API may suggest the code is not constant-time,
-// this has been confirmed as constant-time (outside of rho) by both /fips203/dudect and
-// /fips203/ct_cm4 functionality (other than the `validate_keypair_vartime()` functions).
+// driven by `clippy pedantic`. This code has been confirmed as constant-time (outside of
+// rho) via manual inspection,  ./fips203/dudect and ./fips203/ct_cm4 functionality (other
+// than the `validate_keypair_vartime()` functions).
 //
 // Note that the use of generics has been constrained to storage allocation purposes,
 // only e.g. `[0u8; EK_LEN];` (where arithmetic expressions are not allowed), while the
@@ -61,7 +61,7 @@
 //
 // The ensure!() instances are for validation purposes and cannot be turned off. The
 // debug_assert!() instances are (effectively) targeted by the fuzzer in /fips203/fuzz and
-// will support quicker future changes from any FIPS 203 specification update.
+// will support quicker future changes/fixes from any FIPS 203 specification update.
 
 
 /// These `rand_core` types are re-exported so that users of fips203 do not
@@ -125,7 +125,6 @@ macro_rules! functionality {
             ml_kem_decaps, ml_kem_encaps, ml_kem_key_gen, ml_kem_key_gen_internal,
         };
         use crate::traits::{Decaps, Encaps, KeyGen, SerDes};
-        use crate::types::Z;
         use crate::SharedSecretKey;
         use rand_core::CryptoRngCore;
 
@@ -163,7 +162,6 @@ macro_rules! functionality {
                 (EncapsKey { 0: ek }, DecapsKey { 0: dk })
             }
 
-            #[allow(clippy::items_after_statements)] // Introduce A5Rng just when needed prior to encaps
             fn validate_keypair_with_rng_vartime(
                 rng: &mut impl CryptoRngCore, ek: &Self::EncapsByteArray,
                 dk: &Self::DecapsByteArray,
@@ -244,9 +242,8 @@ macro_rules! functionality {
                 // decodes to an array of integers modulo q without any modular reductions". See
                 // also page 30. Note that accepting a byte array of fixed size, rather than a
                 // slice of varied size, addresses check #1.
-                let mut ek_hat = [Z::default(); 256];
                 for i in 0..K {
-                    byte_decode(12, &ek[384 * i..384 * (i + 1)], &mut ek_hat)?;
+                    let _ek_hat = byte_decode(12, &ek[384 * i..384 * (i + 1)])?;
                 }
                 Ok(EncapsKey { 0: ek })
             }
