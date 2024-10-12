@@ -29,7 +29,6 @@ rand_core = { version = "0.6.4", default-features = false }
 sha3 = { version = "0.10.2", default-features = false }
 subtle = { version = "2.5.0", default-features = false, features = ['const-generics'] }
 zeroize = { version = "1.6.0", default-features = false, features = ["zeroize_derive"] }
-time = "0.3.36"  # TODO: temporary fix for Rust 1.80 breakage of cargo outdated in github actions workflow
 
 
 [dev-dependencies]  # Some are marginally outdated to retain MSRV 1.70
