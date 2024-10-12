@@ -20,8 +20,23 @@ shared_secret_2 = decapsulation_key.decaps(ciphertext)
 assert(shared_secret_1 == shared_secret_2)
 ```
 
-Encapsulation keys, decapsulation keys, and ciphertexts can all be
-serialized by accessing them as `bytes`, and deserialized by
+
+Key generation can also be done deterministically, by passing a
+`SEED_SIZE`-byte seed (the concatenation of d and z) to `keygen`:
+
+```
+from fips203 import ML_KEM_512, Seed
+
+seed1 = Seed()  # Generate a random seed
+(ek1, dk1) = ML_KEM_512.keygen(seed1)
+
+seed2 = Seed(b'\x00'*ML_KEM_512.SEED_SIZE)  # This seed is clearly not a secret!
+(ek2, dk2) = ML_KEM_512.keygen(seed2)
+```
+
+
+Encapsulation keys, decapsulation keys, seeds, and ciphertexts can all
+be serialized by accessing them as `bytes`, and deserialized by
 initializing them with the appropriate size bytes object.
 
 A serialization example:
@@ -29,11 +44,14 @@ A serialization example:
 ```
 from fips203 import ML_KEM_768
 
-(ek,dk) = ML_KEM_768.keygen()
+seed = Seed()
+(ek,dk) = ML_KEM_768.keygen(seed)
 with open('encapskey.bin', 'wb') as f:
     f.write(bytes(ek))
 with open('decapskey.bin', 'wb') as f:
     f.write(bytes(dk))
+with open('seed.bin', 'wb') as f:
+    f.write(bytes(seed)
 ```
 
 A deserialization example, followed by use:
@@ -50,7 +68,7 @@ ek = fips203.EncapsulationKey(ekdata)
 
 The expected sizes (in bytes) of the different objects in each
 parameter set can be accessed with `EK_SIZE`, `DK_SIZE`, `CT_SIZE`,
-and `SS_SIZE`:
+`SEED_SIZE`, and `SS_SIZE`:
 
 ```
 from fips203 import ML_KEM_768
@@ -79,6 +97,7 @@ improved, please report it!
 
 Please report issues at https://github.com/integritychain/fips203/issues
 '''
+from __future__ import annotations
 
 '''__version__ should track package.version from  ../Cargo.toml'''
 __version__ = '0.4.0'
@@ -90,18 +109,22 @@ __all__ = [
     'Ciphertext',
     'EncapsulationKey',
     'DecapsulationKey',
+    'Seed',
 ]
 
 import ctypes
 import ctypes.util
 import enum
-from typing import Tuple, Dict, Any, Union
+import secrets
+from typing import Tuple, Dict, Any, Union, Optional
 from abc import ABC
 
 
 class _SharedSecret(ctypes.Structure):
     _fields_ = [('data', ctypes.c_uint8 * 32)]
 
+class _Seed(ctypes.Structure):
+    _fields_ = [('data', ctypes.c_uint8 * 64)]
 
 class Err(enum.IntEnum):
     OK = 0
@@ -112,6 +135,35 @@ class Err(enum.IntEnum):
     ENCAPSULATION_ERROR = 5
     DECAPSULATION_ERROR = 6
 
+
+class Seed():
+    '''ML-KEM Seed
+
+    This seed can be used to generate an ML-KEM keypair
+    '''
+    def __init__(self, data: Optional[bytes] = None) -> None:
+        '''If initialized with None, the seed will be randomly populated.'''
+        self._seed = _Seed()
+        if data is None:
+            # FIXME: perhaps use ml_kem_populate_seed instead?
+            data = secrets.token_bytes(len(self._seed.data))
+        if len(data) != len(self._seed.data):
+            raise ValueError(f"Expected {len(self._seed.data)} bytes, "
+                             f"got {len(data)}.")
+        for i in range(len(data)):
+            self._seed.data[i] = data[i]
+
+    def __repr__(self) -> str:
+        return '<ML-KEM Seed>'
+
+    def __bytes__(self) -> bytes:
+        return bytes(self._seed.data)
+
+    def keygen(self, strength: int) -> Tuple[EncapsulationKey, DecapsulationKey]:
+        for kt in ML_KEM_512, ML_KEM_768, ML_KEM_1024:
+            if kt._strength == strength:
+                return kt.keygen(self)
+        raise Exception(f"Unknown strength: {strength}, must be 512, 768, or 1024.")
 
 class Ciphertext():
     '''ML-KEM Ciphertext
@@ -293,6 +345,12 @@ class _ML_KEM():
                                       ctypes.POINTER(_DecapsKey)]
             ffi['keygen'].restype = ctypes.c_uint8
 
+            ffi['keygen_from_seed'] = cls.lib[f'ml_kem_{level}_keygen_from_seed']
+            ffi['keygen_from_seed'].argtypes = [ctypes.POINTER(_Seed),
+                                                ctypes.POINTER(_EncapsKey),
+                                                ctypes.POINTER(_DecapsKey)]
+            ffi['keygen_from_seed'].restype = ctypes.c_uint8
+
             ffi['encaps'] = cls.lib[f'ml_kem_{level}_encaps']
             ffi['encaps'].argtypes = [ctypes.POINTER(_EncapsKey),
                                       ctypes.POINTER(_Ciphertext),
@@ -335,6 +393,22 @@ class _ML_KEM():
         return (ek, dk)
 
 
+    @classmethod
+    def _keygen_from_seed(cls, strength: int, seed: Seed) -> Tuple[EncapsulationKey,
+                                                                   DecapsulationKey]:
+        ek = EncapsulationKey(strength)
+        dk = DecapsulationKey(strength)
+
+        ret = Err(cls.strength(strength)['keygen_from_seed'](
+            ctypes.byref(seed._seed),
+            ctypes.byref(ek._ek),
+            ctypes.byref(dk._dk)
+        ))
+        if ret is not Err.OK:
+            raise Exception(f"ml_kem_{strength}_keygen() returned "
+                            f"{ret} ({ret.name})")
+        return (ek, dk)
+
 class ML_KEM(ABC):
     '''Abstract base class for all ML-KEM (FIPS 203) parameter sets.'''
 
@@ -343,11 +417,18 @@ class ML_KEM(ABC):
     DK_SIZE: int
     CT_SIZE: int
     SS_SIZE: int = 32
+    SEED_SIZE: int = 64
 
     @classmethod
-    def keygen(cls) -> Tuple[EncapsulationKey, DecapsulationKey]:
-        '''Generate a pair of Encapsulation and Decapsulation Keys.'''
-        return _ML_KEM._keygen(cls._strength)
+    def keygen(cls, seed: Optional[Seed]) -> Tuple[EncapsulationKey, DecapsulationKey]:
+        '''Generate a pair of Encapsulation and Decapsulation Keys.
+
+        If a Seed is supplied, do a deterministic generation from the seed.
+        Otherwise, randomly generate the key.'''
+        if seed is None:
+            return _ML_KEM._keygen(cls._strength)
+        else:
+            return _ML_KEM._keygen_from_seed(cls._strength, seed)
 
 
 class ML_KEM_512(ML_KEM):
