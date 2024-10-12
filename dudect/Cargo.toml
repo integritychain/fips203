@@ -1,6 +1,6 @@
 [package]
 name = "fips203-dudect"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Eric Schorn <eschorn@integritychain.com>"]
 publish = false
 edition = "2021"

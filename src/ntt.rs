@@ -24,8 +24,7 @@ pub(crate) fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
         for start in (0..256).step_by(2 * len) {
             //
             // 5: zeta ← ζ^{BitRev_7(i)} mod q
-            let mut zeta = Z::default();
-            zeta.set_u16(ZETA_TABLE[i << 1]);
+            let zeta = ZETA_TABLE[i << 1];
 
             // 6: i ← i + 1
             i += 1;
@@ -78,8 +77,7 @@ pub(crate) fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
         for start in (0..256).step_by(2 * len) {
             //
             // 5: zeta ← ζ^{BitRev_7(i)} mod q
-            let mut zeta = Z::default();
-            zeta.set_u16(ZETA_TABLE[i << 1]);
+            let zeta = ZETA_TABLE[i << 1];
 
             // 6: i ← i − 1
             i -= 1;
@@ -128,8 +126,7 @@ pub(crate) fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
     for i in 0..128 {
         //
         // 2: (h_hat[2i], h_hat[2i + 1]) ← BaseCaseMultiply(f_hat[2i], f_hat[2i + 1], g_hat[2i], g_hat[2i + 1], ζ^{2BitRev7(i) + 1})
-        let mut zt = Z::default();
-        zt.set_u16(ZETA_TABLE[i ^ 0x80]);
+        let zt = ZETA_TABLE[i ^ 0x80];
         let (h_hat_2i, h_hat_2ip1) =
             base_case_multiply(f_hat[2 * i], f_hat[2 * i + 1], g_hat[2 * i], g_hat[2 * i + 1], zt);
         h_hat[2 * i] = h_hat_2i;
@@ -167,19 +164,19 @@ pub(crate) fn base_case_multiply(a0: Z, a1: Z, b0: Z, b1: Z, gamma: Z) -> (Z, Z)
 
 #[must_use]
 #[allow(clippy::cast_possible_truncation)] // const fns cannot use u32::from() etc...
-const fn gen_zeta_table() -> [u16; 256] {
-    let mut result = [0u16; 256];
+const fn gen_zeta_table() -> [Z; 256] {
+    let mut result = [Z(0); 256];
     let mut x = 1u32;
     let mut i = 0u32;
     while i < 256 {
-        result[(i as u8).reverse_bits() as usize] = x as u16;
+        result[(i as u8).reverse_bits() as usize] = Z(x as u16); // as u16;
         x = (x * (ZETA as u32)) % (Q as u32);
         i += 1;
     }
     result
 }
 
-pub(crate) static ZETA_TABLE: [u16; 256] = gen_zeta_table();
+pub(crate) static ZETA_TABLE: [Z; 256] = gen_zeta_table();
 
 
 #[cfg(test)]
@@ -191,7 +188,7 @@ mod tests {
     #[test]
     fn test_zeta_misc() {
         let res = gen_zeta_table();
-        assert_eq!(res[4], 2580);
+        assert_eq!(res[4].0, 2580);
 
         let ssk_bytes = [0u8; 32];
         let ssk = SharedSecretKey::try_from_bytes(ssk_bytes);

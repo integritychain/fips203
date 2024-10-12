@@ -6,6 +6,7 @@ use rand_core::{CryptoRng, RngCore};
 
 // Simplistic RNG to regurgitate set value
 #[derive(Clone)]
+#[repr(align(8))]
 struct TestRng([u8; 32]);
 
 impl RngCore for TestRng {
@@ -24,31 +25,35 @@ impl RngCore for TestRng {
 impl CryptoRng for TestRng {}
 
 
+#[repr(align(8))]
+pub struct AlignedBytes<const BYTE_LEN: usize>(pub(crate) [u8; BYTE_LEN]);
+
+
 fn full_flow(runner: &mut CtRunner, mut _rng: &mut BenchRng) {
     const ITERATIONS_INNER: usize = 5;
-    const ITERATIONS_OUTER: usize = 200_000;
+    const ITERATIONS_OUTER: usize = 2_000_000;
 
-    let z_left = [0x55u8; 32];
-    let z_right = [0xaau8; 32];
+    let z_left = AlignedBytes::<32>([0x55u8; 32]);
+    let z_right = AlignedBytes::<32>([0xaau8; 32]);
 
     // d drives rho which is not constant time; ek contains rho sent in the clear
     // See step 1 & 19 of k_pke_key_gen
-    let d = [0u8; 32];
+    let d = AlignedBytes::<32>([0u8; 32]);
 
-    let mut classes = [Class::Right; ITERATIONS_OUTER];
-    let mut z_refs = [&z_right; ITERATIONS_OUTER];
+    let mut classes = vec![Class::Right; ITERATIONS_OUTER];
+    let mut z_refs = vec![&z_right.0; ITERATIONS_OUTER];
 
     // Interleave left and right
     for i in (0..(ITERATIONS_OUTER)).step_by(2) {
         classes[i] = Class::Left;
-        z_refs[i] = &z_left;
+        z_refs[i] = &z_left.0;
     }
 
     for (class, &z) in classes.into_iter().zip(z_refs.iter()) {
         runner.run_one(class, || {
             let mut rng = TestRng(*z); // regurgitates z as rng in encaps
             for _ in 0..ITERATIONS_INNER {
-                let (ek, dk) = ml_kem_512::KG::keygen_from_seed(d, *z);
+                let (ek, dk) = ml_kem_512::KG::keygen_from_seed(d.0, *z);
                 let (ssk1, ct) = ek.try_encaps_with_rng(&mut rng).unwrap(); // uses 1 rng
                 let ssk2 = dk.try_decaps(&ct).unwrap();
                 assert_eq!(ssk1, ssk2);

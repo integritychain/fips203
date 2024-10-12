@@ -8,7 +8,7 @@
 
 [FIPS 203] Module-Lattice-Based Key-Encapsulation Mechanism Standard written in pure Rust for server, desktop, browser 
 and embedded applications. The source repository includes examples demonstrating benchmarking, code provenance, an 
-embedded target, constant-time statistical measurements, fuzzing harness, WASM execution, C FFI and Python bindings.
+embedded target, constant-time statistical measurements, a fuzzing harness, WASM execution, C FFI and Python bindings.
 
 This crate implements the **released** FIPS 203 standard in pure Rust with minimal and mainstream dependencies, **and 
 without any unsafe code**. All three security parameter sets are fully supported and tested. The implementation operates
@@ -16,7 +16,7 @@ in constant-time (outside of rho, which is part of the encapsulation key sent ac
 does not require the standard library, e.g. `#[no_std]`, has no heap allocations, e.g. no `alloc` needed, and optionally 
 exposes the `RNG` so it is suitable for the full range of applications down to the bare-metal. The API is stabilized 
 and the code is heavily biased towards safety and correctness; further performance optimizations will be implemented 
-as the standard matures. This crate will quickly follow any changes to FIPS 203 as they become available.
+as the standard matures. This crate will quickly follow any future changes to FIPS 203 as they become available.
 
 See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf> for a full description of the target functionality.
 
@@ -58,7 +58,7 @@ The Rust [Documentation][docs-link] lives under each **Module** corresponding to
 
 ## Notes
 
-* This crate is fully functional and corresponds to the first **release** of FIPS 203.
+* This crate is fully functional and corresponds to the **released final** FIPS 203.
 * Constant-time operation targets the source-code level only on the latest version of Rust, with 
   confirmation via manual review/inspection, the embedded target, and the `dudect` dynamic measurements.
 * Note that FIPS 203 places specific requirements on randomness per section 3.3, hence the exposed `RNG`.
@@ -80,21 +80,15 @@ defined in the Apache-2.0 license, shall be dual licensed as above without any a
 [//]: # (badges)
 
 [crate-image]: https://img.shields.io/crates/v/fips203
-
 [crate-link]: https://crates.io/crates/fips203
-
 [docs-image]: https://docs.rs/fips203/badge.svg
-
 [docs-link]: https://docs.rs/fips203/
-
 [build-image]: https://github.com/integritychain/fips203/workflows/test/badge.svg
-
 [build-link]: https://github.com/integritychain/fips203/actions?query=workflow%3Atest
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
-
 [rustc-image]: https://img.shields.io/badge/rustc-1.70+-blue.svg
 
 [//]: # (general links)
 
 [IntegrityChain]: https://github.com/integritychain/
-[FIPS 203]: https://csrc.nist.gov/pubs/fips/203/ipd
+[FIPS 203]: https://csrc.nist.gov/pubs/fips/203/final

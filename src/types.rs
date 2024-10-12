@@ -26,7 +26,7 @@ pub struct CipherText<const CT_LEN: usize>(pub(crate) [u8; CT_LEN]);
 
 /// Stored as u16 for space, but arithmetic as u32 for perf
 #[derive(Clone, Copy, Default)]
-pub(crate) struct Z(u16);
+pub(crate) struct Z(pub(crate) u16);
 
 
 #[allow(clippy::inline_always)]

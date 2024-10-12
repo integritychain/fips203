@@ -64,7 +64,7 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
     let t_hat = add_vecs(&as_hat, &e_hat);
 
     // 19: ek_PKE ← ByteEncode_12(t̂) ∥ ρ    ▷ run ByteEncode12 𝑘 times, then append 𝐀-seed
-    for (i, chunk) in ek_pke[0..K * 384].chunks_mut(384).enumerate() {
+    for (i, chunk) in ek_pke.chunks_mut(384).enumerate().take(K) {
         byte_encode(12, &t_hat[i], chunk);
     }
     ek_pke[K * 384..].copy_from_slice(&rho);
@@ -111,7 +111,7 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
 
     // 2: t̂ ← ByteDecode_12 (ek_PKE [0 : 384k])    ▷ run ByteDecode_12 𝑘 times to decode `𝐭  ∈ (ℤ^{256}_𝑞)^k`
     let mut t_hat = [[Z::default(); 256]; K];
-    for (i, chunk) in ek_pke[0..K * 384].chunks(384).enumerate() {
+    for (i, chunk) in ek_pke.chunks(384).enumerate().take(K) {
         t_hat[i] = byte_decode(12, chunk)?;
     }
 
@@ -155,8 +155,7 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     u = add_vecs(&u, &e1);
 
     // 20: µ ← Decompress1(ByteDecode_1(m)))
-    let mut mu; // = [Z::default(); 256];
-    mu = byte_decode(1, m)?;
+    let mut mu = byte_decode(1, m)?;
     decompress_vector(1, &mut mu);
 
     // 21: v ← NTT−1 (t̂⊺ ◦ r̂) + e2 + µ    ▷ encode plaintext m into polynomial v.
@@ -165,14 +164,15 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
 
     // 22: c1 ← ByteEncode_du(Compress_du(u))    ▷ ByteEncode_du is run k times
     let step = 32 * du as usize;
-    for i in 0..K {
+    for (i, chunk) in ct.chunks_mut(step).enumerate().take(K) {
         compress_vector(du, &mut u[i]);
-        byte_encode(du, &u[i], &mut ct[i * step..(i + 1) * step]);
+        byte_encode(du, &u[i], chunk);
     }
+
 
     // 23: c2 ← ByteEncode_dv(Compress_dv(v))
     compress_vector(dv, &mut v);
-    byte_encode(dv, &v, &mut ct[K * step..(K * step + 32 * dv as usize)]);
+    byte_encode(dv, &v, &mut ct[K * step..]);
 
     // 24: return c ← (c1 ∥ c2)
     Ok(())
@@ -203,8 +203,8 @@ pub(crate) fn k_pke_decrypt<const K: usize>(
 
     // 3: 𝐮′ ← Decompress_𝑑(ByteDecode_𝑑(𝑐1))   ▷ run Decompress𝑑 and ByteDecode𝑑 𝑘 times
     let mut u = [[Z::default(); 256]; K];
-    for i in 0..K {
-        u[i] = byte_decode(du, &c1[32 * du as usize * i..32 * du as usize * (i + 1)])?;
+    for (i, chunk) in c1.chunks(32 * du as usize).enumerate().take(K) {
+        u[i] = byte_decode(du, chunk)?;
         decompress_vector(du, &mut u[i]);
     }
 

@@ -74,10 +74,8 @@ fn ml_kem_decaps_internal<
     const J_LEN: usize,
     const CT_LEN: usize,
 >(
-    du: u32, dv: u32, dk: &[u8], ct: &[u8],
+    du: u32, dv: u32, dk: &[u8], ct: &[u8; CT_LEN],
 ) -> Result<SharedSecretKey, &'static str> {
-    // Ciphertext type check
-    debug_assert_eq!(ct.len(), 32 * (du as usize * K + dv as usize), "Alg 18: ct len not 32 * ...");
     // Decapsulation key type check
     debug_assert_eq!(dk.len(), 768 * K + 96, "Alg 18: dk len not 768 ...");
     // Note: decaps key is either correctly sourced from KeyGen, or validated by try_from_bytes(). As
@@ -218,7 +216,7 @@ pub(crate) fn ml_kem_decaps<
     const J_LEN: usize,
     const CT_LEN: usize,
 >(
-    du: u32, dv: u32, dk: &[u8], ct: &[u8],
+    du: u32, dv: u32, dk: &[u8], ct: &[u8; CT_LEN],
 ) -> Result<SharedSecretKey, &'static str> {
     // Ciphertext type check
     debug_assert_eq!(ct.len(), 32 * (du as usize * K + dv as usize), "Alg 21: ct len not 32 * ...");
