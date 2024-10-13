@@ -238,10 +238,10 @@ macro_rules! functionality {
             fn into_bytes(self) -> Self::ByteArray { self.0 }
 
             fn try_from_bytes(ek: Self::ByteArray) -> Result<Self, &'static str> {
-                // Validation per pg 2 "the byte array containing the encapsulation key correctly
-                // decodes to an array of integers modulo q without any modular reductions". See
-                // also page 30. Note that accepting a byte array of fixed size, rather than a
-                // slice of varied size, addresses check #1.
+                // Validation per pg 36 #2 "This check ensures that the integers encoded
+                // in the public key are in the valid range [0, 𝑞 − 1]". Note that
+                // accepting a byte array of fixed size, rather than a slice of varied
+                // size, addresses check #1.
                 for i in 0..K {
                     let _ek_hat = byte_decode(12, &ek[384 * i..384 * (i + 1)])?;
                 }

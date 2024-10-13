@@ -31,7 +31,7 @@ pub struct AlignedBytes<const BYTE_LEN: usize>(pub(crate) [u8; BYTE_LEN]);
 
 fn full_flow(runner: &mut CtRunner, mut _rng: &mut BenchRng) {
     const ITERATIONS_INNER: usize = 5;
-    const ITERATIONS_OUTER: usize = 2_000_000;
+    const ITERATIONS_OUTER: usize = 2_usize.pow(23); // 8_388_608;
 
     let z_left = AlignedBytes::<32>([0x55u8; 32]);
     let z_right = AlignedBytes::<32>([0xaau8; 32]);
