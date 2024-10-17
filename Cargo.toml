@@ -45,6 +45,7 @@ serde_json = {version = "1.0.127", features = []}
 [[bench]]
 name = "benchmark"
 harness = false
+required-features = ["ml-kem-512","ml-kem-768","ml-kem-1024","default-rng"]
 
 
 [profile.dev]
