@@ -51,7 +51,7 @@ with open('encapskey.bin', 'wb') as f:
 with open('decapskey.bin', 'wb') as f:
     f.write(bytes(dk))
 with open('seed.bin', 'wb') as f:
-    f.write(bytes(seed)
+    f.write(bytes(seed))
 ```
 
 A deserialization example, followed by use:
