@@ -20,6 +20,11 @@ Coverage status of ml_kem_512 is robust (run the last step above three times), s
 
 ~~~
 #57120: cov: 6312 ft: 4412 corp: 62 exec/s 15 oom/timeout/crash: 0/0/0 time: 981s job: 85 dft_time: 0
+~~~
+
+For `ml_kem_fuzz`:
+
+~~~
 
 
 # Warning: the following tools are tricky to install/configure

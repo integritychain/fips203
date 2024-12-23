@@ -296,6 +296,10 @@ macro_rules! functionality {
             #[test]
             fn smoke_test() {
                 let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
+                let (ek, dk) = KG::keygen_from_seed([1u8; 32], [2u8; 32]);
+                let (ssk1, ct) = ek.encaps_from_seed(&[3u8; 32]);
+                let ssk2 = dk.try_decaps(&ct).unwrap();
+                assert_eq!(ssk1, ssk2);
                 for _i in 0..100 {
                     let (ek, dk) = KG::try_keygen_with_rng(&mut rng).unwrap();
                     let (ssk1, ct) = ek.try_encaps_with_rng(&mut rng).unwrap();
