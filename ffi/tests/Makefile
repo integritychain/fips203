@@ -10,19 +10,28 @@
 SIZES = 512 768 1024
 FRAMES = encaps_key decaps_key ciphertext encaps decaps keygen keygen_from_seed
 # should derive SONAME somehow, e.g. from CARGO_PKG_VERSION_MAJOR
-SONAME = 0
+SONAME = libfips203.$(SO_EXT)
+
+OS := $(shell uname)
+
+    CXXFLAGS += -DLINUX
+ifeq ($(OS), Darwin)
+    SO_EXT = dylib
+else
+	SO_EXT = so
+endif
 
 all: check
 
 # adjustments for testing the local debug or release build:
 ifneq ($(AS_INSTALLED),true)
 SO_LOCATIONS = $(foreach w,.. ../..,$(foreach x,release debug,$w/target/$x $w/target/*/$x))
-SO_LOCATION = $(dir $(firstword $(foreach d,$(SO_LOCATIONS),$(wildcard $d/libfips203.so))))
-$(SO_LOCATION)libfips203.so.$(SONAME): $(SO_LOCATION)libfips203.so
-	ln $< $@
-COMPILE_FLAGS = -L $(SO_LOCATION) -I..
+SO_LOCATION = $(dir $(firstword $(foreach d,$(SO_LOCATIONS),$(wildcard $d/libfips203.$(SO_EXT)))))
+
+COMPILE_FLAGS = -Wl,-rpath,$(SO_LOCATION) -L $(SO_LOCATION) -I..
 RUN_PREFIX = LD_LIBRARY_PATH=$(SO_LOCATION)
-ADDITIONAL_RUN_DEPENDS = $(SO_LOCATION)libfips203.so.$(SONAME)
+#ADDITIONAL_RUN_DEPENDS = $(SO_LOCATION)libfips203.so.$(SONAME)
+ADDITIONAL_RUN_DEPENDS = $(SO_LOCATION)$(SONAME)
 endif
 
 BASELINES=$(foreach sz, $(SIZES), baseline-$(sz))
