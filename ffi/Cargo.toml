@@ -9,7 +9,6 @@ documentation = "https://docs.rs/fips203"
 categories = ["cryptography"]
 repository = "https://github.com/integritychain/fips203"
 keywords = ["FIPS", "FIPS203", "lattice", "kem", "ml"]
-rust-version = "1.70"
 
 
 [lib]
@@ -24,4 +23,4 @@ rand_core = { version = "0.6.4", features = ["getrandom"] }
 
 [dependencies.fips203]
 path = ".."
-version = "0.4.1"
+version = "0.4.2"

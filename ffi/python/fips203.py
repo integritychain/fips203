@@ -118,6 +118,7 @@ import enum
 import secrets
 from typing import Tuple, Dict, Any, Union, Optional
 from abc import ABC
+import sys
 
 
 class _SharedSecret(ctypes.Structure):
@@ -319,7 +320,11 @@ class _ML_KEM():
             },
         }
     lib = ctypes.CDLL(ctypes.util.find_library('fips203'))
-    if not hasattr(lib, 'ml_kem_512_keygen'): lib = ctypes.CDLL("../../target/debug/libfips203.so")
+    if not hasattr(lib, 'ml_kem_512_keygen'):
+        if sys.platform == 'darwin':
+            lib = ctypes.CDLL('../../target/debug/libfips203.dylib')
+        else:
+            lib = ctypes.CDLL("../../target/debug/libfips203.so")
 
     # use Any below because i don't know how to specify the type of the FuncPtr
     ffi: Dict[int, Dict[str, Any]] = {}

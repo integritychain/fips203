@@ -1,4 +1,4 @@
-use rand_core::CryptoRngCore;
+use rand_core::{CryptoRng, CryptoRngCore, RngCore};
 
 #[cfg(feature = "default-rng")]
 use rand_core::OsRng;
@@ -240,8 +240,64 @@ pub trait Encaps {
     fn try_encaps_with_rng(
         &self, rng: &mut impl CryptoRngCore,
     ) -> Result<(Self::SharedSecretKey, Self::CipherText), &'static str>;
+
+
+    /// Generates a shared secret and ciphertext from an encapsulation key specific to this security parameter set. <br>
+    /// This function utilizes a provided **seed** (rather than a random number generator) and is intended to operate in constant
+    /// time.
+    /// # Errors
+    /// Returns an error when the random number generator fails or an internal error condition arises.
+    /// # Examples
+    /// ```rust
+    /// # use std::error::Error;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # #[cfg(feature = "ml-kem-512")] {
+    /// use rand_core::OsRng;
+    /// use fips203::ml_kem_512;  // Could also be ml_kem_768 or ml_kem_1024.
+    /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
+    ///
+    /// let (ek1, dk1) = ml_kem_512::KG::try_keygen_with_rng(&mut OsRng)?;  // Party 1 generates both encaps and decaps keys
+    /// let ek1_bytes = ek1.into_bytes();  // Party 1 serializes the encaps key
+    ///
+    /// let ek2_bytes = ek1_bytes;  // Party 1 sends encaps bytes to party 2
+    ///
+    /// let ek2 = ml_kem_512::EncapsKey::try_from_bytes(ek2_bytes)?;  // Party 2 deserializes the encaps key
+    /// let (ssk2, ct2) = ek2.encaps_from_seed(&[1u8; 32]);  // Party 2 generates shared secret and ciphertext
+    /// let ct2_bytes = ct2.into_bytes();  // Party 2 serializes the ciphertext
+    ///
+    /// let ct1_bytes = ct2_bytes;  // Party 2 sends the ciphertext to party 1
+    ///
+    /// let ct1 = ml_kem_512::CipherText::try_from_bytes(ct1_bytes)?;  // Party 1 deserializes the ciphertext
+    /// let ssk1 = dk1.try_decaps(&ct1)?;  // Party 1 runs decaps to generate the shared secret
+    ///
+    /// assert_eq!(ssk1, ssk2);  // Each party has the same shared secret
+    /// # }
+    /// # Ok(())}
+    /// ```
+    fn encaps_from_seed(&self, seed: &[u8; 32]) -> (Self::SharedSecretKey, Self::CipherText) {
+        self.try_encaps_with_rng(&mut DummyRng { data: *seed }).expect("rng will not fail")
+    }
 }
 
+// This is for the deterministic signing functions; will be refactored more nicely
+struct DummyRng {
+    data: [u8; 32],
+}
+
+impl RngCore for DummyRng {
+    fn next_u32(&mut self) -> u32 { unimplemented!() }
+
+    fn next_u64(&mut self) -> u64 { unimplemented!() }
+
+    fn fill_bytes(&mut self, _out: &mut [u8]) { unimplemented!() }
+
+    fn try_fill_bytes(&mut self, out: &mut [u8]) -> Result<(), rand_core::Error> {
+        out.copy_from_slice(&self.data);
+        Ok(())
+    }
+}
+
+impl CryptoRng for DummyRng {}
 
 /// The `Decaps` trait uses the decapsulation key and ciphertext to generate the shared secret.
 pub trait Decaps {
@@ -254,7 +310,7 @@ pub trait Decaps {
     /// Generates a shared secret from a decapsulation key and ciphertext specific to this security parameter set. <br>
     /// This function is intended to operate in constant-time.
     /// # Errors
-    /// Returns an error when the random number generator fails or an internal error condition arises.
+    /// Returns an error if an internal error condition arises (e.g., an invalid `ct`).
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
