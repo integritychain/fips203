@@ -9,3 +9,4 @@
 **/package-lock.json
 **/__pycache__
 **/baseline-*.*
+**/.DS_Store
