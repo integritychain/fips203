@@ -4,6 +4,8 @@ use std::path::Path;
 
 fn main() {
     if cfg!(target_os = "macos") {
+        println!("cargo:rustc-cdylib-link-arg=-shared");
+        println!("cargo:rustc-cdylib-link-arg=-dynamiclib");
         println!("cargo:rustc-cdylib-link-arg=-install_name");
         println!("cargo:rustc-cdylib-link-arg=@rpath/libfips203.dylib"
             //, env::var("CARGO_PKG_VERSION_MAJOR").unwrap()
