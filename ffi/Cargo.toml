@@ -9,7 +9,7 @@ documentation = "https://docs.rs/fips203"
 categories = ["cryptography"]
 repository = "https://github.com/integritychain/fips203"
 keywords = ["FIPS", "FIPS203", "lattice", "kem", "ml"]
-
+rust-version = "1.70"
 
 [lib]
 crate-type = ["staticlib", "cdylib"]
