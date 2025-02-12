@@ -1,0 +1,39 @@
+{
+    "makefile.configurations": [
+        {
+            "options.shell": "/bin/bash",
+            "type": "shell",
+            "name": "Unnamed configuration 1"
+        },
+        {
+            "type": "cppdbg",
+            "request": "launch",
+            "oldtype": "cppdbg",
+            "program": "${workspaceFolder}/${workspaceFolderBasename}",
+            "name": "Makefile",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "options.shell": "/bin/bash",
+            "miDebuggerPath": "/opt/local/bin/ggdb",
+            "symbolSearchPath": "${workspaceFolder}",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "make"
+        }
+    ],
+    "cSpell.words": [
+        "cdylib",
+        "lfips",
+        "libfips",
+        "SONAME"
+    ]
+}

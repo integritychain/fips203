@@ -11,9 +11,9 @@ documentation = "https://docs.rs/fips203"
 categories = ["cryptography", "no-std"]
 repository = "https://github.com/integritychain/fips203"
 keywords = ["kem", "FIPS203", "lattice", "kyber", "encapsulation"]
+rust-version = "1.70"
 # MSRV set at 1.70 for debian testing, e.g. https://packages.debian.org/search?keywords=rustc
 # This requires several marginally outdated dependencies, see below
-rust-version = "1.70"
 
 
 [features]
