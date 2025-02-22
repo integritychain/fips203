@@ -18,7 +18,7 @@ name = "fips203"
 
 
 [dependencies]
-rand_core = { version = "0.6.4", features = ["getrandom"] }
+rand_core = { version = "0.6.4"}
 
 
 [dependencies.fips203]
