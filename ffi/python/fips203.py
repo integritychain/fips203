@@ -425,7 +425,7 @@ class ML_KEM(ABC):
     SEED_SIZE: int = 64
 
     @classmethod
-    def keygen(cls, seed: Optional[Seed]) -> Tuple[EncapsulationKey, DecapsulationKey]:
+    def keygen(cls, seed: Optional[Seed] = None) -> Tuple[EncapsulationKey, DecapsulationKey]:
         '''Generate a pair of Encapsulation and Decapsulation Keys.
 
         If a Seed is supplied, do a deterministic generation from the seed.
