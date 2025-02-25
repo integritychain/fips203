@@ -3,10 +3,10 @@ use crate::{Q, ZETA};
 
 
 /// Algorithm 9 `NTT(f)` on page 26.
-/// Computes the NTT representation `f_hat` of the given polynomial `f ∈ R_q`.
+/// Computes the Number Theoretic Transform (NTT) representation `f_hat` of the given polynomial `f ∈ R_q`.
 ///
-/// Input: array `f ∈ Z^{256}_q`    ▷ the coefficients of the input polynomial <br>
-/// Output: array `f_hat ∈ Z^{256}_q`    ▷ the coefficients of the NTT of the input polynomial
+/// Input: array `f ∈ Z^{256}_q`    ▷ Coefficients of the input polynomial in standard basis
+/// Output: array `f_hat ∈ Z^{256}_q`    ▷ Coefficients in NTT basis (frequency domain)
 #[must_use]
 #[allow(clippy::module_name_repetitions)]
 pub(crate) fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
@@ -56,10 +56,10 @@ pub(crate) fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
 
 
 /// Algorithm 10 `NTTinv(f)` on page 26.
-/// Computes the polynomial `f ∈ R_q` corresponding to the given NTT representation `f_hat ∈ T_q`.
+/// Computes the inverse NTT to convert from NTT representation back to standard polynomial form.
 ///
-/// Input: array `f_hat ∈ Z^{256}`    ▷ the coefficients of input NTT representation <br>
-/// Output: array `f ∈ Z^{256}`    ▷ the coefficients of the inverse-NTT of the input
+/// Input: array `f_hat ∈ Z^{256}`    ▷ Coefficients in NTT basis (frequency domain)
+/// Output: array `f ∈ Z^{256}`    ▷ Coefficients of the polynomial in standard basis
 #[must_use]
 #[allow(clippy::module_name_repetitions)]
 pub(crate) fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
@@ -114,10 +114,10 @@ pub(crate) fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
 
 
 /// Algorithm 11 `MultiplyNTTs(f_hat, g_hat)` on page 27.
-/// Computes the product (in the ring `T_q`) of two NTT representations.
+/// Performs polynomial multiplication efficiently by multiplying NTT representations pointwise.
 ///
-/// Input: Two arrays `f_hat ∈ Z^{256}_q` and `g_hat ∈ Z^{256}_q`    ▷ the coefficients of two NTT representations <br>
-/// Output: An array `h_hat ∈ Z^{256}_q`    ▷ the coefficients of the product of the inputs
+/// Input: Two arrays `f_hat ∈ Z^{256}_q` and `g_hat ∈ Z^{256}_q`    ▷ Coefficients of two polynomials in NTT basis
+/// Output: An array `h_hat ∈ Z^{256}_q`    ▷ Coefficients of their product in NTT basis
 #[must_use]
 pub(crate) fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
     let mut h_hat: [Z; 256] = [Z::default(); 256];
@@ -141,11 +141,11 @@ pub(crate) fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
 
 
 /// Algorithm 12 `BaseCaseMultiply(a0, a1, b0, b1, gamma)` on page 24.
-/// Computes the product of two degree-one polynomials with respect to a quadratic modulus.
+/// Multiplies two degree-one polynomials modulo `X^2 - γ`.
 ///
-/// Input: `a0, a1, b0, b1 ∈ Z_q`    ▷ the coefficients of `a0` + `a1` X and `b0` + `b1` X
-/// Input: `γ ∈ Z_q`    ▷ the modulus is `X^2 − γ`
-/// Output: `c0`, `c1` ∈ `Z_q`    ▷ the coefficients of the product of the two polynomials
+/// Input: `a0, a1, b0, b1 ∈ Z_q`    ▷ Coefficients of `a0 + a1X` and `b0 + b1X`
+/// Input: `γ ∈ Z_q`    ▷ Defines the modulus `X^2 - γ`
+/// Output: `(c0, c1)` where `c0, c1 ∈ Z_q`    ▷ Coefficients of the resulting product polynomial
 #[must_use]
 pub(crate) fn base_case_multiply(a0: Z, a1: Z, b0: Z, b1: Z, gamma: Z) -> (Z, Z) {
     // 1: c0 ← a0 · b0 + a1 · b1 · γ    ▷ steps 1-2 done modulo q

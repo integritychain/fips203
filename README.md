@@ -5,6 +5,8 @@
 [![Build Status][build-image]][build-link]
 ![Apache2/MIT licensed][license-image]
 ![Rust Version][rustc-image]
+[![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/fips203.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:fips203)
+
 
 [FIPS 203] Module-Lattice-Based Key-Encapsulation Mechanism Standard written in pure Rust for server, desktop, browser 
 and embedded applications. The source repository includes examples demonstrating benchmarking, code provenance, an 

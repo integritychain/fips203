@@ -1,7 +1,6 @@
 /.idea
 **/Cargo.lock
 **/artifacts
-**/corpus
 **/coverate
 **/target
 **/pkg

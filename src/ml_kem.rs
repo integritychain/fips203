@@ -9,10 +9,11 @@ use subtle::{ConditionallySelectable, ConstantTimeEq};
 /// Algorithm 16 `ML-KEM.KeyGen_internal(d,z)` on page 32.
 /// Uses randomness to generate an encapsulation key and a corresponding decapsulation key.
 ///
-/// Input:  randomness `𝑑 ∈ 𝔹^{32}`.
-/// Input:  randomness `𝑧 ∈ 𝔹^{32}`.
-/// Output: encapsulation key `ek ∈ 𝔹^{384·𝑘+32}`.
-/// Output: decapsulation key `dk ∈ 𝔹^{768·𝑘+96}`.
+/// # Parameters
+/// * `d` - 32-byte random seed for key generation
+/// * `z` - 32-byte random seed for implicit rejection
+/// * `ek` - Output buffer for encapsulation key (size: `384·K+32` bytes)
+/// * `dk` - Output buffer for decapsulation key (size: `768·K+96` bytes)
 pub(crate) fn ml_kem_key_gen_internal<const K: usize, const ETA1_64: usize>(
     d: [u8; 32], z: [u8; 32], ek: &mut [u8], dk: &mut [u8],
 ) {
@@ -37,12 +38,17 @@ pub(crate) fn ml_kem_key_gen_internal<const K: usize, const ETA1_64: usize>(
 
 
 /// Algorithm 17 `ML-KEM.Encaps_internal(ek, m)` on page 33.
-/// Uses the encapsulation key and randomness to generate a key and an associated ciphertext.
+/// Generates a shared secret key and ciphertext using the encapsulation key and randomness.
 ///
-/// Input:  encapsulation key `ek ∈ B^{384·k+32}` <br>
-/// Input:  randomness `𝑚 ∈ 𝔹^{32}` <br>
-/// Output: shared secret key `K ∈ B^{32}` <br>
-/// Output: ciphertext `c ∈ B^{32(du·k+dv)}` <br>
+/// # Parameters
+/// * `du`, `dv` - Parameters affecting ciphertext size
+/// * `m` - 32-byte random input
+/// * `ek` - Encapsulation key (`384·K+32` bytes)
+/// * `ct` - Output buffer for ciphertext (`32(du·K+dv)` bytes)
+///
+/// # Returns
+/// * `Ok(SharedSecretKey)` - 32-byte shared secret key
+/// * `Err(&str)` - Error message if encryption fails
 fn ml_kem_encaps_internal<const K: usize, const ETA1_64: usize, const ETA2_64: usize>(
     du: u32, dv: u32, m: &[u8; 32], ek: &[u8], ct: &mut [u8],
 ) -> Result<SharedSecretKey, &'static str> {
@@ -61,11 +67,17 @@ fn ml_kem_encaps_internal<const K: usize, const ETA1_64: usize, const ETA2_64: u
 
 
 /// Algorithm 18 `ML-KEM.Decaps_internal(dk, c)` on page 34.
-/// Uses the decapsulation key to produce a shared secret key from a ciphertext.
+/// Recovers the shared secret key from a ciphertext using the decapsulation key.
+/// Includes implicit rejection if the re-encryption check fails.
 ///
-/// Validated input: decapsulation key `dk ∈ B^{768·k+96}` <br>
-/// Validated input: ciphertext `c ∈ B^{32(du·k+dv)}` <br>
-/// Output: shared key `K ∈ B^{32}`
+/// # Parameters
+/// * `du`, `dv` - Parameters affecting ciphertext size
+/// * `dk` - Decapsulation key (`768·K+96` bytes)
+/// * `ct` - Input ciphertext (`32(du·K+dv)` bytes)
+///
+/// # Returns
+/// * `Ok(SharedSecretKey)` - 32-byte shared secret key
+/// * `Err(&str)` - Error message if decryption fails
 #[allow(clippy::similar_names)]
 fn ml_kem_decaps_internal<
     const K: usize,
@@ -125,10 +137,16 @@ fn ml_kem_decaps_internal<
 
 
 /// Algorithm 19 `ML-KEM.KeyGen()` on page 35.
-/// Generates an encapsulation key and a corresponding decapsulation key.
+/// Entry point for key generation. Generates random seeds and calls internal key generation.
 ///
-/// Output: Encapsulation key `ek` ∈ `B^{384·k+32}` <br>
-/// Output: Decapsulation key `dk` ∈ `B^{768·k+96}`
+/// # Parameters
+/// * `rng` - Cryptographically secure random number generator
+/// * `ek` - Output buffer for encapsulation key (`384·K+32` bytes)
+/// * `dk` - Output buffer for decapsulation key (`768·K+96` bytes)
+///
+/// # Returns
+/// * `Ok(())` - Success
+/// * `Err(&str)` - Error message if RNG fails
 pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
     rng: &mut impl CryptoRngCore, ek: &mut [u8], dk: &mut [u8],
 ) -> Result<(), &'static str> {
@@ -159,9 +177,19 @@ pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
 /// Algorithm 20 `ML-KEM.Encaps(ek)` on page 37.
 /// Uses the encapsulation key to generate a shared key and an associated ciphertext.
 ///
-/// Checked input: encapsulation key `ek ∈ B^{384·k+32}` <br>
-/// Output: shared secret key `K ∈ B^{32}` <br>
-/// Output: ciphertext `c ∈ B^{32·(du·k+dv)}` <br>
+/// # Parameters
+/// * `rng` - Cryptographically secure random number generator
+/// * `du`, `dv` - Parameters affecting ciphertext size
+/// * `ek` - Encapsulation key (`384·K+32` bytes)
+/// * `ct` - Output buffer for ciphertext (`32(du·K+dv)` bytes)
+///
+/// # Returns
+/// * `Ok(SharedSecretKey)` - 32-byte shared secret key
+/// * `Err(&str)` - Error message if RNG fails or encryption fails
+///
+/// # Input Validation
+/// The encapsulation key `ek` must pass modulus check: `ek = ByteEncode12(ByteDecode12(ek))`.
+/// External `ek` values are validated via `try_from_bytes()`.
 pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64: usize>(
     rng: &mut impl CryptoRngCore, du: u32, dv: u32, ek: &[u8], ct: &mut [u8],
 ) -> Result<SharedSecretKey, &'static str> {
@@ -204,10 +232,21 @@ pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64:
 
 /// Algorithm 21 `ML-KEM.Decaps(c, dk)` on page 38.
 /// Uses the decapsulation key to produce a shared key from a ciphertext.
+/// Implements implicit rejection for invalid ciphertexts.
 ///
-/// Validated input: ciphertext `c` ∈ `B^{32(du·k+dv)}` <br>
-/// Validated input: decapsulation key `dk` ∈ `B^{768·k+96}` <br>
-/// Output: shared key `K` ∈ `B^{32}`
+/// # Parameters
+/// * `du`, `dv` - Parameters affecting ciphertext size
+/// * `dk` - Decapsulation key (`768·K+96` bytes)
+/// * `ct` - Input ciphertext (`32(du·K+dv)` bytes)
+///
+/// # Returns
+/// * `Ok(SharedSecretKey)` - 32-byte shared secret key
+/// * `Err(&str)` - Error message if decryption fails
+///
+/// # Input Validation
+/// - Ciphertext size must be exactly `32(du·K+dv)` bytes
+/// - Decapsulation key size must be exactly `768·K+96` bytes
+/// - External `dk` values are validated via `try_from_bytes()`
 #[allow(clippy::similar_names)]
 pub(crate) fn ml_kem_decaps<
     const K: usize,
@@ -238,6 +277,7 @@ mod tests {
 
     use crate::ml_kem::{ml_kem_decaps, ml_kem_encaps, ml_kem_key_gen};
 
+    /// Test constants for ML-KEM-512
     const ETA1: u32 = 3;
     const ETA2: u32 = 2;
     const DU: u32 = 10;
@@ -245,11 +285,17 @@ mod tests {
     const K: usize = 2;
     const ETA1_64: usize = ETA1 as usize * 64;
     const ETA2_64: usize = ETA2 as usize * 64;
+    /// Size of encapsulation key in bytes
     const EK_LEN: usize = 800;
+    /// Size of decapsulation key in bytes
     const DK_LEN: usize = 1632;
+    /// Size of ciphertext in bytes
     const CT_LEN: usize = 768;
+    /// Size of input to function J (z || c)
     const J_LEN: usize = 32 + 32 * (DU as usize * K + DV as usize);
 
+    /// Tests that the key generation, encapsulation, and decapsulation functions
+    /// complete successfully with valid inputs.
     #[test]
     #[allow(clippy::similar_names)]
     fn test_result_errs() {

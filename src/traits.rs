@@ -10,17 +10,20 @@ pub trait KeyGen {
     type EncapsKey;
     /// The (private) decapsulation key used by the originator to generate the shared secret.
     type DecapsKey;
-    /// A serialized (public) encapsulation key byte array of the correct length
+    /// A serialized (public) encapsulation key byte array of the correct length.
     type EncapsByteArray;
-    /// A serialized (private) decapsulation key of the correct length
+    /// A serialized (private) decapsulation key byte array of the correct length.
     type DecapsByteArray;
 
 
-    /// Generates an encapsulation and decapsulation key pair specific to this security parameter set. <br>
-    /// This function utilizes the OS default random number generator and is intended to operate in constant
-    /// time outside of `rho` which crosses the trust boundary in the clear.
+    /// Generates an encapsulation and decapsulation key pair specific to this security parameter set.
+    ///
+    /// This function uses the OS default random number generator and operates in constant time,
+    /// except for the `rho` operation which crosses the trust boundary in the clear.
+    ///
     /// # Errors
-    /// Returns an error when the random number generator fails.
+    /// Returns an error if the random number generator fails.
+    ///
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -53,11 +56,17 @@ pub trait KeyGen {
     }
 
 
-    /// Generates an encapsulation and decapsulation key key pair specific to this security parameter set. <br>
-    /// This function utilizes a provided random number generator and is intended to operate in constant
-    /// time outside of `rho` which crosses the trust boundary in the clear.
+    /// Generates an encapsulation and decapsulation key pair using a provided random number generator.
+    ///
+    /// This function operates in constant time, except for the `rho` operation which crosses
+    /// the trust boundary in the clear.
+    ///
+    /// # Arguments
+    /// * `rng` - A cryptographically secure random number generator implementing `CryptoRngCore`
+    ///
     /// # Errors
-    /// Returns an error when the random number generator fails.
+    /// Returns an error if the random number generator fails.
+    ///
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -159,11 +168,12 @@ pub trait KeyGen {
 }
 
 
-/// The `Encaps` trait uses the encapsulation key to generate the ciphertext and shared secret.
+/// The `Encaps` trait defines methods for generating shared secrets and ciphertexts using
+/// an encapsulation key.
 pub trait Encaps {
-    /// The common shared secret
+    /// The shared secret key type generated during encapsulation
     type SharedSecretKey;
-    /// The ciphertext transmitted from the remote party to the originator.
+    /// The ciphertext type transmitted from the encapsulating party to the decapsulating party
     type CipherText;
 
 
@@ -279,7 +289,8 @@ pub trait Encaps {
     }
 }
 
-// This is for the deterministic signing functions; will be refactored more nicely
+/// Internal RNG implementation for deterministic operations.
+/// This is used by the deterministic signing functions and will be refactored.
 struct DummyRng {
     data: [u8; 32],
 }
@@ -299,11 +310,12 @@ impl RngCore for DummyRng {
 
 impl CryptoRng for DummyRng {}
 
-/// The `Decaps` trait uses the decapsulation key and ciphertext to generate the shared secret.
+/// The `Decaps` trait defines methods for recovering the shared secret using
+/// a decapsulation key and ciphertext.
 pub trait Decaps {
-    /// Ciphertext struct
+    /// The ciphertext type received from the encapsulating party
     type CipherText;
-    /// Shared secret struct
+    /// The shared secret key type generated during decapsulation
     type SharedSecretKey;
 
 
@@ -341,10 +353,9 @@ pub trait Decaps {
     fn try_decaps(&self, ct: &Self::CipherText) -> Result<Self::SharedSecretKey, &'static str>;
 }
 
-
-/// Serialization and Deserialization of structs
+/// The `SerDes` trait provides methods for serializing and deserializing cryptographic objects.
 pub trait SerDes {
-    /// Correctly sized byte array for struct
+    /// The fixed-size byte array type used for serialization
     type ByteArray;
 
 

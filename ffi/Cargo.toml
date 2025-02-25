@@ -1,6 +1,6 @@
 [package]
 name = "fips203-ffi"
-version = "0.4.1"
+version = "0.4.3"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "C shared library exposing FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism"

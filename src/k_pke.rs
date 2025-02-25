@@ -11,9 +11,10 @@ use crate::types::Z;
 /// Algorithm 13 `K-PKE.KeyGen(d)` on page 29.
 /// Uses randomness to generate an encryption key and a corresponding decryption key.
 ///
-/// Input: randomness `d ∈ B^{32}` <br>
-/// Output: encryption key `ek_PKE ∈ B^{384·k+32}` <br>
-/// Output: decryption key `dk_PKE ∈ B^{384·k}`
+/// # Parameters
+/// * Input: randomness `d ∈ B^{32}` (32-byte random seed)
+/// * Output: encryption key `ek_PKE ∈ B^{384·k+32}` (public key)
+/// * Output: decryption key `dk_PKE ∈ B^{384·k}` (private key)
 #[allow(clippy::similar_names)]
 pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
     d: [u8; 32], ek_pke: &mut [u8], dk_pke: &mut [u8],
@@ -78,7 +79,11 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
 }
 
 
-/// Shared function for `k_pke_key_gen()` steps 3-7, and `k_pke_encrypt()` steps 4-8
+/// Shared function for generating matrix `A_hat` used in both:
+/// * `k_pke_key_gen()` steps 3-7
+/// * `k_pke_encrypt()` steps 4-8
+///
+/// Returns a `[K][K][256]` matrix of coefficients in NTT domain
 fn gen_a_hat<const K: usize>(rho: &[u8; 32]) -> [[[Z; 256]; K]; K] {
     //
     // 3: for (i ← 0; i < k; i++)    ▷ generate matrix A ∈ (Z^{256}_q)^{k×k}
@@ -92,13 +97,21 @@ fn gen_a_hat<const K: usize>(rho: &[u8; 32]) -> [[[Z; 256]; K]; K] {
 }
 
 
-/// Algorithm 14 `K-PKE.Encrypt(ek_PKE , m, r)` on page 30.
-/// Uses the encryption key to encrypt a plaintext message using the randomness r.
+/// Algorithm 14 `K-PKE.Encrypt(ek_PKE, m, r)` on page 30.
+/// Uses the encryption key to encrypt a plaintext message using the randomness `r`.
 ///
-/// Input: encryption key `ek_PKE ∈ B^{384·k+32}` <br>
-/// Input: message `m ∈ B^{32}` <br>
-/// Input: randomness `r ∈ B^{32}` <br>
-/// Output: ciphertext `c ∈ B^{32(du·k+dv)}` <br>
+/// # Parameters
+/// * Input: encryption key `ek_PKE ∈ B^{384·k+32}` (public key)
+/// * Input: message `m ∈ B^{32}` (32-byte message to encrypt)
+/// * Input: randomness `r ∈ B^{32}` (32-byte random seed)
+/// * Output: ciphertext `c ∈ B^{32(du·k+dv)}` (encrypted message)
+///
+/// # Parameters
+/// * `K`: Number of polynomial vectors
+/// * `ETA1_64`: Noise parameter for primary sampling
+/// * `ETA2_64`: Noise parameter for secondary sampling
+/// * `du`: Compression parameter for vector u
+/// * `dv`: Compression parameter for vector v
 #[allow(clippy::many_single_char_names, clippy::too_many_arguments)]
 pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64: usize>(
     du: u32, dv: u32, ek_pke: &[u8], m: &[u8], r: &[u8; 32], ct: &mut [u8],
@@ -182,9 +195,15 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
 /// Algorithm 15 `K-PKE.Decrypt(dk_PKE, c)` on page 31.
 /// Uses the decryption key to decrypt a ciphertext.
 ///
-/// Input: decryption key `dk_PKE ∈ B^{384·k}`
-/// Input: ciphertext `c ∈ B^{32(du·k+dv)}`
-/// Output: message `m ∈ B^{32}`
+/// # Parameters
+/// * Input: decryption key `dk_PKE ∈ B^{384·k}` (private key)
+/// * Input: ciphertext `c ∈ B^{32(du·k+dv)}` (encrypted message)
+/// * Output: message `m ∈ B^{32}` (decrypted 32-byte message)
+///
+/// # Parameters
+/// * `du`: Compression parameter for vector u
+/// * `dv`: Compression parameter for vector v
+/// * `K`: Number of polynomial vectors
 pub(crate) fn k_pke_decrypt<const K: usize>(
     du: u32, dv: u32, dk_pke: &[u8], ct: &[u8],
 ) -> Result<[u8; 32], &'static str> {

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.3 (2024-02-25)
+
+- Synchronizing with fips203-ffi fix release; adjust cargo outdated issue
+- Added project into OS-Fuzz https://github.com/google/oss-fuzz
+- Added fuzzing corpus along with README.md edits and code doc/comments improvements
+
 ## 0.4.2 (2024-12-23)
 
 - Added decaps with seed
