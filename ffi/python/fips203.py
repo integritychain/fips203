@@ -100,7 +100,7 @@ Please report issues at https://github.com/integritychain/fips203/issues
 from __future__ import annotations
 
 '''__version__ should track package.version from  ../Cargo.toml'''
-__version__ = '0.4.1'
+__version__ = '0.4.3'
 __author__ = 'Daniel Kahn Gillmor <dkg@fifthhorseman.net>'
 __all__ = [
     'ML_KEM_512',
