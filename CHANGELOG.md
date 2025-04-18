@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Minor improvements to OSS FUZZ coverage; https://oss-fuzz.com/fuzzer-stats
 - Updated (false positive) Golang vuln in dependency for test vectors
+- Dev dependencies pushing minimum Rust version to 1.81 for test and cross GitHub action
 
 ## 0.4.3 (2024-02-25)
 
