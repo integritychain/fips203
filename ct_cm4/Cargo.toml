@@ -6,7 +6,7 @@ description = "Cortex-M4 testbench for FIPS 203 ML-KEM"
 authors = ["Eric Schorn <eschorn@integritychain.com>"]
 publish = false
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.85"
 
 
 [dependencies]

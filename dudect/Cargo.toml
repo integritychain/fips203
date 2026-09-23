@@ -5,7 +5,7 @@ authors = ["Eric Schorn <eschorn@integritychain.com>"]
 publish = false
 edition = "2021"
 license = "MIT OR Apache-2.0"
-rust-version = "1.70"
+rust-version = "1.85"
 
 
 [dependencies]

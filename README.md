@@ -64,7 +64,7 @@ The Rust [Documentation][docs-link] lives under each **Module** corresponding to
 * Constant-time operation targets the source-code level only on the latest version of Rust, with 
   confirmation via manual review/inspection, the embedded target, and the `dudect` dynamic measurements.
 * Note that FIPS 203 places specific requirements on randomness per section 3.3, hence the exposed `RNG`.
-* Requires Rust **1.70** or higher. The minimum supported Rust version (MSRV) may be changed in the future,
+* Requires Rust **1.85** or higher. The minimum supported Rust version (MSRV) may be changed in the future,
   but it will be done with a minor version bump (when the major version is larger than 0).
 * All on-by-default features of this library are covered by `SemVer`.
 * The FIPS 203 standard is 'new' and so this software is experimental -- USE AT YOUR OWN RISK!
@@ -88,7 +88,7 @@ defined in the Apache-2.0 license, shall be dual licensed as above without any a
 [build-image]: https://github.com/integritychain/fips203/workflows/test/badge.svg
 [build-link]: https://github.com/integritychain/fips203/actions?query=workflow%3Atest
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
-[rustc-image]: https://img.shields.io/badge/rustc-1.70+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.85+-blue.svg
 
 [//]: # (general links)
 

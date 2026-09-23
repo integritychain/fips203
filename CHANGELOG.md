@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI: bump cargo-deny-action to v2 and move deny.toml graph and output settings into the v2 tables.
 - Minor improvements to OSS FUZZ coverage; https://oss-fuzz.com/fuzzer-stats
 - Updated (false positive) Golang vuln in dependency for test vectors
-- Dev dependencies pushing minimum Rust version to 1.81 for test and cross GitHub action
+- Raise the minimum supported Rust version to 1.85 (Debian stable / trixie) in the crate manifests and CI.
 
 ## 0.4.3 (2024-02-25)
 
