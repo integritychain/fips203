@@ -1,6 +1,6 @@
 // This file implements the NIST ACVP vectors.
-//   from: https://github.com/usnistgov/ACVP-Server/blob/65370b861b96efd30dfe0daae607bde26a78a5c8/gen-val/json-files/ML-KEM-keyGen-FIPS203/internalProjection.json
-//   from: https://github.com/usnistgov/ACVP-Server/blob/65370b861b96efd30dfe0daae607bde26a78a5c8/gen-val/json-files/ML-KEM-encapDecap-FIPS203/internalProjection.json
+//   from: https://github.com/usnistgov/ACVP-Server/blob/ad33b3d9504491767f1aa76382464f3b3fa2359e/gen-val/json-files/ML-KEM-keyGen-FIPS203/internalProjection.json
+//   from: https://github.com/usnistgov/ACVP-Server/blob/ad33b3d9504491767f1aa76382464f3b3fa2359e/gen-val/json-files/ML-KEM-encapDecap-FIPS203/internalProjection.json
 
 use hex::decode;
 use rand_core::{CryptoRng, RngCore};
@@ -156,8 +156,8 @@ fn test_decaps() {
     for test_group in v["testGroups"].as_array().unwrap().iter() {
         if test_group["function"] == "decapsulation" {
             let parameter_set = &test_group["parameterSet"];
-            let dk = decode(test_group["dk"].as_str().unwrap()).unwrap();
             for test in test_group["tests"].as_array().unwrap().iter() {
+                let dk = decode(test["dk"].as_str().unwrap()).unwrap();
                 let c = decode(test["c"].as_str().unwrap()).unwrap();
                 let k_exp = decode(test["k"].as_str().unwrap()).unwrap();
 
@@ -188,6 +188,74 @@ fn test_decaps() {
                     let k_act = dk.try_decaps(&c).unwrap();
                     assert_eq!(k_exp, k_act.into_bytes());
                 }
+            }
+        }
+    }
+}
+
+
+#[test]
+fn test_key_check() {
+    let vectors = fs::read_to_string(
+        "./tests/nist_vectors/ML-KEM-encapDecap-FIPS203/internalProjection.json",
+    )
+    .expect("Unable to read file");
+    let v: Value = serde_json::from_str(&vectors).unwrap();
+
+    for test_group in v["testGroups"].as_array().unwrap().iter() {
+        let function = test_group["function"].as_str().unwrap();
+        if function != "encapsulationKeyCheck" && function != "decapsulationKeyCheck" {
+            continue;
+        }
+        let parameter_set = &test_group["parameterSet"];
+        for test in test_group["tests"].as_array().unwrap().iter() {
+            let passed_exp = test["testPassed"].as_bool().unwrap();
+            let tc_id = test["tcId"].as_u64().unwrap();
+
+            #[cfg(feature = "ml-kem-512")]
+            if parameter_set == "ML-KEM-512" {
+                let passed_act = match function {
+                    "encapsulationKeyCheck" => {
+                        let ek = decode(test["ek"].as_str().unwrap()).unwrap();
+                        ml_kem_512::EncapsKey::try_from_bytes(ek.try_into().unwrap()).is_ok()
+                    }
+                    "decapsulationKeyCheck" => {
+                        let dk = decode(test["dk"].as_str().unwrap()).unwrap();
+                        ml_kem_512::DecapsKey::try_from_bytes(dk.try_into().unwrap()).is_ok()
+                    }
+                    _ => unreachable!(),
+                };
+                assert_eq!(passed_exp, passed_act, "ML-KEM-512 {function} tcId {tc_id}");
+            }
+            #[cfg(feature = "ml-kem-768")]
+            if parameter_set == "ML-KEM-768" {
+                let passed_act = match function {
+                    "encapsulationKeyCheck" => {
+                        let ek = decode(test["ek"].as_str().unwrap()).unwrap();
+                        ml_kem_768::EncapsKey::try_from_bytes(ek.try_into().unwrap()).is_ok()
+                    }
+                    "decapsulationKeyCheck" => {
+                        let dk = decode(test["dk"].as_str().unwrap()).unwrap();
+                        ml_kem_768::DecapsKey::try_from_bytes(dk.try_into().unwrap()).is_ok()
+                    }
+                    _ => unreachable!(),
+                };
+                assert_eq!(passed_exp, passed_act, "ML-KEM-768 {function} tcId {tc_id}");
+            }
+            #[cfg(feature = "ml-kem-1024")]
+            if parameter_set == "ML-KEM-1024" {
+                let passed_act = match function {
+                    "encapsulationKeyCheck" => {
+                        let ek = decode(test["ek"].as_str().unwrap()).unwrap();
+                        ml_kem_1024::EncapsKey::try_from_bytes(ek.try_into().unwrap()).is_ok()
+                    }
+                    "decapsulationKeyCheck" => {
+                        let dk = decode(test["dk"].as_str().unwrap()).unwrap();
+                        ml_kem_1024::DecapsKey::try_from_bytes(dk.try_into().unwrap()).is_ok()
+                    }
+                    _ => unreachable!(),
+                };
+                assert_eq!(passed_exp, passed_act, "ML-KEM-1024 {function} tcId {tc_id}");
             }
         }
     }

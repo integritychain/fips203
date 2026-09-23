@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased so far...
 
+- Update NIST ACVP ML-KEM vectors, including the July 2026 encap/decap corrections. Decapsulation reads each `dk` from its test case, and key-check groups compare `try_from_bytes` with `testPassed`.
 - NIST keygen tests for ML-KEM-768 and ML-KEM-1024 now use keygen_from_seed.
 - Document bare-metal RNG use, and point the security advisory link at this repository.
 - WASM demo: refresh the browser npm toolchain and rewrite the WASM README.
