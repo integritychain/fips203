@@ -32,7 +32,9 @@ zeroize = { version = "1.6.0", default-features = false, features = ["zeroize_de
 
 
 [dev-dependencies]  # Some are marginally outdated to retain MSRV 1.70
-criterion = "0.4.0"
+criterion = "0.5"
+# Direct pin: Cargo.lock is gitignored; textwrap>=0.16.3 raises MSRV above 1.85
+textwrap = "=0.16.2"
 flate2 = "1.0.27"
 hex = "0.4.3"
 hex-literal = "0.4.1"

@@ -74,8 +74,6 @@ yanked = "warn"
 ignore = [
     "RUSTSEC-2021-0139",
     "RUSTSEC-2021-0145",
-    # atty via criterion 0.4; drop this when Criterion moves to 0.5
-    { id = "RUSTSEC-2024-0375", reason = "removed with the Criterion 0.5 bump" },
     #"RUSTSEC-0000-0000",
 ]
 # Threshold for security vulnerabilities, any vulnerability with a CVSS score
