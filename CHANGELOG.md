@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased so far...
 
+- Prepare 0.5.0. The public API is unchanged and rand_core stays on 0.6; the version bump is the Rust 1.85 MSRV break.
 - Enable the CCTV modulus and strcmp tests. Intermediate and unlucky vectors stay ignored because their encapsulation keys do not match final FIPS 203.
 - Update NIST ACVP ML-KEM vectors, including the July 2026 encap/decap corrections. Decapsulation reads each `dk` from its test case, and key-check groups compare `try_from_bytes` with `testPassed`.
 - NIST keygen tests for ML-KEM-768 and ML-KEM-1024 now use keygen_from_seed.

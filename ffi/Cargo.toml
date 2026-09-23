@@ -1,6 +1,6 @@
 [package]
 name = "fips203-ffi"
-version = "0.4.3"
+version = "0.5.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "C shared library exposing FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism"
@@ -23,4 +23,4 @@ rand_core = { version = "0.6.4"}
 
 [dependencies.fips203]
 path = ".."
-version = "0.4.2"
+version = "0.5.0"
