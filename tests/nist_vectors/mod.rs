@@ -63,27 +63,31 @@ fn test_keygen() {
             let d = decode(test["d"].as_str().unwrap()).unwrap();
             let ek_exp = decode(test["ek"].as_str().unwrap()).unwrap();
             let dk_exp = decode(test["dk"].as_str().unwrap()).unwrap();
-            let mut rnd = TestRng::new();
-            rnd.push(&z);
-            rnd.push(&d);
 
             #[cfg(feature = "ml-kem-512")]
             if test_group["parameterSet"] == "ML-KEM-512" {
-                // Following line picks up seed API
-                let (ek_act, dk_act) =
-                    ml_kem_512::KG::keygen_from_seed(d.try_into().unwrap(), z.try_into().unwrap());
+                let (ek_act, dk_act) = ml_kem_512::KG::keygen_from_seed(
+                    d.clone().try_into().unwrap(),
+                    z.clone().try_into().unwrap(),
+                );
                 assert_eq!(ek_exp, ek_act.into_bytes());
                 assert_eq!(dk_exp, dk_act.into_bytes());
             }
             #[cfg(feature = "ml-kem-768")]
             if test_group["parameterSet"] == "ML-KEM-768" {
-                let (ek_act, dk_act) = ml_kem_768::KG::try_keygen_with_rng(&mut rnd).unwrap();
+                let (ek_act, dk_act) = ml_kem_768::KG::keygen_from_seed(
+                    d.clone().try_into().unwrap(),
+                    z.clone().try_into().unwrap(),
+                );
                 assert_eq!(ek_exp, ek_act.into_bytes());
                 assert_eq!(dk_exp, dk_act.into_bytes());
             }
             #[cfg(feature = "ml-kem-1024")]
             if test_group["parameterSet"] == "ML-KEM-1024" {
-                let (ek_act, dk_act) = ml_kem_1024::KG::try_keygen_with_rng(&mut rnd).unwrap();
+                let (ek_act, dk_act) = ml_kem_1024::KG::keygen_from_seed(
+                    d.clone().try_into().unwrap(),
+                    z.clone().try_into().unwrap(),
+                );
                 assert_eq!(ek_exp, ek_act.into_bytes());
                 assert_eq!(dk_exp, dk_act.into_bytes());
             }
