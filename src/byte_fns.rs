@@ -148,6 +148,8 @@ mod tests {
         let bytes1: Vec<u8> = (0..num_bytes).map(|_| 0xFF).collect();
         let ret = byte_decode(num_bits, &bytes1);
         assert!(ret.is_err());
-        integer_array.iter_mut().for_each(|x| x.set_u16(u16::MAX));
+        for x in &mut integer_array {
+            x.set_u16(u16::MAX);
+        }
     }
 }

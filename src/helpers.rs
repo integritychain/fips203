@@ -150,7 +150,9 @@ pub(crate) fn xof(rho: &[u8; 32], i: u8, j: u8) -> impl XofReader {
 /// Tuple of two 32-byte arrays (tr, K) as specified in the protocol
 pub(crate) fn g(bytes: &[&[u8]]) -> ([u8; 32], [u8; 32]) {
     let mut hasher = Sha3_512::new();
-    bytes.iter().for_each(|b| Digest::update(&mut hasher, b));
+    for b in bytes {
+        Digest::update(&mut hasher, b);
+    }
     let digest = hasher.finalize();
     let a = digest[0..32].try_into().expect("g_a fail");
     let b = digest[32..64].try_into().expect("g_b fail");
@@ -212,7 +214,7 @@ pub(crate) fn j(z: &[u8; 32], ct: &[u8]) -> [u8; 32] {
 /// * Uses pre-computed multiplier M to avoid floating-point arithmetic
 #[allow(clippy::cast_possible_truncation)]
 pub(crate) fn compress_vector(d: u32, inout: &mut [Z]) {
-    const M: u32 = (((1u64 << 36) + Q as u64 - 1) / Q as u64) as u32;
+    const M: u32 = (1u64 << 36).div_ceil(Q as u64) as u32;
     for x_ref in &mut *inout {
         let y = (x_ref.get_u32() << d) + (u32::from(Q) >> 1);
         let result = (u64::from(y) * u64::from(M)) >> 36;

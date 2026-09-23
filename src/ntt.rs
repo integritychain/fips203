@@ -106,7 +106,9 @@ pub(crate) fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
     // 14: f ← f · 3303 mod q    ▷ multiply every entry by 3303 ≡ 128^{−1} mod q
     let mut z3303 = Z::default();
     z3303.set_u16(3303);
-    f.iter_mut().for_each(|item| *item = item.mul(z3303));
+    for item in &mut f {
+        *item = item.mul(z3303);
+    }
 
     // 15: return f
     f
