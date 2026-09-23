@@ -118,7 +118,7 @@ fn get_strcmp_vec(filename: &str) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
     (dk_exp, k_exp, c_exp)
 }
 
-#[ignore] // TODO: Fix for final FIPS 203
+// CCTV strcmp vector: implicit rejection must not stop at an embedded 0x00.
 #[test]
 #[cfg(feature = "ml-kem-512")]
 pub fn test_strcmp_512() {
@@ -130,7 +130,7 @@ pub fn test_strcmp_512() {
     assert_eq!(k_exp, k_act.into_bytes());
 }
 
-#[ignore] // TODO: Fix for final FIPS 203
+// CCTV strcmp vector: implicit rejection must not stop at an embedded 0x00.
 #[test]
 #[cfg(feature = "ml-kem-768")]
 pub fn test_strcmp_768() {
@@ -142,7 +142,7 @@ pub fn test_strcmp_768() {
     assert_eq!(k_exp, k_act.into_bytes());
 }
 
-#[ignore] // TODO: Fix for final FIPS 203
+// CCTV strcmp vector: implicit rejection must not stop at an embedded 0x00.
 #[test]
 #[cfg(feature = "ml-kem-1024")]
 pub fn test_strcmp_1024() {
@@ -214,7 +214,7 @@ pub fn test_unlucky_1024() {
     assert_eq!(k1_act, k2_act);
 }
 
-#[ignore] // TODO: Fix for final FIPS 203
+// CCTV modulus vector: an encapsulation key with any coefficient >= q must be rejected.
 #[test]
 #[cfg(feature = "ml-kem-512")]
 fn test_modulus_512() {
@@ -229,7 +229,7 @@ fn test_modulus_512() {
     }
 }
 
-#[ignore] // TODO: Fix for final FIPS 203
+// CCTV modulus vector: an encapsulation key with any coefficient >= q must be rejected.
 #[test]
 #[cfg(feature = "ml-kem-768")]
 fn test_modulus_768() {
@@ -244,7 +244,7 @@ fn test_modulus_768() {
     }
 }
 
-#[ignore] // TODO: Fix for final FIPS 203
+// CCTV modulus vector: an encapsulation key with any coefficient >= q must be rejected.
 #[test]
 #[cfg(feature = "ml-kem-1024")]
 fn test_modulus_1024() {
