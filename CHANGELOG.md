@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased so far...
 
+- ct_cm4: pin fixed to 1.30.0 so the Microbit sample still resolves on Rust 1.85.
 - Bump Criterion to 0.5, which drops unmaintained atty, and pin textwrap to 0.16.2 so the dev-dependency tree stays buildable on Rust 1.85.
 - CI: install the Clippy component on stable before running cargo clippy.
 - CI: bump cargo-deny-action to v2 and move deny.toml graph and output settings into the v2 tables.
