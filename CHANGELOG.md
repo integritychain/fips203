@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased so far...
 
+- Document bare-metal RNG use, and point the security advisory link at this repository.
 - WASM demo: refresh the browser npm toolchain and rewrite the WASM README.
 - WASM demo: point the fips203 path dependency at the parent directory and bump wasm-bindgen.
 - Clear Clippy pedantic findings reported by current stable.

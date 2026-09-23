@@ -11,7 +11,7 @@ it privately. **Do not disclose it as a public issue.** This gives us time to
 work with you to fix the issue before public exposure, reducing the chance that
 the exploit will be used before a patch is released.
 
-Please disclose it at [security advisory](https://github.com/integritychain/ml-kem-rs/security/advisories/new).
+Please disclose it at [security advisory](https://github.com/integritychain/fips203/security/advisories/new).
 
 This project is maintained by a team of volunteers on a reasonable-effort basis.
 As such, please give us at least 90 days to work on a fix before public exposure.

@@ -56,7 +56,7 @@ assert_eq!(bob_ssk_bytes, alice_ssk_bytes);
 ~~~
 
 The Rust [Documentation][docs-link] lives under each **Module** corresponding to the desired
-[security parameter](#modules) below.
+[security parameter][docs-modules].
 
 ## Notes
 
@@ -64,6 +64,8 @@ The Rust [Documentation][docs-link] lives under each **Module** corresponding to
 * Constant-time operation targets the source-code level only on the latest version of Rust, with 
   confirmation via manual review/inspection, the embedded target, and the `dudect` dynamic measurements.
 * Note that FIPS 203 places specific requirements on randomness per section 3.3, hence the exposed `RNG`.
+* Default features enable `default-rng` plus all three parameter sets. That OS RNG path is for hosted targets and will not build on bare-metal targets that lack a `getrandom` backend (for example `thumbv7em-none-eabi`). Embedded builds use `default-features = false`, the `ml-kem-*` feature they need, and seeds or `*_with_rng`. See [`ct_cm4/`](ct_cm4/).
+* Custom generators implement `CryptoRngCore` from `rand_core` 0.6. The crate re-exports `CryptoRng`, `RngCore`, and `RngError`. Keygen and encaps call `try_fill_bytes`.
 * Requires Rust **1.85** or higher. The minimum supported Rust version (MSRV) may be changed in the future,
   but it will be done with a minor version bump (when the major version is larger than 0).
 * All on-by-default features of this library are covered by `SemVer`.
@@ -94,3 +96,4 @@ defined in the Apache-2.0 license, shall be dual licensed as above without any a
 
 [IntegrityChain]: https://github.com/integritychain/
 [FIPS 203]: https://csrc.nist.gov/pubs/fips/203/final
+[docs-modules]: https://docs.rs/fips203/latest/fips203/#modules
