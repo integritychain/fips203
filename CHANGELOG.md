@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased so far...
 
+- CI: install the Clippy component on stable before running cargo clippy.
 - CI: bump cargo-deny-action to v2 and move deny.toml graph and output settings into the v2 tables. Temporarily ignore RUSTSEC-2024-0375 until Criterion 0.5 drops atty.
 - Minor improvements to OSS FUZZ coverage; https://oss-fuzz.com/fuzzer-stats
 - Updated (false positive) Golang vuln in dependency for test vectors
