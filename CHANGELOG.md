@@ -5,23 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased so far...
+## 0.5.0 (in progress)
 
-- Prepare 0.5.0. The public API is unchanged and rand_core stays on 0.6; the version bump is the Rust 1.85 MSRV break.
-- Enable the CCTV modulus and strcmp tests. Intermediate and unlucky vectors stay ignored because their encapsulation keys do not match final FIPS 203.
-- Update NIST ACVP ML-KEM vectors, including the July 2026 encap/decap corrections. Decapsulation reads each `dk` from its test case, and key-check groups compare `try_from_bytes` with `testPassed`.
-- NIST keygen tests for ML-KEM-768 and ML-KEM-1024 now use keygen_from_seed.
-- Document bare-metal RNG use, and point the security advisory link at this repository.
-- WASM demo: refresh the browser npm toolchain and rewrite the WASM README.
-- WASM demo: point the fips203 path dependency at the parent directory and bump wasm-bindgen.
-- Clear Clippy pedantic findings reported by current stable.
-- ct_cm4: pin fixed to 1.30.0 so the Microbit sample still resolves on Rust 1.85.
-- Bump Criterion to 0.5, which drops unmaintained atty, and pin textwrap to 0.16.2 so the dev-dependency tree stays buildable on Rust 1.85.
-- CI: install the Clippy component on stable before running cargo clippy.
-- CI: bump cargo-deny-action to v2 and move deny.toml graph and output settings into the v2 tables.
-- Minor improvements to OSS FUZZ coverage; https://oss-fuzz.com/fuzzer-stats
-- Updated (false positive) Golang vuln in dependency for test vectors
-- Raise the minimum supported Rust version to 1.85 (Debian stable / trixie) in the crate manifests and CI.
+### Migration from 0.4.x
+- Public API is unchanged. Depend on `fips203 = "0.5"`. The bump is the MSRV break.
+- MSRV is **1.85**.
+- RNG stays `rand_core` 0.6. `CryptoRng`, `RngCore`, and `RngError` are re-exported.
+- Default features enable the OS RNG and all three parameter sets. That does not build on bare metal. Use `default-features = false`, one `ml-kem-*` feature, and seeds or `*_with_rng`.
+
+### Changed
+- Checked against the current NIST ACVP ML-KEM vectors, including the July 2026 encap/decap corrections.
+- Security reports go to this repository.
 
 ## 0.4.3 (2024-02-25)
 
