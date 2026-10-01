@@ -1,23 +1,23 @@
 Figure-of-merit only; no particular care has been taken to disable turbo-boost etc.
 Note that constant-time restrictions on the implementation do impact performance.
 
-Additional performance optimizations will follow ...
-
 ~~~
-October 12, 2024
-Intel® Core™ i7-7700K CPU @ 4.20GHz × 8 Circa 2017 w/ Rust 1.81
+October 1, 2026
+13th Gen Intel® Core™ i7-13700K, Rust 1.85.1
+Bench profile: opt-level 3, LTO, codegen-units 1, overflow checks off.
+Turbo Boost was left enabled.
 
-$ RUSTFLAGS="-C target-cpu=native" cargo bench
+$ RUSTFLAGS="-C target-cpu=native" cargo bench --bench benchmark
 
-ml_kem_512  KeyGen      time:   [27.694 µs 27.705 µs 27.720 µs]
-ml_kem_768  KeyGen      time:   [46.650 µs 46.662 µs 46.677 µs]
-ml_kem_1024 KeyGen      time:   [71.232 µs 71.247 µs 71.263 µs]
+ml_kem_512  KeyGen      time:   [16.844 µs 16.856 µs 16.870 µs]
+ml_kem_768  KeyGen      time:   [28.843 µs 28.885 µs 28.923 µs]
+ml_kem_1024 KeyGen      time:   [44.181 µs 44.227 µs 44.276 µs]
 
-ml_kem_512  Encaps      time:   [27.878 µs 27.884 µs 27.892 µs]
-ml_kem_768  Encaps      time:   [44.768 µs 44.800 µs 44.840 µs]
-ml_kem_1024 Encaps      time:   [69.829 µs 69.852 µs 69.878 µs]
+ml_kem_512  Encaps      time:   [16.880 µs 16.893 µs 16.908 µs]
+ml_kem_768  Encaps      time:   [27.012 µs 27.036 µs 27.063 µs]
+ml_kem_1024 Encaps      time:   [39.831 µs 39.854 µs 39.885 µs]
 
-ml_kem_512  Decaps      time:   [39.295 µs 39.314 µs 39.334 µs]
-ml_kem_768  Decaps      time:   [60.061 µs 60.129 µs 60.211 µs]
-ml_kem_1024 Decaps      time:   [85.276 µs 85.386 µs 85.516 µs]
+ml_kem_512  Decaps      time:   [23.031 µs 23.048 µs 23.066 µs]
+ml_kem_768  Decaps      time:   [35.676 µs 35.727 µs 35.778 µs]
+ml_kem_1024 Decaps      time:   [50.837 µs 50.858 µs 50.881 µs]
 ~~~
