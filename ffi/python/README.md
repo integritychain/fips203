@@ -42,7 +42,7 @@ initializing them with the appropriate size bytes object.
 A serialization example:
 
 ```
-from fips203 import ML_KEM_768
+from fips203 import ML_KEM_768, Seed
 
 seed = Seed()
 (ek,dk) = ML_KEM_768.keygen(seed)
@@ -59,11 +59,11 @@ A deserialization example, followed by use:
 ```
 import fips203
 
-with open('encapskey.bin', 'b') as f:
+with open('encapskey.bin', 'rb') as f:
     ekdata = f.read()
 
 ek = fips203.EncapsulationKey(ekdata)
-(ct, ss) = ek.Encaps()
+(ct, ss) = ek.encaps()
 ```
 
 The expected sizes (in bytes) of the different objects in each
@@ -81,7 +81,8 @@ print(f"ML-KEM-768 Ciphertext size (in bytes) is {ML_KEM_768.CT_SIZE}")
 This is a wrapper around libfips203, built from the Rust fips203-ffi crate.
 
 If that library is not installed in the expected path for libraries on
-your system, any attempt to use this module will fail.
+your system, importing this module will fail.  For in-tree tests, set
+`FIPS203_PYTHON_TESTING_LIBRARY` to the built `libfips203.so`.
 
 This module should have reasonable type annotations and docstrings for
 the public interface.  If you discover a problem with type
@@ -90,7 +91,7 @@ improved, please report it!
 
 ## See Also
 
-- https://doi.org/10.6028/NIST.FIPS.203.ipd
+- https://doi.org/10.6028/NIST.FIPS.203
 - https://github.com/integritychain/fips203
 
 ## Bug Reporting

@@ -42,7 +42,7 @@ initializing them with the appropriate size bytes object.
 A serialization example:
 
 ```
-from fips203 import ML_KEM_768
+from fips203 import ML_KEM_768, Seed
 
 seed = Seed()
 (ek,dk) = ML_KEM_768.keygen(seed)
@@ -51,7 +51,7 @@ with open('encapskey.bin', 'wb') as f:
 with open('decapskey.bin', 'wb') as f:
     f.write(bytes(dk))
 with open('seed.bin', 'wb') as f:
-    f.write(bytes(seed)
+    f.write(bytes(seed))
 ```
 
 A deserialization example, followed by use:
@@ -59,11 +59,11 @@ A deserialization example, followed by use:
 ```
 import fips203
 
-with open('encapskey.bin', 'b') as f:
+with open('encapskey.bin', 'rb') as f:
     ekdata = f.read()
 
 ek = fips203.EncapsulationKey(ekdata)
-(ct, ss) = ek.Encaps()
+(ct, ss) = ek.encaps()
 ```
 
 The expected sizes (in bytes) of the different objects in each
@@ -81,7 +81,8 @@ print(f"ML-KEM-768 Ciphertext size (in bytes) is {ML_KEM_768.CT_SIZE}")
 This is a wrapper around libfips203, built from the Rust fips203-ffi crate.
 
 If that library is not installed in the expected path for libraries on
-your system, any attempt to use this module will fail.
+your system, importing this module will fail.  For in-tree tests, set
+`FIPS203_PYTHON_TESTING_LIBRARY` to the built `libfips203.so`.
 
 This module should have reasonable type annotations and docstrings for
 the public interface.  If you discover a problem with type
@@ -90,7 +91,7 @@ improved, please report it!
 
 ## See Also
 
-- https://doi.org/10.6028/NIST.FIPS.203.ipd
+- https://doi.org/10.6028/NIST.FIPS.203
 - https://github.com/integritychain/fips203
 
 ## Bug Reporting
@@ -100,7 +101,7 @@ Please report issues at https://github.com/integritychain/fips203/issues
 from __future__ import annotations
 
 '''__version__ should track package.version from  ../Cargo.toml'''
-__version__ = '0.4.3'
+__version__ = '0.5.0'
 __author__ = 'Daniel Kahn Gillmor <dkg@fifthhorseman.net>'
 __all__ = [
     'ML_KEM_512',
@@ -118,7 +119,7 @@ import enum
 import secrets
 from typing import Tuple, Dict, Any, Union, Optional
 from abc import ABC
-import sys
+from os import environ
 
 
 class _SharedSecret(ctypes.Structure):
@@ -319,12 +320,18 @@ class _ML_KEM():
             'CT_SIZE': 1568,
             },
         }
-    lib = ctypes.CDLL(ctypes.util.find_library('fips203'))
-    if not hasattr(lib, 'ml_kem_512_keygen'):
-        if sys.platform == 'darwin':
-            lib = ctypes.CDLL('../../target/debug/libfips203.dylib')
-        else:
-            lib = ctypes.CDLL("../../target/debug/libfips203.so")
+    testlibpath = environ.get('FIPS203_PYTHON_TESTING_LIBRARY', None)
+    if testlibpath:
+        lib = ctypes.CDLL(testlibpath)
+    else:
+        libname = ctypes.util.find_library('fips203')
+        if libname is None:
+            raise OSError(
+                "libfips203 shared library not found. Install it, or set "
+                "FIPS203_PYTHON_TESTING_LIBRARY to the path of libfips203.so "
+                "for in-tree tests."
+            )
+        lib = ctypes.CDLL(libname)
 
     # use Any below because i don't know how to specify the type of the FuncPtr
     ffi: Dict[int, Dict[str, Any]] = {}

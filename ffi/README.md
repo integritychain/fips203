@@ -41,7 +41,7 @@ $ cd ffi   # this directory
 $ cargo build
 $ (cd tests && make)
 $ cd python
-$ python3
+$ FIPS203_PYTHON_TESTING_LIBRARY=../../target/debug/libfips203.so python3
 >>> from fips203 import ML_KEM_512
 >>> 
 >>> (encapsulation_key, decapsulation_key) = ML_KEM_512.keygen()

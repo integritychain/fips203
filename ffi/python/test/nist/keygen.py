@@ -3,7 +3,7 @@
 
 From the ffi/python/ directory, do:
 
-PYTHONPATH=. test/nist/keygen.py
+FIPS203_PYTHON_TESTING_LIBRARY=../../target/debug/libfips203.so PYTHONPATH=. python3 test/nist/keygen.py
 
 """
 from __future__ import annotations

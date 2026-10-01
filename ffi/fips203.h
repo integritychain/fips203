@@ -16,13 +16,13 @@
 
 typedef uint8_t ml_kem_err;
 
-const ml_kem_err ML_KEM_OK = 0;
-const ml_kem_err ML_KEM_NULL_PTR_ERROR = 1;
-const ml_kem_err ML_KEM_SERIALIZATION_ERROR = 2;
-const ml_kem_err ML_KEM_DESERIALIZATION_ERROR = 3;
-const ml_kem_err ML_KEM_KEYGEN_ERROR = 4;
-const ml_kem_err ML_KEM_ENCAPSULATION_ERROR = 5;
-const ml_kem_err ML_KEM_DECAPSULATION_ERROR = 6;
+static const ml_kem_err ML_KEM_OK = 0;
+static const ml_kem_err ML_KEM_NULL_PTR_ERROR = 1;
+static const ml_kem_err ML_KEM_SERIALIZATION_ERROR = 2;
+static const ml_kem_err ML_KEM_DESERIALIZATION_ERROR = 3;
+static const ml_kem_err ML_KEM_KEYGEN_ERROR = 4;
+static const ml_kem_err ML_KEM_ENCAPSULATION_ERROR = 5;
+static const ml_kem_err ML_KEM_DECAPSULATION_ERROR = 6;
 
 
 typedef struct ml_kem_shared_secret {

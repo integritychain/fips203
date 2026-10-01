@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Checked against the current NIST ACVP ML-KEM vectors, including the July 2026 encap/decap corrections.
 - Security reports go to this repository.
+- The Python module (`ffi/python`) loads `libfips203` from `FIPS203_PYTHON_TESTING_LIBRARY` when that is set, otherwise from the system library path. If neither finds it, import raises an `OSError` that names the library. It no longer falls back to `../../target/debug/libfips203.{so,dylib}`. That path is relative to the current directory, so it only worked from `ffi/python` in a source checkout, and from any other directory it loaded whatever library sat at that path. The `fips204` and `fips205` modules load the same way.
+
+### Fixed
+- `ffi/fips203.h` declares its `ML_KEM_*` error codes `static const`. Before, two C files that included the header failed to link with duplicate symbols.
+- The Python module reports `__version__` 0.5.0. It said 0.4.3, and `pyproject.toml` takes the package version from it.
+- The Python README and module docstring examples run as written. The serialization example imports `Seed`. The deserialization example opens its file `'rb'` (not `'b'`) and calls `encaps()` (not `Encaps()`). The docstring copy had a missing parenthesis. The specification link points at final FIPS 203, not the draft.
 
 ## 0.4.3 (2024-02-25)
 

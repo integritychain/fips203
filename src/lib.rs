@@ -92,6 +92,9 @@ const ZETA: u16 = 17;
 pub const SSK_LEN: usize = 32;
 
 /// The (opaque) secret key that can be de/serialized by each party.
+///
+/// `Debug` prints the secret bytes, so do not log or format this value. It is
+/// derived so that `assert_eq!` can compare the two parties' shared secrets.
 #[derive(Clone, Debug, Zeroize, ZeroizeOnDrop)]
 pub struct SharedSecretKey([u8; SSK_LEN]);
 

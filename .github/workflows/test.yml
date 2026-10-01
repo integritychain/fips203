@@ -83,6 +83,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
+      # The FFI is tested from C and Python (the `ffi` job), which llvm-cov cannot see.
+      # Including it would only add a 0% crate to the total.
       - name: Generate code coverage
         run: cargo llvm-cov --all-features --workspace --exclude fips203-ffi
     # No codecov account, so stop here for now
@@ -161,3 +163,19 @@ jobs:
       - run: ${{ matrix.deps }}
       - run: cargo check --target ${{ matrix.target }} --all-features
       - run: cargo test --release --target ${{ matrix.target }}
+
+
+  ffi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build shared library and run C tests
+        run: |
+          cargo build -p fips203-ffi
+          make -C ffi/tests check
+      - name: Python NIST vectors
+        run: |
+          cd ffi/python
+          FIPS203_PYTHON_TESTING_LIBRARY=../../target/debug/libfips203.so \
+            PYTHONPATH=. python3 test/nist/keygen.py
