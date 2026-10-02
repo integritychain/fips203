@@ -62,6 +62,10 @@
 // The ensure!() instances are for validation purposes and cannot be turned off. The
 // debug_assert!() instances are (effectively) targeted by the fuzzer in /fips203/fuzz and
 // will support quicker future changes/fixes from any FIPS 203 specification update.
+//
+// This crate has no test or measurement hooks. Every NIST vector runs through the public
+// API: `keygen_from_seed()`, `try_encaps_with_rng()`, `try_decaps()` and `try_from_bytes()`.
+// In fips204 and fips205, such hooks are `#[deprecated]` and live behind non-default features.
 
 
 /// These `rand_core` types are re-exported so that users of fips203 do not
