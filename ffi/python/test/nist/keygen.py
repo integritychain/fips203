@@ -6,6 +6,7 @@ From the ffi/python/ directory, do:
 FIPS203_PYTHON_TESTING_LIBRARY=../../target/debug/libfips203.so PYTHONPATH=. python3 test/nist/keygen.py
 
 """
+
 from __future__ import annotations
 
 import fips203
@@ -47,18 +48,18 @@ class KeyGenTest:
 
     def run(self, group: TestGroup) -> None:
         seed = fips203.Seed(self.d + self.z)
-        (ek, dk) = seed.keygen(group.strength)
+        ek, dk = seed.keygen(group.strength)
         if bytes(ek) != self.ek:
             raise Exception(
                 f"""test {self.tcId} (group {group.tgId}, str: {group.strength}) ek failed:
-                   got: {b2a_hex(bytes(ek))}
-                wanted: {b2a_hex(self.ek)}"""
+                   got: {b2a_hex(bytes(ek)).decode()}
+                wanted: {b2a_hex(self.ek).decode()}"""
             )
         if bytes(dk) != self.dk:
             raise Exception(
                 f"""test {self.tcId} (group {group.tgId}, str: {group.strength}) dk failed:
-                   got: {b2a_hex(bytes(dk))}
-                wanted: {b2a_hex(self.dk)}"""
+                   got: {b2a_hex(bytes(dk)).decode()}
+                wanted: {b2a_hex(self.dk).decode()}"""
             )
 
 
