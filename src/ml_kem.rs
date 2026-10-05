@@ -230,7 +230,7 @@ pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64:
 }
 
 
-/// Algorithm 21 `ML-KEM.Decaps(c, dk)` on page 38.
+/// Algorithm 21 `ML-KEM.Decaps(dk, c)` on page 38.
 /// Uses the decapsulation key to produce a shared key from a ciphertext.
 /// Implements implicit rejection for invalid ciphertexts.
 ///

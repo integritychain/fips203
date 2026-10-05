@@ -36,7 +36,7 @@
 // Algorithm 10 NTT−1(fˆ) on page 26                        --> ntt.rs
 // Algorithm 11 MultiplyNTTs(fˆ,ĝ) on page 27               --> ntt.rs
 // Algorithm 12 BaseCaseMultiply(a0,a1,b0,b1,γ) on page 27  --> ntt.rs
-// Algorithm 13 K-PKE.KeyGen() on page 29                   --> k_pke.rs
+// Algorithm 13 K-PKE.KeyGen(d) on page 29                  --> k_pke.rs
 // Algorithm 14 K-PKE.Encrypt(ek_PKE,m,r) on page 30        --> k_pke.rs
 // Algorithm 15 K-PKE.Decrypt(dk_PKE,c) on page 31          --> k_pke.rs
 // Algorithm 16 ML-KEM.KeyGen_internal(d,z) on page 32      --> ml_kem.rs
@@ -53,7 +53,7 @@
 // connects them into the functionality in ml_kem.rs. Some of the 'obtuse' coding style is
 // driven by `clippy pedantic`. This code has been confirmed as constant-time (outside of
 // rho) via manual inspection,  ./fips203/dudect and ./fips203/ct_cm4 functionality (other
-// than the `validate_keypair_vartime()` functions).
+// than the `validate_keypair_with_rng_vartime()` functions).
 //
 // Note that the use of generics has been constrained to storage allocation purposes,
 // only e.g. `[0u8; EK_LEN];` (where arithmetic expressions are not allowed), while the
@@ -110,7 +110,7 @@ impl SerDes for SharedSecretKey {
 
     // While this function never fails for `SharedSecretKey`, it includes the `try_` prefix
     // to maintain alignment with the SerDes trait (alongside all the other objects) and to
-    // retains the opportunity for future validation.
+    // retain the opportunity for future validation.
     fn try_from_bytes(ssk: Self::ByteArray) -> Result<Self, &'static str> {
         Ok(SharedSecretKey(ssk))
     }
@@ -263,9 +263,9 @@ macro_rules! functionality {
             fn into_bytes(self) -> Self::ByteArray { self.0 }
 
             fn try_from_bytes(dk: Self::ByteArray) -> Result<Self, &'static str> {
-                // Validation per pg 31. Note that the two checks specify fixed sizes, and these
-                // functions take only byte arrays of correct size. Nonetheless, we take the
-                // opportunity to validate the ek and h(ek).
+                // Validation per the decapsulation input check on pg 37. Checks #1 and #2 specify
+                // fixed sizes, and these functions take only byte arrays of correct size. Check #3,
+                // the hash check on h(ek), is below. We also validate the embedded ek.
                 let len_ek_pke = 384 * K + 32;
                 let len_dk_pke = 384 * K;
                 let ek = &dk[len_dk_pke..len_dk_pke + EK_LEN];
@@ -286,9 +286,9 @@ macro_rules! functionality {
             fn into_bytes(self) -> Self::ByteArray { self.0 }
 
             fn try_from_bytes(ct: Self::ByteArray) -> Result<Self, &'static str> {
-                // Validation per pg 31. Note that the two checks specify fixed sizes, and these
-                // functions take only byte arrays of correct size. Nonetheless, we use a Result
-                // here in case future opportunities for further validation arise.
+                // Validation per the decapsulation input check on pg 37. Check #1 specifies a
+                // fixed size, and these functions take only byte arrays of correct size. Nonetheless,
+                // we use a Result here in case future opportunities for further validation arise.
                 Ok(CipherText { 0: ct })
             }
         }
@@ -338,9 +338,9 @@ pub mod ml_kem_512 {
     //! 2. The originator serializes the encaps key via `encapsKey.into_bytes()` and sends to the remote party.
     //! 3. The remote party deserializes the bytes via `try_from_bytes(<bytes>)` and runs `try_encaps()` to get the
     //!    shared secret key `ssk` and ciphertext `cipherText`.
-    //! 4. The remote party serializes the cipertext via `cipherText.into_bytes()` and sends to the originator.
+    //! 4. The remote party serializes the ciphertext via `cipherText.into_bytes()` and sends to the originator.
     //! 5. The originator deserializes the ciphertext via `try_from_bytes(<bytes>)` then
-    //!    runs `decapsKey.try_decaps(cipherText)` to the get shared secret ket `ssk`.
+    //!    runs `decapsKey.try_decaps(cipherText)` to get the shared secret key `ssk`.
     //! 6. Both the originator and remote party now have the same shared secret key `ssk`.
     //!
     //! **--> See [`crate::traits`] for the keygen, encapsulation, decapsulation, and serialization/deserialization functionality.**
@@ -374,9 +374,9 @@ pub mod ml_kem_768 {
     //! 2. The originator serializes the encaps key via `encapsKey.into_bytes()` and sends to the remote party.
     //! 3. The remote party deserializes the bytes via `try_from_bytes(<bytes>)` and runs `try_encaps()` to get the
     //!    shared secret key `ssk` and ciphertext `cipherText`.
-    //! 4. The remote party serializes the cipertext via `cipherText.into_bytes()` and sends to the originator.
+    //! 4. The remote party serializes the ciphertext via `cipherText.into_bytes()` and sends to the originator.
     //! 5. The originator deserializes the ciphertext via `try_from_bytes(<bytes>)` then
-    //!    runs `decapsKey.try_decaps(cipherText)` to the get shared secret ket `ssk`.
+    //!    runs `decapsKey.try_decaps(cipherText)` to get the shared secret key `ssk`.
     //! 6. Both the originator and remote party now have the same shared secret key `ssk`.
     //!
     //! **--> See [`crate::traits`] for the keygen, encapsulation, decapsulation, and serialization/deserialization functionality.**
@@ -409,9 +409,9 @@ pub mod ml_kem_1024 {
     //! 2. The originator serializes the encaps key via `encapsKey.into_bytes()` and sends to the remote party.
     //! 3. The remote party deserializes the bytes via `try_from_bytes(<bytes>)` and runs `try_encaps()` to get the
     //!    shared secret key `ssk` and ciphertext `cipherText`.
-    //! 4. The remote party serializes the cipertext via `cipherText.into_bytes()` and sends to the originator.
+    //! 4. The remote party serializes the ciphertext via `cipherText.into_bytes()` and sends to the originator.
     //! 5. The originator deserializes the ciphertext via `try_from_bytes(<bytes>)` then
-    //!    runs `decapsKey.try_decaps(cipherText)` to the get shared secret ket `ssk`.
+    //!    runs `decapsKey.try_decaps(cipherText)` to get the shared secret key `ssk`.
     //! 6. Both the originator and remote party now have the same shared secret key `ssk`.
     //!
     //! **--> See [`crate::traits`] for the keygen, encapsulation, decapsulation, and serialization/deserialization functionality.**

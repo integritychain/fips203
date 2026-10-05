@@ -99,7 +99,7 @@ pub trait KeyGen {
     ) -> Result<(Self::EncapsKey, Self::DecapsKey), &'static str>;
 
 
-    /// Generates an encapsulation and decapsulation key key pair specific to this security parameter set
+    /// Generates an encapsulation and decapsulation key pair specific to this security parameter set
     /// based on a provided seed. <br>
     /// This function is intended to operate in constant time outside of `rho` which crosses the trust
     /// boundary in the clear.
@@ -255,8 +255,6 @@ pub trait Encaps {
     /// Generates a shared secret and ciphertext from an encapsulation key specific to this security parameter set. <br>
     /// This function utilizes a provided **seed** (rather than a random number generator) and is intended to operate in constant
     /// time.
-    /// # Errors
-    /// Returns an error when the random number generator fails or an internal error condition arises.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -290,7 +288,7 @@ pub trait Encaps {
 }
 
 /// Internal RNG implementation for deterministic operations.
-/// This is used by the deterministic signing functions and will be refactored.
+/// This is used by the deterministic `encaps_from_seed()` function and will be refactored.
 struct DummyRng {
     data: [u8; 32],
 }
@@ -322,7 +320,8 @@ pub trait Decaps {
     /// Generates a shared secret from a decapsulation key and ciphertext specific to this security parameter set. <br>
     /// This function is intended to operate in constant-time.
     /// # Errors
-    /// Returns an error if an internal error condition arises (e.g., an invalid `ct`).
+    /// Returns an error only when the decapsulation key's secret vector holds a coefficient outside `[0, q − 1]`.
+    /// An invalid `ct` is not an error: ML-KEM's implicit rejection returns a pseudo-random shared secret instead.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;

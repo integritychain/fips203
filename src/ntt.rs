@@ -142,7 +142,7 @@ pub(crate) fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
 }
 
 
-/// Algorithm 12 `BaseCaseMultiply(a0, a1, b0, b1, gamma)` on page 24.
+/// Algorithm 12 `BaseCaseMultiply(a0, a1, b0, b1, gamma)` on page 27.
 /// Multiplies two degree-one polynomials modulo `X^2 - γ`.
 ///
 /// Input: `a0, a1, b0, b1 ∈ Z_q`    ▷ Coefficients of `a0 + a1X` and `b0 + b1X`

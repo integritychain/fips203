@@ -147,7 +147,7 @@ pub(crate) fn xof(rho: &[u8; 32], i: u8, j: u8) -> impl XofReader {
 /// * `bytes` - Slice of byte slices to be hashed together
 ///
 /// # Returns
-/// Tuple of two 32-byte arrays (tr, K) as specified in the protocol
+/// Tuple of two 32-byte arrays: (ρ, σ) in K-PKE.KeyGen, or (K, r) in encapsulation and decapsulation
 pub(crate) fn g(bytes: &[&[u8]]) -> ([u8; 32], [u8; 32]) {
     let mut hasher = Sha3_512::new();
     for b in bytes {
@@ -198,7 +198,7 @@ pub(crate) fn j(z: &[u8; 32], ct: &[u8]) -> [u8; 32] {
 }
 
 
-/// Compress<d> from page 21 (4.7).
+/// `Compress<d>` from page 21 (4.7).
 /// x → ⌈(2^d/q) · x⌋
 ///
 /// This function compresses elements from `Z_q` to a smaller range by scaling them down.
@@ -223,7 +223,7 @@ pub(crate) fn compress_vector(d: u32, inout: &mut [Z]) {
 }
 
 
-/// Decompress<d> from page 21 (4.8).
+/// `Decompress<d>` from page 21 (4.8).
 /// y → ⌈(q/2^d) · y⌋
 ///
 /// Inverse operation of `compress_vector` that expands compressed elements back to `Z_q`.

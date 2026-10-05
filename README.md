@@ -73,13 +73,13 @@ The Rust [Documentation][docs-link] lives under each **Module** corresponding to
 
 ## License
 
-Contents are licensed under either the [Apache License Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
+Contents are licensed under either the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 or [MIT license](http://opensource.org/licenses/MIT) at your option.
 
 ### Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as
-defined in the Apache-2.0 license, shall be dual licensed as above without any additional terms or conditions.
+defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
