@@ -139,7 +139,7 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     // 1: N ← 0
     let mut n = 0;
 
-    // 2: t̂ ← ByteDecode_12 (ek_PKE [0 : 384k])    ▷ run ByteDecode_12 𝑘 times to decode `𝐭  ∈ (ℤ^{256}_𝑞)^k`
+    // 2: t̂ ← ByteDecode_12 (ek_PKE [0 : 384k])    ▷ run ByteDecode_12 𝑘 times to decode `𝐭̂ ∈ (ℤ^{256}_𝑞)^k`
     let mut t_hat = [[Z::default(); 256]; K];
     for (i, chunk) in ek_pke.chunks(384).enumerate().take(K) {
         byte_decode(12, chunk, &mut t_hat[i])?;
@@ -155,7 +155,7 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     // of scope (FIPS 203 §3.3), and every step runs in place so no other copies are made.
 
     // 9: for (i ← 0; i < k; i ++)
-    // 10: y[i] ← SamplePolyCBD_η1(PRF_η1(r, N))    ▷ r[i] ∈ Z^{256}_q sampled from CBD
+    // 10: y[i] ← SamplePolyCBD_η1(PRF_η1(r, N))    ▷ y[i] ∈ Z^{256}_q sampled from CBD
     // 11: N ← N +1
     // 12: end for
     // (y is sampled into `y_hat`, which step 18 transforms in place)
@@ -189,7 +189,7 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
         ntt(y_i);
     }
 
-    // 19: u ← NTT−1 (Â⊺ ◦ r̂) + e1
+    // 19: u ← NTT−1 (Â⊺ ◦ ŷ) + e1
     let mut u = Zeroizing::new([[Z::default(); 256]; K]);
     mul_mat_t_vec(&a_hat, &y_hat, &mut u);
     for u_i in u.iter_mut() {
@@ -197,12 +197,12 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     }
     add_vecs(&mut u, &e1);
 
-    // 20: µ ← Decompress1(ByteDecode_1(m)))
+    // 20: µ ← Decompress1(ByteDecode_1(m))
     let mut mu = Zeroizing::new([Z::default(); 256]);
     byte_decode(1, m, &mut mu)?;
     decompress_vector(1, &mut mu[..]);
 
-    // 21: v ← NTT−1 (t̂⊺ ◦ r̂) + e2 + µ    ▷ encode plaintext m into polynomial v.
+    // 21: v ← NTT−1 (t̂⊺ ◦ ŷ) + e2 + µ    ▷ encode plaintext m into polynomial v.
     let mut v = Zeroizing::new([Z::default(); 256]);
     dot_t_prod(&t_hat, &y_hat, &mut v);
     ntt_inv(&mut v);
@@ -276,7 +276,7 @@ pub(crate) fn k_pke_decrypt<const K: usize>(
         byte_decode(12, chunk, &mut s_hat[i])?;
     }
 
-    // 6: 𝑤 ← 𝑣 − NTT (𝐬 ̂ ∘ NTT(𝐮))    ▷ run NTT 𝑘 times; run NTT^{−1} once
+    // 6: 𝑤 ← 𝑣′ − NTT^{−1}(𝐬̂⊺ ∘ NTT(𝐮′))    ▷ run NTT 𝑘 times; run NTT^{−1} once
     // (u now holds NTT(u′), which is public; w holds ŝ⊺ ◦ NTT(u′), then its NTT^{−1}, then w)
     for u_i in &mut u {
         ntt(u_i);
@@ -288,7 +288,7 @@ pub(crate) fn k_pke_decrypt<const K: usize>(
         *w_i = v_i.sub(*w_i);
     }
 
-    // 7: m ← ByteEncode_1(Compress_1(w))    ▷ decode plaintext m from polynomial v
+    // 7: m ← ByteEncode_1(Compress_1(w))    ▷ decode plaintext m from polynomial w
     compress_vector(1, &mut w[..]);
     byte_encode(1, &w, m);
 

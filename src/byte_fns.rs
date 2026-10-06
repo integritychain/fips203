@@ -42,7 +42,7 @@ pub(crate) fn byte_encode(d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8]) {
 
     // Process each d-bit integer into bytes
     for coeff in integers_f {
-        // Mask off any bits above d (safety measure)
+        // Mask to d bits. Required: applies Compress_d's mod 2^d (4.7), omitted by compress_vector
         let coeff = coeff.get_u32() & ((1 << d) - 1);
 
         // Accumulate bits into temp buffer
@@ -70,6 +70,9 @@ pub(crate) fn byte_encode(d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8]) {
 ///
 /// Input: byte array `B ∈ B^{32·d}` <br>
 /// Output: integer array `F ∈ Z^256_m`, where `m = 2^d if d < 12` and `m = q if d = 12`
+///
+/// Unlike Alg 6, a 12-bit value ≥ q is not reduced mod q: `Err` is returned instead, which
+/// implements the §7.2 modulus check (7.1).
 ///
 /// The output is written into `integers_f` rather than returned by value, so decoding a secret
 /// (such as `s_hat`) into a buffer that is later wiped leaves no other copy (FIPS 203 §3.3).

@@ -48,7 +48,7 @@ pub(crate) fn sample_ntt(mut xof_reader: impl XofReader) -> [Z; 256] {
         }
 
         // 12: if d2 < q and j < 256 then
-        // Bitwise AND so both comparisons run. `&&` would short-circuit.
+        // Bitwise AND; `&&` would do as well, as this loop need not be constant time (see above)
         #[allow(clippy::needless_bitwise_bool)]
         if (d2 < Q) & (j < 256) {
             //

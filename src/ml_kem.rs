@@ -53,7 +53,8 @@ pub(crate) fn ml_kem_key_gen_internal<const K: usize, const ETA1_64: usize>(
 fn ml_kem_encaps_internal<const K: usize, const ETA1_64: usize, const ETA2_64: usize>(
     du: u32, dv: u32, m: &[u8; 32], ek: &[u8], ct: &mut [u8],
 ) -> Result<SharedSecretKey, &'static str> {
-    // Note: this is only called via ml_kem_encaps() which validates slice sizes and correct decode
+    // Note: this is only called via ml_kem_encaps(), whose size and modulus checks are debug-only.
+    // Sizes are fixed by array types in lib.rs, and ek is checked by EncapsKey::try_from_bytes().
 
     // 1: (K, r) ← G(m ∥ H(ek))    ▷ derive shared secret key K and randomness r
     // (K and r are wiped when they go out of scope, FIPS 203 §3.3; K is returned as a copy)
@@ -80,7 +81,9 @@ fn ml_kem_encaps_internal<const K: usize, const ETA1_64: usize, const ETA2_64: u
 ///
 /// # Returns
 /// * `Ok(SharedSecretKey)` - 32-byte shared secret key
-/// * `Err(&str)` - Error message if decryption fails
+/// * `Err(&str)` - Only if `dk` holds a coefficient ≥ q in ŝ or in its embedded `ek`, which key
+///   generation and `try_from_bytes()` rule out. An invalid `ct` is not an error: implicit
+///   rejection returns a pseudorandom key instead.
 #[allow(clippy::similar_names)]
 fn ml_kem_decaps_internal<
     const K: usize,
@@ -94,7 +97,7 @@ fn ml_kem_decaps_internal<
     // Decapsulation key type check
     debug_assert_eq!(dk.len(), 768 * K + 96, "Alg 18: dk len not 768 ...");
     // Note: decaps key is either correctly sourced from KeyGen, or validated by try_from_bytes(). As
-    // such, the two above checks are redundant but will be removed in release builds. The are left
+    // such, the above check is redundant but will be removed in release builds. It is left
     // here for A) caution, B) give guardrails for future changes
 
     // 1: dk_PKE ← dk[0 : 384·k]    ▷ extract (from KEM decaps key) the PKE decryption key
@@ -120,7 +123,7 @@ fn ml_kem_decaps_internal<
     let (mut k_prime, mut r_prime) = (Zeroizing::new([0u8; 32]), Zeroizing::new([0u8; 32]));
     g(&[&m_prime[..], h], &mut k_prime, &mut r_prime);
 
-    // 7: K̄ ← J(z ∥ c, 32)
+    // 7: K̄ ← J(z ∥ c)
     let mut k_bar = Zeroizing::new([0u8; 32]);
     j(z.try_into().unwrap(), ct, &mut k_bar);
 
@@ -199,7 +202,8 @@ pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
 /// * `Err(&str)` - Error message if RNG fails or encryption fails
 ///
 /// # Input Validation
-/// The encapsulation key `ek` must pass modulus check: `ek = ByteEncode12(ByteDecode12(ek))`.
+/// The encapsulation key `ek` must pass the modulus check (7.1):
+/// `ek[0:384k] = ByteEncode12(ByteDecode12(ek[0:384k]))`.
 /// External `ek` values are validated via `try_from_bytes()`.
 pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64: usize>(
     rng: &mut impl CryptoRngCore, du: u32, dv: u32, ek: &[u8], ct: &mut [u8],
@@ -211,7 +215,7 @@ pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64:
         "Alg 20: ct len not 32*(DU*K+DV)"
     ); // also: size check at top level
 
-    // modulus check: perform/confirm the computation ek ← ByteEncode12(ByteDecode12(ek_tilde).
+    // modulus check (7.1): confirm ByteEncode12(ByteDecode12(ek[0:384k])) = ek[0:384k].
     // Note: An *external* ek can only arrive via try_from_bytes() which does this validation already.
     // As such, this check is redundant but is left in for caution and as a fuzz target, as it is
     // removed in release builds anyway. It also supports quicker changes if the spec moves...
@@ -254,7 +258,9 @@ pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64:
 ///
 /// # Returns
 /// * `Ok(SharedSecretKey)` - 32-byte shared secret key
-/// * `Err(&str)` - Error message if decryption fails
+/// * `Err(&str)` - Only if `dk` holds a coefficient ≥ q in ŝ or in its embedded `ek`, which key
+///   generation and `try_from_bytes()` rule out. An invalid `ct` is not an error: implicit
+///   rejection returns a pseudorandom key instead.
 ///
 /// # Input Validation
 /// - Ciphertext size must be exactly `32(du·K+dv)` bytes
@@ -275,7 +281,7 @@ pub(crate) fn ml_kem_decaps<
     // Decapsulation key type check
     debug_assert_eq!(dk.len(), 768 * K + 96, "Alg 21: dk len not 768 ...");
     // Note: decaps key is either correctly sourced from KeyGen, or validated by try_from_bytes(). As
-    // such, the two above checks are redundant but will be removed in release builds. The are left
+    // such, the two above checks are redundant but will be removed in release builds. They are left
     // here for A) caution, B) give guardrails for future changes
 
     // 1: 𝐾 ′ ← ML-KEM.Decaps_internal(dk, 𝑐)    ▷ run internal decapsulation algorithm

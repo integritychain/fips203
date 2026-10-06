@@ -221,12 +221,12 @@ pub(crate) fn h(bytes: &[u8]) -> [u8; 32] {
 
 
 /// Function J on page 18 (4.4).
-/// XOF-based hash function for challenge generation
+/// XOF-based hash function that derives the implicit-rejection key K̄ = J(z ‖ c) in decapsulation
 ///
 /// # Arguments
 /// * `z` - 32-byte seed
 /// * `ct` - Variable length ciphertext
-/// * `out` - Output buffer for the 32-byte challenge value derived from inputs
+/// * `out` - Output buffer for the 32-byte implicit-rejection key K̄ derived from inputs
 pub(crate) fn j(z: &[u8; 32], ct: &[u8], out: &mut [u8; 32]) {
     shake256_wiped(&[z, ct], out);
     scrub_hash_stack();
@@ -234,19 +234,20 @@ pub(crate) fn j(z: &[u8; 32], ct: &[u8], out: &mut [u8; 32]) {
 
 
 /// `Compress<d>` from page 21 (4.7).
-/// x → ⌈(2^d/q) · x⌋
+/// x → ⌈(2^d/q) · x⌋ mod 2^d
 ///
 /// This function compresses elements from `Z_q` to a smaller range by scaling them down.
 /// The compression is lossy but maintains approximate ratios between elements.
 ///
 /// # Arguments
-/// * `d` - Compression parameter that determines output range (0 to 11)
+/// * `d` - Compression parameter that determines output range (1 to 11)
 /// * `inout` - Vector of elements to compress in-place
 ///
 /// # Implementation Notes
 /// * Works for all odd q values from 17 to 6307
 /// * Input x must be in range 0 to q-1
 /// * Uses pre-computed multiplier M to avoid floating-point arithmetic
+/// * Does not reduce mod 2^d: inputs near q give 2^d, which `byte_encode` masks to 0
 #[allow(clippy::cast_possible_truncation)]
 pub(crate) fn compress_vector(d: u32, inout: &mut [Z]) {
     const M: u32 = (1u64 << 36).div_ceil(Q as u64) as u32;

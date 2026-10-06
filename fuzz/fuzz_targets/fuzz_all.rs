@@ -89,7 +89,7 @@ fuzz_target!(|data: [u8; 3328]| {
     // Fuzz input -> `DecapsKey::try_from_bytes()`
     let dk2 = ml_kem_512::DecapsKey::try_from_bytes(dk2_bytes.try_into().unwrap());
 
-    // Fuzz input -> `KG::validate_keypair_vartime()`
+    // Fuzz input -> `KG::validate_keypair_with_rng_vartime()`
     rng.push(&data[start..start + RND_SIZE]); // reuse for the moment; TODO 'expand'
     let _ok = ml_kem_512::KG::validate_keypair_with_rng_vartime(
         &mut rng,
@@ -116,5 +116,5 @@ fuzz_target!(|data: [u8; 3328]| {
         let _res = dk2.unwrap().try_decaps(&ct2);
     }
 
-    assert_eq!(start, data.len()); // this doesn't appear to trigger (even when wrong)
+    assert_eq!(start, data.len());
 });

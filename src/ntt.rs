@@ -58,8 +58,8 @@ pub(crate) fn ntt(f_hat: &mut [Z; 256]) {
 /// Algorithm 10 `NTTinv(f)` on page 26.
 /// Computes the inverse NTT to convert from NTT representation back to standard polynomial form.
 ///
-/// Input: array `f_hat ∈ Z^{256}`    ▷ Coefficients in NTT basis (frequency domain)
-/// Output: array `f ∈ Z^{256}`    ▷ Coefficients of the polynomial in standard basis
+/// Input: array `f_hat ∈ Z^{256}_q`    ▷ Coefficients in NTT basis (frequency domain)
+/// Output: array `f ∈ Z^{256}_q`    ▷ Coefficients of the polynomial in standard basis
 ///
 /// Computed in place: `f` holds `f_hat` on entry and `f` on return, for the same reason as `ntt`.
 #[allow(clippy::module_name_repetitions)]
@@ -125,7 +125,7 @@ pub(crate) fn ntt_inv(f: &mut [Z; 256]) {
 /// copy of one is left behind (FIPS 203 §3.3).
 pub(crate) fn multiply_ntts_acc(h_hat: &mut [Z; 256], f_hat: &[Z; 256], g_hat: &[Z; 256]) {
     //
-    // for (i ← 0; i < 128; i ++)
+    // 1: for (i ← 0; i < 128; i ++)
     for i in 0..128 {
         //
         // 2: (h_hat[2i], h_hat[2i + 1]) ← BaseCaseMultiply(f_hat[2i], f_hat[2i + 1], g_hat[2i], g_hat[2i + 1], ζ^{2BitRev7(i) + 1})
@@ -171,7 +171,7 @@ const fn gen_zeta_table() -> [Z; 256] {
     let mut x = 1u32;
     let mut i = 0u32;
     while i < 256 {
-        result[(i as u8).reverse_bits() as usize] = Z(x as u16); // as u16;
+        result[(i as u8).reverse_bits() as usize] = Z(x as u16);
         x = (x * (ZETA as u32)) % (Q as u32);
         i += 1;
     }
