@@ -298,4 +298,72 @@ mod tests {
         let res = k_pke_decrypt::<K>(DU, DV, &dk[0..384 * K], &ct);
         assert!(res.is_ok());
     }
+
+
+    // K-PKE.Decrypt against the C2SP CCTV intermediate values. The vendored files are from the
+    // FIPS 203 draft, so their key-generation values are stale, but Algorithm 15 and the
+    // ByteDecode, Decompress and NTT steps it uses did not change in the final standard.
+    // Asserting m alone would not catch a wrong Decompress, so u', v' and w are checked first.
+    // File-format traps: the first `dkPKE` line reads `dkPKE = NTT(s) = <hex>`, and the second
+    // `dkPKE` line actually holds ekPKE.
+    fn cctv_k_pke_decrypt<const KK: usize>(du: u32, dv: u32, text: &str) {
+        use crate::byte_fns::{byte_decode, byte_encode};
+        use crate::helpers::{decompress_vector, dot_t_prod};
+        use crate::ntt::{ntt, ntt_inv};
+        use crate::types::Z;
+
+        let field = |prefix: &str| {
+            let line = text.lines().find(|l| l.starts_with(prefix)).expect(prefix);
+            hex::decode(line.rsplit(" = ").next().unwrap()).unwrap()
+        };
+        let (dk_pke, ct, msg) = (field("dkPKE = NTT(s) = "), field("c = "), field("m = "));
+        let (u_d, v_d, w_exp) = (field("uᵈ = "), field("vᵈ = "), field("w = "));
+        assert_eq!(dk_pke.len(), 384 * KK);
+        assert_eq!(ct.len(), 32 * (du as usize * KK + dv as usize));
+
+        // Steps 1-4: u' and v' must match the ByteEncode_12 of the reference Decompress output
+        let (c1, c2) = ct.split_at(32 * du as usize * KK);
+        let mut u = [[Z::default(); 256]; KK];
+        let mut enc = [0u8; 384];
+        for (i, chunk) in c1.chunks(32 * du as usize).enumerate() {
+            u[i] = byte_decode(du, chunk).unwrap();
+            decompress_vector(du, &mut u[i]);
+            byte_encode(12, &u[i], &mut enc);
+            assert_eq!(enc[..], u_d[384 * i..384 * (i + 1)], "Decompress_du of u'[{i}]");
+        }
+        let mut v = byte_decode(dv, c2).unwrap();
+        decompress_vector(dv, &mut v);
+        byte_encode(12, &v, &mut enc);
+        assert_eq!(enc[..], v_d[..], "Decompress_dv of v'");
+
+        // Steps 5-6: w = v' - NTT^-1(s_hat^T o NTT(u'))
+        let s_hat: [[Z; 256]; KK] =
+            core::array::from_fn(|i| byte_decode(12, &dk_pke[384 * i..384 * (i + 1)]).unwrap());
+        let ntt_u: [[Z; 256]; KK] = core::array::from_fn(|i| ntt(&u[i]));
+        let su = ntt_inv(&dot_t_prod(&s_hat, &ntt_u));
+        let w: [Z; 256] = core::array::from_fn(|i| v[i].sub(su[i]));
+        byte_encode(12, &w, &mut enc);
+        assert_eq!(enc[..], w_exp[..], "w");
+
+        // The whole algorithm
+        assert_eq!(k_pke_decrypt::<KK>(du, dv, &dk_pke, &ct).unwrap()[..], msg[..], "m");
+    }
+
+    #[test]
+    fn cctv_k_pke_decrypt_512() {
+        let text = include_str!("../tests/cctv_vectors/ML-KEM/intermediate/ML-KEM-512.txt");
+        cctv_k_pke_decrypt::<2>(10, 4, text);
+    }
+
+    #[test]
+    fn cctv_k_pke_decrypt_768() {
+        let text = include_str!("../tests/cctv_vectors/ML-KEM/intermediate/ML-KEM-768.txt");
+        cctv_k_pke_decrypt::<3>(10, 4, text);
+    }
+
+    #[test]
+    fn cctv_k_pke_decrypt_1024() {
+        let text = include_str!("../tests/cctv_vectors/ML-KEM/intermediate/ML-KEM-1024.txt");
+        cctv_k_pke_decrypt::<4>(11, 5, text);
+    }
 }

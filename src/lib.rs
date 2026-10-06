@@ -265,7 +265,7 @@ macro_rules! functionality {
             fn try_from_bytes(dk: Self::ByteArray) -> Result<Self, &'static str> {
                 // Validation per the decapsulation input check on pg 37. Checks #1 and #2 specify
                 // fixed sizes, and these functions take only byte arrays of correct size. Check #3,
-                // the hash check on h(ek), is below. We also validate the embedded ek.
+                // the hash check on h(ek), is below. We also validate the embedded ek and s_hat.
                 let len_ek_pke = 384 * K + 32;
                 let len_dk_pke = 384 * K;
                 let ek = &dk[len_dk_pke..len_dk_pke + EK_LEN];
@@ -275,6 +275,17 @@ macro_rules! functionality {
                     h(ek) == dk[(len_dk_pke + len_ek_pke)..(len_dk_pke + len_ek_pke + 32)],
                     "Encaps hash wrong"
                 );
+                // Beyond pg 37: reject s_hat coefficients >= q, as BoringSSL does, so that
+                // try_decaps cannot fail (ByteDecode_12 would otherwise reduce them mod q). Constant
+                // time over the secret s_hat: (q - 1) - x sets bit 31 exactly when x >= q.
+                let q_minus_1 = u32::from(crate::Q) - 1;
+                let mut bad = 0u32;
+                for c in dk[..len_dk_pke].chunks_exact(3) {
+                    let a = u32::from(c[0]) | (u32::from(c[1] & 0x0f) << 8);
+                    let b = u32::from(c[1] >> 4) | (u32::from(c[2]) << 4);
+                    bad |= q_minus_1.wrapping_sub(a) | q_minus_1.wrapping_sub(b);
+                }
+                ensure!(bad >> 31 == 0, "Decaps key s_hat out of range");
                 Ok(DecapsKey { 0: dk })
             }
         }

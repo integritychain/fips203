@@ -320,7 +320,8 @@ pub trait Decaps {
     /// Generates a shared secret from a decapsulation key and ciphertext specific to this security parameter set. <br>
     /// This function is intended to operate in constant-time.
     /// # Errors
-    /// Returns an error only when the decapsulation key's secret vector holds a coefficient outside `[0, q − 1]`.
+    /// None for any decapsulation key this crate can construct. `DecapsKey::try_from_bytes` rejects a key whose
+    /// secret vector holds a coefficient outside `[0, q − 1]`, and key generation never produces one.
     /// An invalid `ct` is not an error: ML-KEM's implicit rejection returns a pseudo-random shared secret instead.
     /// # Examples
     /// ```rust
