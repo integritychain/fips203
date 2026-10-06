@@ -28,6 +28,9 @@ pub struct CipherText<const CT_LEN: usize>(pub(crate) [u8; CT_LEN]);
 #[derive(Clone, Copy, Default)]
 pub(crate) struct Z(pub(crate) u16);
 
+// Default is zero, so `Z`, `[Z; 256]` and `[[Z; 256]; K]` implement `Zeroize`
+impl zeroize::DefaultIsZeroes for Z {}
+
 
 #[allow(clippy::inline_always)]
 impl Z {

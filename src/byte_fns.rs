@@ -70,8 +70,12 @@ pub(crate) fn byte_encode(d: u32, integers_f: &[Z; 256], bytes_b: &mut [u8]) {
 ///
 /// Input: byte array `B ∈ B^{32·d}` <br>
 /// Output: integer array `F ∈ Z^256_m`, where `m = 2^d if d < 12` and `m = q if d = 12`
-pub(crate) fn byte_decode(d: u32, bytes_b: &[u8]) -> Result<[Z; 256], &'static str> {
-    let mut integers_f = [Z::default(); 256];
+///
+/// The output is written into `integers_f` rather than returned by value, so decoding a secret
+/// (such as `s_hat`) into a buffer that is later wiped leaves no other copy (FIPS 203 §3.3).
+pub(crate) fn byte_decode(
+    d: u32, bytes_b: &[u8], integers_f: &mut [Z; 256],
+) -> Result<(), &'static str> {
     debug_assert_eq!(bytes_b.len(), 32 * d as usize, "Alg 6: bytes len is not 32 * d");
 
     // temp acts as a bit buffer that we gradually fill and extract d-bit integers from
@@ -107,7 +111,7 @@ pub(crate) fn byte_decode(d: u32, bytes_b: &[u8]) -> Result<[Z; 256], &'static s
     // Verify all integers are within valid range for the given bit width
     let m = if d < 12 { 1 << d } else { u32::from(Q) };
     ensure!(integers_f.iter().all(|e| e.get_u32() < m), "Alg 6: integers out of range");
-    Ok(integers_f)
+    Ok(())
 }
 
 
@@ -127,13 +131,13 @@ mod tests {
     #[test]
     fn test_decode_and_encode() {
         let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(123);
-        //let mut integer_array = [Z::default(); 256];
+        let mut integer_array = [Z::default(); 256];
         for num_bits in 2..12_u32 {
             for _i in 0..100 {
                 let num_bytes = 32 * num_bits as usize;
                 let mut bytes2 = vec![0u8; num_bytes];
                 let bytes1: Vec<u8> = (0..num_bytes).map(|_| rng.gen()).collect();
-                let integer_array = byte_decode(num_bits, &bytes1).unwrap();
+                byte_decode(num_bits, &bytes1, &mut integer_array).unwrap();
                 byte_encode(num_bits, &integer_array, &mut bytes2);
                 assert_eq!(bytes1, bytes2);
             }
@@ -146,7 +150,7 @@ mod tests {
         let num_bits = 12;
         let num_bytes = 32 * num_bits as usize;
         let bytes1: Vec<u8> = (0..num_bytes).map(|_| 0xFF).collect();
-        let ret = byte_decode(num_bits, &bytes1);
+        let ret = byte_decode(num_bits, &bytes1, &mut integer_array);
         assert!(ret.is_err());
         for x in &mut integer_array {
             x.set_u16(u16::MAX);

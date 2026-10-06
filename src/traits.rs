@@ -1,4 +1,5 @@
 use rand_core::{CryptoRng, CryptoRngCore, RngCore};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 #[cfg(feature = "default-rng")]
 use rand_core::OsRng;
@@ -289,6 +290,8 @@ pub trait Encaps {
 
 /// Internal RNG implementation for deterministic operations.
 /// This is used by the deterministic `encaps_from_seed()` function and will be refactored.
+/// It holds a copy of the secret seed m, so it wipes itself on drop (FIPS 203 §3.3).
+#[derive(Zeroize, ZeroizeOnDrop)]
 struct DummyRng {
     data: [u8; 32],
 }

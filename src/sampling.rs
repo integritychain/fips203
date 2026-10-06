@@ -75,11 +75,12 @@ pub(crate) fn sample_ntt(mut xof_reader: impl XofReader) -> [Z; 256] {
 ///
 /// Input: byte array `B ∈ B^{64·η}` <br>
 /// Output: array `f ∈ Z^{256}_q`
-#[must_use]
-pub(crate) fn sample_poly_cbd(byte_array_b: &[u8]) -> [Z; 256] {
+///
+/// The output is written into `array_f` rather than returned by value, so the secret sample leaves
+/// no copy outside the caller's buffer, which the caller wipes (FIPS 203 §3.3).
+pub(crate) fn sample_poly_cbd(byte_array_b: &[u8], array_f: &mut [Z; 256]) {
     let eta = u32::try_from(byte_array_b.len()).unwrap() >> 6;
     debug_assert_eq!(byte_array_b.len(), 64 * eta as usize, "Alg 8: byte array not 64 * eta");
-    let mut array_f: [Z; 256] = [Z::default(); 256];
     let mut temp = 0;
     let mut int_index = 0;
     let mut bit_index = 0;
@@ -100,7 +101,6 @@ pub(crate) fn sample_poly_cbd(byte_array_b: &[u8]) -> [Z; 256] {
             int_index += 1;
         }
     }
-    array_f
 }
 
 

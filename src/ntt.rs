@@ -7,12 +7,13 @@ use crate::{Q, ZETA};
 ///
 /// Input: array `f ∈ Z^{256}_q`    ▷ Coefficients of the input polynomial in standard basis
 /// Output: array `f_hat ∈ Z^{256}_q`    ▷ Coefficients in NTT basis (frequency domain)
-#[must_use]
+///
+/// Computed in place: `f_hat` holds `f` on entry and `f_hat` on return. Returning nothing by value
+/// leaves no copy of a secret input or output behind (FIPS 203 §3.3).
 #[allow(clippy::module_name_repetitions)]
-pub(crate) fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
+pub(crate) fn ntt(f_hat: &mut [Z; 256]) {
     //
-    // 1: f_hat ← f    ▷ will compute NTT in-place on a copy of input array
-    let mut f_hat: [Z; 256] = core::array::from_fn(|i| array_f[i]);
+    // 1: f_hat ← f    ▷ in place, see above
 
     // 2: i ← 1
     let mut i = 1;
@@ -50,8 +51,7 @@ pub(crate) fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
         // 13: end for
     }
 
-    // 14: return f_hat
-    f_hat
+    // 14: return f_hat    ▷ in place
 }
 
 
@@ -60,12 +60,12 @@ pub(crate) fn ntt(array_f: &[Z; 256]) -> [Z; 256] {
 ///
 /// Input: array `f_hat ∈ Z^{256}`    ▷ Coefficients in NTT basis (frequency domain)
 /// Output: array `f ∈ Z^{256}`    ▷ Coefficients of the polynomial in standard basis
-#[must_use]
+///
+/// Computed in place: `f` holds `f_hat` on entry and `f` on return, for the same reason as `ntt`.
 #[allow(clippy::module_name_repetitions)]
-pub(crate) fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
+pub(crate) fn ntt_inv(f: &mut [Z; 256]) {
     //
-    // 1: f ← f_hat    ▷ will compute in-place on a copy of input array
-    let mut f: [Z; 256] = core::array::from_fn(|i| f_hat[i]);
+    // 1: f ← f_hat    ▷ in place, see above
 
     // 2: i ← 127
     let mut i = 127;
@@ -106,24 +106,25 @@ pub(crate) fn ntt_inv(f_hat: &[Z; 256]) -> [Z; 256] {
     // 14: f ← f · 3303 mod q    ▷ multiply every entry by 3303 ≡ 128^{−1} mod q
     let mut z3303 = Z::default();
     z3303.set_u16(3303);
-    for item in &mut f {
+    for item in f.iter_mut() {
         *item = item.mul(z3303);
     }
 
-    // 15: return f
-    f
+    // 15: return f    ▷ in place
 }
 
 
-/// Algorithm 11 `MultiplyNTTs(f_hat, g_hat)` on page 27.
+/// Algorithm 11 `MultiplyNTTs(f_hat, g_hat)` on page 27, fused with the addition that follows it at
+/// every call site: `h_hat ← h_hat + MultiplyNTTs(f_hat, g_hat)`.
 /// Performs polynomial multiplication efficiently by multiplying NTT representations pointwise.
 ///
 /// Input: Two arrays `f_hat ∈ Z^{256}_q` and `g_hat ∈ Z^{256}_q`    ▷ Coefficients of two polynomials in NTT basis
-/// Output: An array `h_hat ∈ Z^{256}_q`    ▷ Coefficients of their product in NTT basis
-#[must_use]
-pub(crate) fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
-    let mut h_hat: [Z; 256] = [Z::default(); 256];
-
+/// Input/Output: An array `h_hat ∈ Z^{256}_q`    ▷ Their product in NTT basis is added to it
+///
+/// Accumulating in place means no product is held in a temporary or returned by value, so no
+/// copy of one is left behind (FIPS 203 §3.3).
+pub(crate) fn multiply_ntts_acc(h_hat: &mut [Z; 256], f_hat: &[Z; 256], g_hat: &[Z; 256]) {
+    //
     // for (i ← 0; i < 128; i ++)
     for i in 0..128 {
         //
@@ -131,14 +132,13 @@ pub(crate) fn multiply_ntts(f_hat: &[Z; 256], g_hat: &[Z; 256]) -> [Z; 256] {
         let zt = ZETA_TABLE[i ^ 0x80];
         let (h_hat_2i, h_hat_2ip1) =
             base_case_multiply(f_hat[2 * i], f_hat[2 * i + 1], g_hat[2 * i], g_hat[2 * i + 1], zt);
-        h_hat[2 * i] = h_hat_2i;
-        h_hat[2 * i + 1] = h_hat_2ip1;
+        h_hat[2 * i] = h_hat[2 * i].add(h_hat_2i);
+        h_hat[2 * i + 1] = h_hat[2 * i + 1].add(h_hat_2ip1);
 
         // 3: end for
     }
 
-    // 4: return h_hat
-    h_hat
+    // 4: return h_hat    ▷ in place
 }
 
 

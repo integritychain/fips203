@@ -25,7 +25,7 @@ ml-kem-1024 = []
 
 [dependencies]
 rand_core = { version = "0.6.4", default-features = false }
-sha3 = { version = "0.10.2", default-features = false }
+sha3 = { version = "0.10.9", default-features = false, features = ["zeroize"] }
 subtle = { version = "2.5.0", default-features = false, features = ['const-generics'] }
 zeroize = { version = "1.6.0", default-features = false, features = ["zeroize_derive"] }
 

@@ -4,6 +4,7 @@ use crate::k_pke::{k_pke_decrypt, k_pke_encrypt, k_pke_key_gen};
 use crate::SharedSecretKey;
 use rand_core::CryptoRngCore;
 use subtle::{ConditionallySelectable, ConstantTimeEq};
+use zeroize::Zeroizing;
 
 
 /// Algorithm 16 `ML-KEM.KeyGen_internal(d,z)` on page 32.
@@ -15,7 +16,7 @@ use subtle::{ConditionallySelectable, ConstantTimeEq};
 /// * `ek` - Output buffer for encapsulation key (size: `384·K+32` bytes)
 /// * `dk` - Output buffer for decapsulation key (size: `768·K+96` bytes)
 pub(crate) fn ml_kem_key_gen_internal<const K: usize, const ETA1_64: usize>(
-    d: [u8; 32], z: [u8; 32], ek: &mut [u8], dk: &mut [u8],
+    d: &[u8; 32], z: &[u8; 32], ek: &mut [u8], dk: &mut [u8],
 ) {
     debug_assert_eq!(ek.len(), 384 * K + 32, "Alg 16: ek len not 384 * K + 32");
     debug_assert_eq!(dk.len(), 768 * K + 96, "Alg 16: dk len not 768 * K + 96");
@@ -31,7 +32,7 @@ pub(crate) fn ml_kem_key_gen_internal<const K: usize, const ETA1_64: usize>(
     let p3 = p2 + h_ek.len();
     dk[p1..p2].copy_from_slice(ek);
     dk[p2..p3].copy_from_slice(&h_ek);
-    dk[p3..].copy_from_slice(&z);
+    dk[p3..].copy_from_slice(z);
 
     // 4: return (ek, dk)
 }
@@ -55,14 +56,16 @@ fn ml_kem_encaps_internal<const K: usize, const ETA1_64: usize, const ETA2_64: u
     // Note: this is only called via ml_kem_encaps() which validates slice sizes and correct decode
 
     // 1: (K, r) ← G(m ∥ H(ek))    ▷ derive shared secret key K and randomness r
+    // (K and r are wiped when they go out of scope, FIPS 203 §3.3; K is returned as a copy)
     let h_ek = h(ek);
-    let (k, r) = g(&[m, &h_ek]);
+    let (mut k, mut r) = (Zeroizing::new([0u8; 32]), Zeroizing::new([0u8; 32]));
+    g(&[m, &h_ek], &mut k, &mut r);
 
     // 2: c ← K-PKE.Encrypt(ek, m, r)    ▷ encrypt m using K-PKE with randomness r
     k_pke_encrypt::<K, ETA1_64, ETA2_64>(du, dv, ek, m, &r, ct)?;
 
     // 3: return (K, c)  (note: ct is mutable input)
-    Ok(SharedSecretKey(k))
+    Ok(SharedSecretKey(*k))
 }
 
 
@@ -106,22 +109,28 @@ fn ml_kem_decaps_internal<
     // 4: z ← dk[768·k + 64 : 768·k + 96]    ▷ extract implicit rejection value
     let z = &dk[768 * K + 64..768 * K + 96];
 
+    // m′, K′, r′, K̄ and c′ are wiped when they go out of scope (FIPS 203 §3.3); K′ is returned as a
+    // copy. When c′ ≠ c, c′ and m′ are exactly what implicit rejection hides.
+
     // 5: m′ ← K-PKE.Decrypt(dk_PKE,c)
-    let m_prime = k_pke_decrypt::<K>(du, dv, dk_pke, ct)?;
+    let mut m_prime = Zeroizing::new([0u8; 32]);
+    k_pke_decrypt::<K>(du, dv, dk_pke, ct, &mut m_prime)?;
 
     // 6: (K′, r′) ← G(m′ ∥ h)
-    let (mut k_prime, r_prime) = g(&[&m_prime, h]);
+    let (mut k_prime, mut r_prime) = (Zeroizing::new([0u8; 32]), Zeroizing::new([0u8; 32]));
+    g(&[&m_prime[..], h], &mut k_prime, &mut r_prime);
 
     // 7: K̄ ← J(z ∥ c, 32)
-    let k_bar = j(z.try_into().unwrap(), ct);
+    let mut k_bar = Zeroizing::new([0u8; 32]);
+    j(z.try_into().unwrap(), ct, &mut k_bar);
 
     // 8: c′ ← K-PKE.Encrypt(ek_PKE , m′ , r′ )    ▷ re-encrypt using the derived randomness r′
-    let mut c_prime = [0u8; CT_LEN];
+    let mut c_prime = Zeroizing::new([0u8; CT_LEN]);
     k_pke_encrypt::<K, ETA1_64, ETA2_64>(
         du,
         dv,
         ek_pke,
-        &m_prime,
+        &m_prime[..],
         &r_prime,
         &mut c_prime[0..ct.len()],
     )?;
@@ -129,10 +138,10 @@ fn ml_kem_decaps_internal<
     // 9:  if 𝑐 ≠ 𝑐 ′ then
     // 10:   𝐾 ′ ← 𝐾̄    ▷ if ciphertexts do not match, “implicitly reject”
     // 11: end if
-    k_prime.conditional_assign(&k_bar, ct.ct_ne(&c_prime));
+    k_prime.conditional_assign(&k_bar, ct.ct_ne(&*c_prime));
 
     // 12: return 𝐾 ′
-    Ok(SharedSecretKey(k_prime))
+    Ok(SharedSecretKey(*k_prime))
 }
 
 
@@ -153,13 +162,15 @@ pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
     debug_assert_eq!(ek.len(), 384 * K + 32, "Alg 19: ek len not 384 * K + 32");
     debug_assert_eq!(dk.len(), 768 * K + 96, "Alg 19: dk len not 768 * K + 96");
 
+    // d and z are wiped when they go out of scope, including on an RNG failure (FIPS 203 §3.3)
+
     // 1: d ←− B^{32}    ▷ d is 32 random bytes (see Section 3.3)
-    let mut d = [0u8; 32];
-    rng.try_fill_bytes(&mut d).map_err(|_| "Alg 19: Random number generator failed for d")?;
+    let mut d = Zeroizing::new([0u8; 32]);
+    rng.try_fill_bytes(&mut d[..]).map_err(|_| "Alg 19: Random number generator failed for d")?;
 
     // 2: z ←− B^{32}    ▷ z is 32 random bytes (see Section 3.3)
-    let mut z = [0u8; 32];
-    rng.try_fill_bytes(&mut z).map_err(|_| "Alg 19: Random number generator failed for z")?;
+    let mut z = Zeroizing::new([0u8; 32]);
+    rng.try_fill_bytes(&mut z[..]).map_err(|_| "Alg 19: Random number generator failed for z")?;
 
     // 3: if 𝑑 == NULL or 𝑧 == NULL then
     // 4:   return ⊥    ▷ return an error indication if random bit generation failed
@@ -167,7 +178,7 @@ pub(crate) fn ml_kem_key_gen<const K: usize, const ETA1_64: usize>(
     // Note: the above functionality is present in the map_err() in step 1 and 2
 
     // 6: (ek, dk) ← ML-KEM.KeyGen_internal(𝑑, 𝑧)    ▷ run internal key generation algorithm
-    ml_kem_key_gen_internal::<K, ETA1_64>(d, z, ek, dk);
+    ml_kem_key_gen_internal::<K, ETA1_64>(&d, &z, ek, dk);
 
     // 7: return (ek, dk)
     Ok(())
@@ -209,7 +220,8 @@ pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64:
             let mut pass = true;
             for i in 0..K {
                 let mut ek_tilde = [0u8; 384];
-                let ek_hat = byte_decode(12, &ek[384 * i..384 * (i + 1)]).unwrap(); // btw, going to panic
+                let mut ek_hat = [crate::types::Z::default(); 256];
+                byte_decode(12, &ek[384 * i..384 * (i + 1)], &mut ek_hat).unwrap(); // btw, going to panic
                 byte_encode(12, &ek_hat, &mut ek_tilde);
                 pass &= ek_tilde == ek[384 * i..384 * (i + 1)];
             }
@@ -222,8 +234,9 @@ pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64:
     // 2: if 𝑚 == NULL then
     // 3:   return ⊥    ▷ return an error indication if random bit generation failed
     // 4: end if
-    let mut m = [0u8; 32];
-    rng.try_fill_bytes(&mut m).map_err(|_| "Alg 20: random number generator failed")?;
+    // m is wiped when it goes out of scope (FIPS 203 §3.3)
+    let mut m = Zeroizing::new([0u8; 32]);
+    rng.try_fill_bytes(&mut m[..]).map_err(|_| "Alg 20: random number generator failed")?;
 
     let k = ml_kem_encaps_internal::<K, ETA1_64, ETA2_64>(du, dv, &m, ek, ct)?;
     Ok(k)

@@ -1,8 +1,12 @@
-use crate::ntt::multiply_ntts;
+use crate::ntt::multiply_ntts_acc;
 use crate::types::Z;
 use crate::Q;
+use sha3::digest::core_api::{
+    Buffer, ExtendableOutputCore, FixedOutputCore, UpdateCore, XofReaderCore,
+};
 use sha3::digest::{ExtendableOutput, Update, XofReader};
-use sha3::{Digest, Sha3_256, Sha3_512, Shake128, Shake256};
+use sha3::{Digest, Sha3_256, Sha3_512Core, Shake128, Shake256Core};
+use zeroize::Zeroize;
 
 
 /// If the condition is not met, return an error message. Borrowed from the `anyhow` crate.
@@ -17,19 +21,27 @@ macro_rules! ensure {
 pub(crate) use ensure; // make available throughout crate
 
 
-/// Vector addition; See commentary on 2.11 page 10: `z_hat` = `u_hat` + `v_hat`
+// The vector helpers below work in place on caller-provided buffers and return nothing by value.
+// A value returned by value can leave a copy in the callee's stack frame that no wipe can reach, so
+// this is what lets the K-PKE functions destroy their intermediate values (FIPS 203 §3.3).
+
+/// Polynomial addition in place: `poly_a` ← `poly_a` + `poly_b`
+pub(crate) fn add_poly(poly_a: &mut [Z; 256], poly_b: &[Z; 256]) {
+    for (a, b) in poly_a.iter_mut().zip(poly_b) {
+        *a = a.add(*b);
+    }
+}
+
+
+/// Vector addition in place; See commentary on 2.11 page 10: `vec_a` ← `vec_a` + `vec_b`
 ///
 /// # Arguments
-/// * `vec_a` - First vector of size K×256
+/// * `vec_a` - First vector of size K×256, which receives the element-wise sum
 /// * `vec_b` - Second vector of size K×256
-///
-/// # Returns
-/// Sum of the two vectors element-wise
-#[must_use]
-pub(crate) fn add_vecs<const K: usize>(
-    vec_a: &[[Z; 256]; K], vec_b: &[[Z; 256]; K],
-) -> [[Z; 256]; K] {
-    core::array::from_fn(|k| core::array::from_fn(|n| vec_a[k][n].add(vec_b[k][n])))
+pub(crate) fn add_vecs<const K: usize>(vec_a: &mut [[Z; 256]; K], vec_b: &[[Z; 256]; K]) {
+    for (a, b) in vec_a.iter_mut().zip(vec_b) {
+        add_poly(a, b);
+    }
 }
 
 
@@ -38,22 +50,17 @@ pub(crate) fn add_vecs<const K: usize>(
 /// # Arguments
 /// * `a_hat` - Matrix of size K×K×256
 /// * `u_hat` - Vector of size K×256
-///
-/// # Returns
-/// Result of matrix multiplication `A_hat * u_hat`
-#[must_use]
+/// * `w_hat` - Output vector of size K×256, overwritten with `A_hat * u_hat`
 pub(crate) fn mul_mat_vec<const K: usize>(
-    a_hat: &[[[Z; 256]; K]; K], u_hat: &[[Z; 256]; K],
-) -> [[Z; 256]; K] {
-    let mut w_hat = [[Z::default(); 256]; K];
+    a_hat: &[[[Z; 256]; K]; K], u_hat: &[[Z; 256]; K], w_hat: &mut [[Z; 256]; K],
+) {
     for i in 0..K {
+        w_hat[i].fill(Z::default());
         #[allow(clippy::needless_range_loop)] // alternative is harder to understand
         for j in 0..K {
-            let tmp = multiply_ntts(&a_hat[i][j], &u_hat[j]);
-            w_hat[i] = add_vecs(&[w_hat[i]], &[tmp])[0];
+            multiply_ntts_acc(&mut w_hat[i], &a_hat[i][j], &u_hat[j]);
         }
     }
-    w_hat
 }
 
 
@@ -62,23 +69,18 @@ pub(crate) fn mul_mat_vec<const K: usize>(
 /// # Arguments
 /// * `a_hat` - Matrix of size K×K×256 to be transposed before multiplication
 /// * `u_hat` - Vector of size K×256
-///
-/// # Returns
-/// Result of matrix multiplication `A_hat^T * u_hat`, where `^T` denotes transpose
-#[must_use]
+/// * `y_hat` - Output vector of size K×256, overwritten with `A_hat^T * u_hat`, where `^T` denotes transpose
 pub(crate) fn mul_mat_t_vec<const K: usize>(
-    a_hat: &[[[Z; 256]; K]; K], u_hat: &[[Z; 256]; K],
-) -> [[Z; 256]; K] {
-    let mut y_hat = [[Z::default(); 256]; K];
+    a_hat: &[[[Z; 256]; K]; K], u_hat: &[[Z; 256]; K], y_hat: &mut [[Z; 256]; K],
+) {
     #[allow(clippy::needless_range_loop)] // alternative is harder to understand
     for i in 0..K {
+        y_hat[i].fill(Z::default());
         #[allow(clippy::needless_range_loop)] // alternative is harder to understand
         for j in 0..K {
-            let tmp = multiply_ntts(&a_hat[j][i], &u_hat[j]); // i,j swapped vs above fn
-            y_hat[i] = add_vecs(&[y_hat[i]], &[tmp])[0];
+            multiply_ntts_acc(&mut y_hat[i], &a_hat[j][i], &u_hat[j]); // i,j swapped vs above fn
         }
     }
-    y_hat
 }
 
 
@@ -87,17 +89,14 @@ pub(crate) fn mul_mat_t_vec<const K: usize>(
 /// # Arguments
 /// * `u_hat` - First vector of size K×256
 /// * `v_hat` - Second vector of size K×256
-///
-/// # Returns
-/// Dot product result as a 256-element array, computed as sum of element-wise products
-#[must_use]
-pub(crate) fn dot_t_prod<const K: usize>(u_hat: &[[Z; 256]; K], v_hat: &[[Z; 256]; K]) -> [Z; 256] {
-    let mut result = [Z::default(); 256];
+/// * `z_hat` - Output 256-element array, overwritten with the sum of element-wise products
+pub(crate) fn dot_t_prod<const K: usize>(
+    u_hat: &[[Z; 256]; K], v_hat: &[[Z; 256]; K], z_hat: &mut [Z; 256],
+) {
+    z_hat.fill(Z::default());
     for j in 0..K {
-        let tmp = multiply_ntts(&u_hat[j], &v_hat[j]);
-        result = add_vecs(&[result], &[tmp])[0];
+        multiply_ntts_acc(z_hat, &u_hat[j], &v_hat[j]);
     }
-    result
 }
 
 
@@ -107,15 +106,44 @@ pub(crate) fn dot_t_prod<const K: usize>(u_hat: &[[Z; 256]; K], v_hat: &[[Z; 256
 /// # Arguments
 /// * `s` - 32-byte seed
 /// * `b` - Single byte domain separator
-#[must_use]
-pub(crate) fn prf<const ETA_64: usize>(s: &[u8; 32], b: u8) -> [u8; ETA_64] {
-    let mut hasher = Shake256::default();
-    hasher.update(s);
-    hasher.update(&[b]);
-    let mut reader = hasher.finalize_xof();
-    let mut result = [0u8; ETA_64];
-    reader.read(&mut result);
-    result
+/// * `out` - Output buffer for the `ETA_64` bytes
+pub(crate) fn prf<const ETA_64: usize>(s: &[u8; 32], b: u8, out: &mut [u8; ETA_64]) {
+    shake256_wiped(&[s, &[b]], out);
+    scrub_hash_stack();
+}
+
+
+/// SHAKE256 over the concatenation of `inputs`, squeezed into `out`, for the secret inputs of PRF
+/// and J. It absorbs through the `core_api`, with no wrapper to move or copy, so that the block
+/// buffer (which keeps the unprocessed tail of the input, e.g. sigma || N) and each squeezed block
+/// can be wiped (FIPS 203 §3.3). The Keccak state is wiped on drop by the sha3 `zeroize` feature.
+/// Callers follow it with `scrub_hash_stack()`, so it must not be inlined.
+#[inline(never)]
+fn shake256_wiped(inputs: &[&[u8]], out: &mut [u8]) {
+    let mut core = Shake256Core::default();
+    let mut buffer = Buffer::<Shake256Core>::default();
+    for i in inputs {
+        buffer.digest_blocks(i, |blocks| core.update_blocks(blocks));
+    }
+    let mut reader = core.finalize_xof_core(&mut buffer);
+    buffer.pad_with_zeros().as_mut_slice().zeroize();
+    for chunk in out.chunks_mut(136) {
+        let mut block = reader.read_block();
+        chunk.copy_from_slice(&block[..chunk.len()]);
+        block.as_mut_slice().zeroize();
+    }
+}
+
+
+/// Overwrites the stack area that `shake256_wiped()` or `sha3_512_wiped()` just used. sha3 0.10
+/// returns each squeezed block by value and permutes on stack copies of the state, so its own
+/// frames can still hold secret-derived bytes that no wipe in this crate can reach (FIPS 203 §3.3).
+/// It is called from the same frame as the hash function, so this frame overlays the hash's.
+#[inline(never)]
+fn scrub_hash_stack() {
+    let mut area = [0u64; 256]; // 2 KiB, wiped a word at a time; it covers the measured frames
+    area.zeroize();
+    let _ = core::hint::black_box(&area);
 }
 
 
@@ -145,18 +173,33 @@ pub(crate) fn xof(rho: &[u8; 32], i: u8, j: u8) -> impl XofReader {
 ///
 /// # Arguments
 /// * `bytes` - Slice of byte slices to be hashed together
-///
-/// # Returns
-/// Tuple of two 32-byte arrays: (ρ, σ) in K-PKE.KeyGen, or (K, r) in encapsulation and decapsulation
-pub(crate) fn g(bytes: &[&[u8]]) -> ([u8; 32], [u8; 32]) {
-    let mut hasher = Sha3_512::new();
-    for b in bytes {
-        Digest::update(&mut hasher, b);
+/// * `a`, `b` - Output buffers for the two 32-byte halves: (ρ, σ) in K-PKE.KeyGen, or (K, r) in
+///   encapsulation and decapsulation
+pub(crate) fn g(bytes: &[&[u8]], a: &mut [u8; 32], b: &mut [u8; 32]) {
+    sha3_512_wiped(bytes, a, b);
+    scrub_hash_stack();
+}
+
+
+/// SHA3-512 of the concatenation of `bytes`, split into `a` and `b`, for G. It absorbs and finalizes
+/// through the `core_api`, with no wrapper to move or copy, so that the block buffer (which keeps
+/// the tail of the secret input d || k or m || H(ek)) and the digest can be wiped (FIPS 203 §3.3).
+/// The Keccak state is wiped on drop by the sha3 `zeroize` feature. The outputs go into the
+/// caller's buffers rather than being returned by value. Callers follow it with
+/// `scrub_hash_stack()`, so it must not be inlined.
+#[inline(never)]
+fn sha3_512_wiped(bytes: &[&[u8]], a: &mut [u8; 32], b: &mut [u8; 32]) {
+    let mut core = Sha3_512Core::default();
+    let mut buffer = Buffer::<Sha3_512Core>::default();
+    for x in bytes {
+        buffer.digest_blocks(x, |blocks| core.update_blocks(blocks));
     }
-    let digest = hasher.finalize();
-    let a = digest[0..32].try_into().expect("g_a fail");
-    let b = digest[32..64].try_into().expect("g_b fail");
-    (a, b)
+    let mut digest = sha3::digest::Output::<Sha3_512Core>::default();
+    core.finalize_fixed_core(&mut buffer, &mut digest);
+    buffer.pad_with_zeros().as_mut_slice().zeroize();
+    a.copy_from_slice(&digest[0..32]);
+    b.copy_from_slice(&digest[32..64]);
+    digest.as_mut_slice().zeroize();
 }
 
 
@@ -183,18 +226,10 @@ pub(crate) fn h(bytes: &[u8]) -> [u8; 32] {
 /// # Arguments
 /// * `z` - 32-byte seed
 /// * `ct` - Variable length ciphertext
-///
-/// # Returns
-/// 32-byte challenge value derived from inputs
-#[must_use]
-pub(crate) fn j(z: &[u8; 32], ct: &[u8]) -> [u8; 32] {
-    let mut hasher = Shake256::default();
-    hasher.update(z);
-    hasher.update(ct);
-    let mut reader = hasher.finalize_xof();
-    let mut result = [0u8; 32];
-    reader.read(&mut result);
-    result
+/// * `out` - Output buffer for the 32-byte challenge value derived from inputs
+pub(crate) fn j(z: &[u8; 32], ct: &[u8], out: &mut [u8; 32]) {
+    shake256_wiped(&[z, ct], out);
+    scrub_hash_stack();
 }
 
 

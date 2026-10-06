@@ -165,7 +165,7 @@ macro_rules! functionality {
 
             fn keygen_from_seed(d: [u8; 32], z: [u8; 32]) -> (EncapsKey, DecapsKey) {
                 let (mut ek, mut dk) = ([0u8; EK_LEN], [0u8; DK_LEN]);
-                ml_kem_key_gen_internal::<K, { ETA1 as usize * 64 }>(d, z, &mut ek, &mut dk);
+                ml_kem_key_gen_internal::<K, { ETA1 as usize * 64 }>(&d, &z, &mut ek, &mut dk);
                 (EncapsKey { 0: ek }, DecapsKey { 0: dk })
             }
 
@@ -249,8 +249,9 @@ macro_rules! functionality {
                 // in the public key are in the valid range [0, 𝑞 − 1]". Note that
                 // accepting a byte array of fixed size, rather than a slice of varied
                 // size, addresses check #1.
+                let mut ek_hat = [crate::types::Z::default(); 256];
                 for i in 0..K {
-                    let _ek_hat = byte_decode(12, &ek[384 * i..384 * (i + 1)])?;
+                    byte_decode(12, &ek[384 * i..384 * (i + 1)], &mut ek_hat)?;
                 }
                 Ok(EncapsKey { 0: ek })
             }

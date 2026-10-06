@@ -1,11 +1,12 @@
 use crate::byte_fns::{byte_decode, byte_encode};
 use crate::helpers::{
-    add_vecs, compress_vector, decompress_vector, dot_t_prod, g, mul_mat_t_vec, mul_mat_vec, prf,
-    xof,
+    add_poly, add_vecs, compress_vector, decompress_vector, dot_t_prod, g, mul_mat_t_vec,
+    mul_mat_vec, prf, xof,
 };
 use crate::ntt::{ntt, ntt_inv};
 use crate::sampling::{sample_ntt, sample_poly_cbd};
 use crate::types::Z;
+use zeroize::Zeroizing;
 
 
 /// Algorithm 13 `K-PKE.KeyGen(d)` on page 29.
@@ -17,16 +18,21 @@ use crate::types::Z;
 /// * Output: decryption key `dk_PKE ∈ B^{384·k}` (private key)
 #[allow(clippy::similar_names)]
 pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
-    d: [u8; 32], ek_pke: &mut [u8], dk_pke: &mut [u8],
+    d: &[u8; 32], ek_pke: &mut [u8], dk_pke: &mut [u8],
 ) {
     debug_assert_eq!(ek_pke.len(), 384 * K + 32, "Alg 13: ek_pke not 384 * K + 32");
     debug_assert_eq!(dk_pke.len(), 384 * K, "Alg 13: dk_pke not 384 * K");
 
+    // Secret intermediate values are held in `Zeroizing` buffers, which are wiped when they go out
+    // of scope (FIPS 203 §3.3), and the NTTs run in place so no other copies are made.
+
     // 1: (𝜌, 𝜎) ← G(𝑑 ‖ 𝑘)    ▷ expand 32+1 bytes to two pseudorandom 32-byte seeds
-    let mut dk = [0u8; 33]; // Last byte is 'final' FIPS 203 fix; 'domain' separator
-    dk[0..32].copy_from_slice(&d);
+    let mut dk = Zeroizing::new([0u8; 33]); // Last byte is 'final' FIPS 203 fix; 'domain' separator
+    dk[0..32].copy_from_slice(d);
     dk[32] = K.to_le_bytes()[0];
-    let (rho, sigma) = g(&[&dk]);
+    let mut rho = [0u8; 32];
+    let mut sigma = Zeroizing::new([0u8; 32]);
+    g(&[&dk[..]], &mut rho, &mut sigma);
 
     // 2: N ← 0
     let mut n = 0;
@@ -38,31 +44,42 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
     // 9: s[i] ← SamplePolyCBD_η1(PRFη1(σ, N))    ▷ s[i] ∈ Z^{256}_q sampled from CBD
     // 10: N ← N +1
     // 11: end for
-    let s: [[Z; 256]; K] = core::array::from_fn(|_| {
-        let x = sample_poly_cbd(&prf::<ETA1_64>(&sigma, n));
+    // (s is sampled into `s_hat`, which step 16 transforms in place)
+    let mut prf_out = Zeroizing::new([0u8; ETA1_64]);
+    let mut s_hat = Zeroizing::new([[Z::default(); 256]; K]);
+    for s_i in s_hat.iter_mut() {
+        prf(&sigma, n, &mut prf_out);
+        sample_poly_cbd(&prf_out[..], s_i);
         n += 1;
-        x
-    });
+    }
 
     // 12: for (i ← 0; i < k; i++)    ▷ generate e ∈ (Z_q^{256})^k
     // 13: e[i] ← SamplePolyCBD_η1(PRFη1(σ, N))    ▷ e[i] ∈ Z^{256}_q sampled from CBD
     // 14: N ← N +1
     // 15: end for
-    let e: [[Z; 256]; K] = core::array::from_fn(|_| {
-        let x = sample_poly_cbd(&prf::<ETA1_64>(&sigma, n));
+    // (e is sampled into `e_hat`, which step 17 transforms in place)
+    let mut e_hat = Zeroizing::new([[Z::default(); 256]; K]);
+    for e_i in e_hat.iter_mut() {
+        prf(&sigma, n, &mut prf_out);
+        sample_poly_cbd(&prf_out[..], e_i);
         n += 1;
-        x
-    });
+    }
 
     // 16: s_hat ← NTT(s)    ▷ NTT is run k times (once for each coordinate of s)
-    let s_hat: [[Z; 256]; K] = core::array::from_fn(|i| ntt(&s[i]));
+    for s_i in s_hat.iter_mut() {
+        ntt(s_i);
+    }
 
     // 17: ê ← NTT(e)    ▷ NTT is run k times
-    let e_hat: [[Z; 256]; K] = core::array::from_fn(|i| ntt(&e[i]));
+    for e_i in e_hat.iter_mut() {
+        ntt(e_i);
+    }
 
     // 18: t̂ ← Â ◦ ŝ + ê
-    let as_hat = mul_mat_vec(&a_hat, &s_hat);
-    let t_hat = add_vecs(&as_hat, &e_hat);
+    // (t̂ is public, so the secret partial result Â ◦ ŝ only ever exists in the buffer that becomes t̂)
+    let mut t_hat = [[Z::default(); 256]; K];
+    mul_mat_vec(&a_hat, &s_hat, &mut t_hat);
+    add_vecs(&mut t_hat, &e_hat);
 
     // 19: ek_PKE ← ByteEncode_12(t̂) ∥ ρ    ▷ run ByteEncode12 𝑘 times, then append 𝐀-seed
     for (i, chunk) in ek_pke.chunks_mut(384).enumerate().take(K) {
@@ -125,7 +142,7 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     // 2: t̂ ← ByteDecode_12 (ek_PKE [0 : 384k])    ▷ run ByteDecode_12 𝑘 times to decode `𝐭  ∈ (ℤ^{256}_𝑞)^k`
     let mut t_hat = [[Z::default(); 256]; K];
     for (i, chunk) in ek_pke.chunks(384).enumerate().take(K) {
-        t_hat[i] = byte_decode(12, chunk)?;
+        byte_decode(12, chunk, &mut t_hat[i])?;
     }
 
     // 3: ρ ← ek_PKE [384k : 384k + 32]    ▷ extract 32-byte seed from ek_PKE
@@ -134,46 +151,63 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     // Steps 4-8 in gen_a_hat() above
     let a_hat = gen_a_hat(rho);
 
+    // Secret intermediate values are held in `Zeroizing` buffers, which are wiped when they go out
+    // of scope (FIPS 203 §3.3), and every step runs in place so no other copies are made.
+
     // 9: for (i ← 0; i < k; i ++)
     // 10: y[i] ← SamplePolyCBD_η1(PRF_η1(r, N))    ▷ r[i] ∈ Z^{256}_q sampled from CBD
     // 11: N ← N +1
     // 12: end for
-    let y: [[Z; 256]; K] = core::array::from_fn(|_| {
-        let x = sample_poly_cbd(&prf::<ETA1_64>(r, n));
+    // (y is sampled into `y_hat`, which step 18 transforms in place)
+    let mut prf_out1 = Zeroizing::new([0u8; ETA1_64]);
+    let mut y_hat = Zeroizing::new([[Z::default(); 256]; K]);
+    for y_i in y_hat.iter_mut() {
+        prf(r, n, &mut prf_out1);
+        sample_poly_cbd(&prf_out1[..], y_i);
         n += 1;
-        x
-    });
+    }
 
     // 13: for (i ← 0; i < k; i ++)    ▷ generate e1 ∈ (Z_q^{256})^k
     // 14: e1 [i] ← SamplePolyCBD_η2(PRF_η2(r, N))    ▷ e1 [i] ∈ Z^{256}_q sampled from CBD
     // 15: N ← N +1
     // 16: end for
-    let e1: [[Z; 256]; K] = core::array::from_fn(|_| {
-        let x = sample_poly_cbd(&prf::<ETA2_64>(r, n));
+    let mut prf_out2 = Zeroizing::new([0u8; ETA2_64]);
+    let mut e1 = Zeroizing::new([[Z::default(); 256]; K]);
+    for e1_i in e1.iter_mut() {
+        prf(r, n, &mut prf_out2);
+        sample_poly_cbd(&prf_out2[..], e1_i);
         n += 1;
-        x
-    });
+    }
 
     // 17: e2 ← SamplePolyCBD_η2(PRF_η2(r, N))    ▷ sample e2 ∈ Z^{256}_q from CBD
-    let e2 = sample_poly_cbd(&prf::<ETA2_64>(r, n));
+    let mut e2 = Zeroizing::new([Z::default(); 256]);
+    prf(r, n, &mut prf_out2);
+    sample_poly_cbd(&prf_out2[..], &mut e2);
 
     // 18: 𝐲̂ ← NTT(𝐲)    ▷ NTT is run k times
-    let y_hat: [[Z; 256]; K] = core::array::from_fn(|i| ntt(&y[i]));
+    for y_i in y_hat.iter_mut() {
+        ntt(y_i);
+    }
 
     // 19: u ← NTT−1 (Â⊺ ◦ r̂) + e1
-    let mut u = mul_mat_t_vec(&a_hat, &y_hat);
-    for u_i in &mut u {
-        *u_i = ntt_inv(u_i);
+    let mut u = Zeroizing::new([[Z::default(); 256]; K]);
+    mul_mat_t_vec(&a_hat, &y_hat, &mut u);
+    for u_i in u.iter_mut() {
+        ntt_inv(u_i);
     }
-    u = add_vecs(&u, &e1);
+    add_vecs(&mut u, &e1);
 
     // 20: µ ← Decompress1(ByteDecode_1(m)))
-    let mut mu = byte_decode(1, m)?;
-    decompress_vector(1, &mut mu);
+    let mut mu = Zeroizing::new([Z::default(); 256]);
+    byte_decode(1, m, &mut mu)?;
+    decompress_vector(1, &mut mu[..]);
 
     // 21: v ← NTT−1 (t̂⊺ ◦ r̂) + e2 + µ    ▷ encode plaintext m into polynomial v.
-    let mut v = ntt_inv(&dot_t_prod(&t_hat, &y_hat));
-    v = add_vecs(&add_vecs(&[v], &[e2]), &[mu])[0];
+    let mut v = Zeroizing::new([Z::default(); 256]);
+    dot_t_prod(&t_hat, &y_hat, &mut v);
+    ntt_inv(&mut v);
+    add_poly(&mut v, &e2);
+    add_poly(&mut v, &mu);
 
     // 22: c1 ← ByteEncode_du(Compress_du(u))    ▷ ByteEncode_du is run k times
     let step = 32 * du as usize;
@@ -184,7 +218,7 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
 
 
     // 23: c2 ← ByteEncode_dv(Compress_dv(v))
-    compress_vector(dv, &mut v);
+    compress_vector(dv, &mut v[..]);
     byte_encode(dv, &v, &mut ct[K * step..]);
 
     // 24: return c ← (c1 ∥ c2)
@@ -198,15 +232,16 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
 /// # Parameters
 /// * Input: decryption key `dk_PKE ∈ B^{384·k}` (private key)
 /// * Input: ciphertext `c ∈ B^{32(du·k+dv)}` (encrypted message)
-/// * Output: message `m ∈ B^{32}` (decrypted 32-byte message)
+/// * Output: message `m ∈ B^{32}` (decrypted 32-byte message), written into `m` rather than
+///   returned by value, so that the secret leaves no copy outside the caller's buffer (FIPS 203 §3.3)
 ///
 /// # Parameters
 /// * `du`: Compression parameter for vector u
 /// * `dv`: Compression parameter for vector v
 /// * `K`: Number of polynomial vectors
 pub(crate) fn k_pke_decrypt<const K: usize>(
-    du: u32, dv: u32, dk_pke: &[u8], ct: &[u8],
-) -> Result<[u8; 32], &'static str> {
+    du: u32, dv: u32, dk_pke: &[u8], ct: &[u8], m: &mut [u8; 32],
+) -> Result<(), &'static str> {
     debug_assert_eq!(dk_pke.len(), 384 * K, "Alg 15: dk len not 384 * K");
     debug_assert_eq!(
         ct.len(),
@@ -223,36 +258,42 @@ pub(crate) fn k_pke_decrypt<const K: usize>(
     // 3: 𝐮′ ← Decompress_𝑑(ByteDecode_𝑑(𝑐1))   ▷ run Decompress𝑑 and ByteDecode𝑑 𝑘 times
     let mut u = [[Z::default(); 256]; K];
     for (i, chunk) in c1.chunks(32 * du as usize).enumerate().take(K) {
-        u[i] = byte_decode(du, chunk)?;
+        byte_decode(du, chunk, &mut u[i])?;
         decompress_vector(du, &mut u[i]);
     }
 
     // 4: v ← Decompress_{dv}(ByteDecode_dv(c_2))
-    let mut v = byte_decode(dv, c2)?;
+    let mut v = [Z::default(); 256];
+    byte_decode(dv, c2, &mut v)?;
     decompress_vector(dv, &mut v);
 
+    // Secret intermediate values are held in `Zeroizing` buffers, which are wiped when they go out
+    // of scope (FIPS 203 §3.3), and every step runs in place so no other copies are made.
+
     // 5: s_hat ← ByteDecode_12(dk_PKE)
-    let mut s_hat = [[Z::default(); 256]; K];
+    let mut s_hat = Zeroizing::new([[Z::default(); 256]; K]);
     for (i, chunk) in dk_pke.chunks(384).enumerate() {
-        s_hat[i] = byte_decode(12, chunk)?;
+        byte_decode(12, chunk, &mut s_hat[i])?;
     }
 
     // 6: 𝑤 ← 𝑣 − NTT (𝐬 ̂ ∘ NTT(𝐮))    ▷ run NTT 𝑘 times; run NTT^{−1} once
-    let mut w = [Z::default(); 256];
-    let ntt_u: [[Z; 256]; K] = core::array::from_fn(|i| ntt(&u[i]));
-    let st_ntt_u = dot_t_prod(&s_hat, &ntt_u);
-    let yy = ntt_inv(&st_ntt_u);
-    for i in 0..256 {
-        w[i] = v[i].sub(yy[i]);
+    // (u now holds NTT(u′), which is public; w holds ŝ⊺ ◦ NTT(u′), then its NTT^{−1}, then w)
+    for u_i in &mut u {
+        ntt(u_i);
+    }
+    let mut w = Zeroizing::new([Z::default(); 256]);
+    dot_t_prod(&s_hat, &u, &mut w);
+    ntt_inv(&mut w);
+    for (w_i, v_i) in w.iter_mut().zip(v.iter()) {
+        *w_i = v_i.sub(*w_i);
     }
 
     // 7: m ← ByteEncode_1(Compress_1(w))    ▷ decode plaintext m from polynomial v
-    compress_vector(1, &mut w);
-    let mut m = [0u8; 32];
-    byte_encode(1, &w, &mut m);
+    compress_vector(1, &mut w[..]);
+    byte_encode(1, &w, m);
 
-    // 8: return m
-    Ok(m)
+    // 8: return m    ▷ in place
+    Ok(())
 }
 
 
@@ -285,7 +326,7 @@ mod tests {
 
         let mut d = [0u8; 32];
         rng.try_fill_bytes(&mut d).unwrap();
-        k_pke_key_gen::<K, ETA1_64>(d, &mut ek, &mut dk[0..384 * K]);
+        k_pke_key_gen::<K, ETA1_64>(&d, &mut ek, &mut dk[0..384 * K]);
         // k_pke_key_gen does not fail because it no longer relies on rng // assert!(res.is_ok());
 
         let res = k_pke_encrypt::<K, ETA1_64, ETA2_64>(DU, DV, &ek, &m, &r, &mut ct);
@@ -295,7 +336,7 @@ mod tests {
         let res = k_pke_encrypt::<K, ETA1_64, ETA2_64>(DU, DV, &ff_ek, &m, &r, &mut ct);
         assert!(res.is_err());
 
-        let res = k_pke_decrypt::<K>(DU, DV, &dk[0..384 * K], &ct);
+        let res = k_pke_decrypt::<K>(DU, DV, &dk[0..384 * K], &ct, &mut [0u8; 32]);
         assert!(res.is_ok());
     }
 
@@ -326,27 +367,37 @@ mod tests {
         let mut u = [[Z::default(); 256]; KK];
         let mut enc = [0u8; 384];
         for (i, chunk) in c1.chunks(32 * du as usize).enumerate() {
-            u[i] = byte_decode(du, chunk).unwrap();
+            byte_decode(du, chunk, &mut u[i]).unwrap();
             decompress_vector(du, &mut u[i]);
             byte_encode(12, &u[i], &mut enc);
             assert_eq!(enc[..], u_d[384 * i..384 * (i + 1)], "Decompress_du of u'[{i}]");
         }
-        let mut v = byte_decode(dv, c2).unwrap();
+        let mut v = [Z::default(); 256];
+        byte_decode(dv, c2, &mut v).unwrap();
         decompress_vector(dv, &mut v);
         byte_encode(12, &v, &mut enc);
         assert_eq!(enc[..], v_d[..], "Decompress_dv of v'");
 
         // Steps 5-6: w = v' - NTT^-1(s_hat^T o NTT(u'))
-        let s_hat: [[Z; 256]; KK] =
-            core::array::from_fn(|i| byte_decode(12, &dk_pke[384 * i..384 * (i + 1)]).unwrap());
-        let ntt_u: [[Z; 256]; KK] = core::array::from_fn(|i| ntt(&u[i]));
-        let su = ntt_inv(&dot_t_prod(&s_hat, &ntt_u));
+        let mut s_hat = [[Z::default(); 256]; KK];
+        for (i, chunk) in dk_pke.chunks(384).enumerate() {
+            byte_decode(12, chunk, &mut s_hat[i]).unwrap();
+        }
+        let mut ntt_u = u;
+        for ntt_u_i in &mut ntt_u {
+            ntt(ntt_u_i);
+        }
+        let mut su = [Z::default(); 256];
+        dot_t_prod(&s_hat, &ntt_u, &mut su);
+        ntt_inv(&mut su);
         let w: [Z; 256] = core::array::from_fn(|i| v[i].sub(su[i]));
         byte_encode(12, &w, &mut enc);
         assert_eq!(enc[..], w_exp[..], "w");
 
         // The whole algorithm
-        assert_eq!(k_pke_decrypt::<KK>(du, dv, &dk_pke, &ct).unwrap()[..], msg[..], "m");
+        let mut m = [0u8; 32];
+        k_pke_decrypt::<KK>(du, dv, &dk_pke, &ct, &mut m).unwrap();
+        assert_eq!(m[..], msg[..], "m");
     }
 
     #[test]
