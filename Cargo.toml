@@ -13,6 +13,8 @@ repository = "https://github.com/integritychain/fips203"
 keywords = ["kem", "FIPS203", "lattice", "kyber", "encapsulation"]
 # MSRV set at 1.85 for Debian stable (trixie), e.g. https://packages.debian.org/trixie/rustc
 rust-version = "1.85"
+# The Wycheproof vectors (8 MB) stay in the repository; the published crate omits them
+exclude = ["tests/wycheproof.rs", "tests/wycheproof/"]
 
 
 [features]
