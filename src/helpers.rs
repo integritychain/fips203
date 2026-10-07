@@ -141,7 +141,9 @@ fn shake256_wiped(inputs: &[&[u8]], out: &mut [u8]) {
 /// It is called from the same frame as the hash function, so this frame overlays the hash's.
 #[inline(never)]
 fn scrub_hash_stack() {
-    let mut area = [0u64; 256]; // 2 KiB, wiped a word at a time; it covers the measured frames
+    // 2 KiB, wiped a word at a time. It covers the hash frames of an optimized build (≤ 1.3 KiB
+    // measured on x86_64), but not those of an unoptimized one (about 20 KiB).
+    let mut area = [0u64; 256];
     area.zeroize();
     let _ = core::hint::black_box(&area);
 }

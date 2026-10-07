@@ -38,7 +38,7 @@ pub(crate) fn sample_ntt(mut xof_reader: impl XofReader) -> [Z; 256] {
         // 8: if d1 < q then
         if d1 < Q {
             //
-            // 9: a_hat[j] ← d1         ▷ a_hat ∈ Z256
+            // 9: a_hat[j] ← d1    ▷ a_hat ∈ Z^{256}_q
             array_a_hat[j].set_u16(d1);
 
             // 10: j ← j + 1

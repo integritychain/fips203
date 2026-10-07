@@ -115,7 +115,7 @@ fn ml_kem_decaps_internal<
     // m′, K′, r′, K̄ and c′ are wiped when they go out of scope (FIPS 203 §3.3); K′ is returned as a
     // copy. When c′ ≠ c, c′ and m′ are exactly what implicit rejection hides.
 
-    // 5: m′ ← K-PKE.Decrypt(dk_PKE,c)
+    // 5: m′ ← K-PKE.Decrypt(dk_PKE,c)    ▷ decrypt ciphertext
     let mut m_prime = Zeroizing::new([0u8; 32]);
     k_pke_decrypt::<K>(du, dv, dk_pke, ct, &mut m_prime)?;
 
@@ -242,7 +242,10 @@ pub(crate) fn ml_kem_encaps<const K: usize, const ETA1_64: usize, const ETA2_64:
     let mut m = Zeroizing::new([0u8; 32]);
     rng.try_fill_bytes(&mut m[..]).map_err(|_| "Alg 20: random number generator failed")?;
 
+    // 5: (K, c) ← ML-KEM.Encaps_internal(ek, m)    ▷ run internal encapsulation algorithm
     let k = ml_kem_encaps_internal::<K, ETA1_64, ETA2_64>(du, dv, &m, ek, ct)?;
+
+    // 6: return (K, c)
     Ok(k)
 }
 

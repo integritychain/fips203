@@ -75,7 +75,7 @@ pub(crate) fn k_pke_key_gen<const K: usize, const ETA1_64: usize>(
         ntt(e_i);
     }
 
-    // 18: t̂ ← Â ◦ ŝ + ê
+    // 18: t̂ ← Â ◦ ŝ + ê    ▷ noisy linear system in NTT domain
     // (t̂ is public, so the secret partial result Â ◦ ŝ only ever exists in the buffer that becomes t̂)
     let mut t_hat = [[Z::default(); 256]; K];
     mul_mat_vec(&a_hat, &s_hat, &mut t_hat);
@@ -124,9 +124,9 @@ fn gen_a_hat<const K: usize>(rho: &[u8; 32]) -> [[[Z; 256]; K]; K] {
 /// * Output: ciphertext `c ∈ B^{32(du·k+dv)}` (encrypted message)
 ///
 /// # Parameters
-/// * `K`: Number of polynomial vectors
-/// * `ETA1_64`: Noise parameter for primary sampling
-/// * `ETA2_64`: Noise parameter for secondary sampling
+/// * `K`: Module dimension k (polynomials per vector)
+/// * `ETA1_64`: 64·η1, the byte length of each `PRF_η1` output
+/// * `ETA2_64`: 64·η2, the byte length of each `PRF_η2` output
 /// * `du`: Compression parameter for vector u
 /// * `dv`: Compression parameter for vector v
 #[allow(clippy::many_single_char_names, clippy::too_many_arguments)]
@@ -154,7 +154,7 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     // Secret intermediate values are held in `Zeroizing` buffers, which are wiped when they go out
     // of scope (FIPS 203 §3.3), and every step runs in place so no other copies are made.
 
-    // 9: for (i ← 0; i < k; i ++)
+    // 9: for (i ← 0; i < k; i ++)    ▷ generate y ∈ (Z_q^{256})^k
     // 10: y[i] ← SamplePolyCBD_η1(PRF_η1(r, N))    ▷ y[i] ∈ Z^{256}_q sampled from CBD
     // 11: N ← N +1
     // 12: end for
@@ -189,7 +189,7 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
         ntt(y_i);
     }
 
-    // 19: u ← NTT−1 (Â⊺ ◦ ŷ) + e1
+    // 19: u ← NTT^{−1}(Â⊺ ◦ ŷ) + e1    ▷ run NTT^{−1} k times
     let mut u = Zeroizing::new([[Z::default(); 256]; K]);
     mul_mat_t_vec(&a_hat, &y_hat, &mut u);
     for u_i in u.iter_mut() {
@@ -202,7 +202,7 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
     byte_decode(1, m, &mut mu)?;
     decompress_vector(1, &mut mu[..]);
 
-    // 21: v ← NTT−1 (t̂⊺ ◦ ŷ) + e2 + µ    ▷ encode plaintext m into polynomial v.
+    // 21: v ← NTT^{−1}(t̂⊺ ◦ ŷ) + e2 + µ    ▷ encode plaintext m into polynomial v.
     let mut v = Zeroizing::new([Z::default(); 256]);
     dot_t_prod(&t_hat, &y_hat, &mut v);
     ntt_inv(&mut v);
@@ -238,7 +238,7 @@ pub(crate) fn k_pke_encrypt<const K: usize, const ETA1_64: usize, const ETA2_64:
 /// # Parameters
 /// * `du`: Compression parameter for vector u
 /// * `dv`: Compression parameter for vector v
-/// * `K`: Number of polynomial vectors
+/// * `K`: Module dimension k (polynomials per vector)
 pub(crate) fn k_pke_decrypt<const K: usize>(
     du: u32, dv: u32, dk_pke: &[u8], ct: &[u8], m: &mut [u8; 32],
 ) -> Result<(), &'static str> {
@@ -255,14 +255,14 @@ pub(crate) fn k_pke_decrypt<const K: usize>(
     // 2: c2 ← c[32du·k : 32·(du·k + dv)]
     let c2 = &ct[32 * du as usize * K..32 * (du as usize * K + dv as usize)];
 
-    // 3: 𝐮′ ← Decompress_𝑑(ByteDecode_𝑑(𝑐1))   ▷ run Decompress𝑑 and ByteDecode𝑑 𝑘 times
+    // 3: 𝐮′ ← Decompress_du(ByteDecode_du(𝑐1))    ▷ run Decompress_du and ByteDecode_du 𝑘 times
     let mut u = [[Z::default(); 256]; K];
     for (i, chunk) in c1.chunks(32 * du as usize).enumerate().take(K) {
         byte_decode(du, chunk, &mut u[i])?;
         decompress_vector(du, &mut u[i]);
     }
 
-    // 4: v ← Decompress_{dv}(ByteDecode_dv(c_2))
+    // 4: v′ ← Decompress_{dv}(ByteDecode_dv(c_2))
     let mut v = [Z::default(); 256];
     byte_decode(dv, c2, &mut v)?;
     decompress_vector(dv, &mut v);
@@ -270,7 +270,7 @@ pub(crate) fn k_pke_decrypt<const K: usize>(
     // Secret intermediate values are held in `Zeroizing` buffers, which are wiped when they go out
     // of scope (FIPS 203 §3.3), and every step runs in place so no other copies are made.
 
-    // 5: s_hat ← ByteDecode_12(dk_PKE)
+    // 5: s_hat ← ByteDecode_12(dk_PKE)    ▷ run ByteDecode_12 k times
     let mut s_hat = Zeroizing::new([[Z::default(); 256]; K]);
     for (i, chunk) in dk_pke.chunks(384).enumerate() {
         byte_decode(12, chunk, &mut s_hat[i])?;

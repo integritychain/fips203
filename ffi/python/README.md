@@ -4,7 +4,7 @@ This Python module provides an implementation of FIPS 203, the
 Module-Lattice-based Key Encapsulation Mechanism Standard.
 
 The underlying mechanism is intended to offer "post-quantum"
-asymmetric encryption and decryption.
+key establishment.
 
 ## Example
 

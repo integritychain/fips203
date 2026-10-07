@@ -15,7 +15,7 @@ use rtt_target::{rprintln, rtt_init_print};
 use subtle::{ConditionallySelectable, ConstantTimeEq};
 
 
-// Test RNG to regurgitate incremented values when 'asked' except rho every i mod 4 == 0 (seed d)
+// Test RNG to regurgitate incremented values when 'asked' except rho if value mod 4 == 0 (seed d)
 #[derive(Clone)]
 struct TestRng {
     rho: u32,

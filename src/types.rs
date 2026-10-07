@@ -39,7 +39,7 @@ impl Z {
     pub(crate) fn set_u16(&mut self, a: u16) { self.0 = a }
 
     #[inline(always)]
-    #[allow(clippy::cast_possible_truncation)] // rem as u16; for perf
+    #[allow(clippy::cast_possible_truncation)] // res as u16; for perf
     pub(crate) fn add(self, other: Self) -> Self {
         debug_assert!(self.0 < Q);
         debug_assert!(other.0 < Q);

@@ -277,7 +277,7 @@ macro_rules! functionality {
                     "Encaps hash wrong"
                 );
                 // Beyond pg 37: reject s_hat coefficients >= q, as BoringSSL does, so that
-                // try_decaps cannot fail (ByteDecode_12 would otherwise reduce them mod q). Constant
+                // try_decaps cannot fail (byte_decode would otherwise return Err). Constant
                 // time over the secret s_hat: (q - 1) - x sets bit 31 exactly when x >= q.
                 let q_minus_1 = u32::from(crate::Q) - 1;
                 let mut bad = 0u32;
@@ -341,7 +341,7 @@ macro_rules! functionality {
 #[cfg(feature = "ml-kem-512")]
 pub mod ml_kem_512 {
     //! Functionality for the ML-KEM-512 security parameter set, which is claimed to be in security category 1, see
-    //! table 2 & 3 on page 39 of spec.
+    //! section 8 on page 40 of spec.
     //!
     //! See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf>
     //!
@@ -377,7 +377,7 @@ pub mod ml_kem_512 {
 #[cfg(feature = "ml-kem-768")]
 pub mod ml_kem_768 {
     //! Functionality for the ML-KEM-768 security parameter set, which is claimed to be in security category 3, see
-    //! table 2 & 3 on page 39 of spec.
+    //! section 8 on page 40 of spec.
     //!
     //! See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf>
     //!
@@ -412,7 +412,7 @@ pub mod ml_kem_768 {
 #[cfg(feature = "ml-kem-1024")]
 pub mod ml_kem_1024 {
     //! Functionality for the ML-KEM-1024 security parameter set, which is claimed to be in security category 5, see
-    //! table 2 & 3 on page 39 of spec.
+    //! section 8 on page 40 of spec.
     //!
     //! See <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf>
     //!

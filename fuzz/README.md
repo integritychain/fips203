@@ -31,7 +31,7 @@ For `ml_kem_fuzz`:
 
 
 # Warning: the following tools are tricky to install/configure
-$ cargo install cargo-cov
+$ cargo install cargo-binutils
 $ rustup component add llvm-tools-preview
 $ cargo fuzz coverage fuzz_all
 $ cargo cov -- show target/x86_64-unknown-linux-gnu/coverage/x86_64-unknown-linux-gnu/release/fuzz_all \
