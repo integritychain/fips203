@@ -1,4 +1,4 @@
-r'''FIPS 203 (ML-KEM) Asymmetric Post-Quantum Cryptography
+r"""FIPS 203 (ML-KEM) Asymmetric Post-Quantum Cryptography
 
 This Python module provides an implementation of FIPS 203, the
 Module-Lattice-based Key Encapsulation Mechanism Standard.
@@ -97,20 +97,21 @@ improved, please report it!
 ## Bug Reporting
 
 Please report issues at https://github.com/integritychain/fips203/issues
-'''
+"""
+
 from __future__ import annotations
 
-'''__version__ should track package.version from  ../Cargo.toml'''
-__version__ = '0.5.0'
-__author__ = 'Daniel Kahn Gillmor <dkg@fifthhorseman.net>'
+"""__version__ should track package.version from  ../Cargo.toml"""
+__version__ = "0.5.0"
+__author__ = "Daniel Kahn Gillmor <dkg@fifthhorseman.net>"
 __all__ = [
-    'ML_KEM_512',
-    'ML_KEM_768',
-    'ML_KEM_1024',
-    'Ciphertext',
-    'EncapsulationKey',
-    'DecapsulationKey',
-    'Seed',
+    "ML_KEM_512",
+    "ML_KEM_768",
+    "ML_KEM_1024",
+    "Ciphertext",
+    "EncapsulationKey",
+    "DecapsulationKey",
+    "Seed",
 ]
 
 import ctypes
@@ -123,10 +124,12 @@ from os import environ
 
 
 class _SharedSecret(ctypes.Structure):
-    _fields_ = [('data', ctypes.c_uint8 * 32)]
+    _fields_ = [("data", ctypes.c_uint8 * 32)]
+
 
 class _Seed(ctypes.Structure):
-    _fields_ = [('data', ctypes.c_uint8 * 64)]
+    _fields_ = [("data", ctypes.c_uint8 * 64)]
+
 
 class Err(enum.IntEnum):
     OK = 0
@@ -138,25 +141,27 @@ class Err(enum.IntEnum):
     DECAPSULATION_ERROR = 6
 
 
-class Seed():
-    '''ML-KEM Seed
+class Seed:
+    """ML-KEM Seed
 
     This seed can be used to generate an ML-KEM keypair
-    '''
+    """
+
     def __init__(self, data: Optional[bytes] = None) -> None:
-        '''If initialized with None, the seed will be randomly populated.'''
+        """If initialized with None, the seed will be randomly populated."""
         self._seed = _Seed()
         if data is None:
             # FIXME: perhaps use ml_kem_populate_seed instead?
             data = secrets.token_bytes(len(self._seed.data))
         if len(data) != len(self._seed.data):
-            raise ValueError(f"Expected {len(self._seed.data)} bytes, "
-                             f"got {len(data)}.")
+            raise ValueError(
+                f"Expected {len(self._seed.data)} bytes, " f"got {len(data)}."
+            )
         for i in range(len(data)):
             self._seed.data[i] = data[i]
 
     def __repr__(self) -> str:
-        return '<ML-KEM Seed>'
+        return "<ML-KEM Seed>"
 
     def __bytes__(self) -> bytes:
         return bytes(self._seed.data)
@@ -167,164 +172,183 @@ class Seed():
                 return kt.keygen(self)
         raise Exception(f"Unknown strength: {strength}, must be 512, 768, or 1024.")
 
-class Ciphertext():
-    '''ML-KEM Ciphertext
+
+class Ciphertext:
+    """ML-KEM Ciphertext
 
     Serialize this object by asking for it as `bytes`.
 
     You can convert it to a 32-byte shared secret by passing it to the
     Decaps() function of the appropriate Decapsulation Key.
 
-    '''
+    """
+
     def __init__(self, data: Union[bytes, int]) -> None:
-        '''Create ML-KEM Ciphertext from bytes (or strength level).'''
+        """Create ML-KEM Ciphertext from bytes (or strength level)."""
         if isinstance(data, bytes):
-            self._strength = _ML_KEM.strength_from_length('CT_SIZE', len(data))
+            self._strength = _ML_KEM.strength_from_length("CT_SIZE", len(data))
         elif isinstance(data, int):
             self._strength = data
         else:
-            raise Exception("Initialize ML-KEM Ciphertext object with "
-                            f"bytes or a strength level, not {type(data)}")
+            raise Exception(
+                "Initialize ML-KEM Ciphertext object with "
+                f"bytes or a strength level, not {type(data)}"
+            )
         self._ffi = _ML_KEM.strength(self._strength)
-        self._ct = self._ffi['Ciphertext']()
+        self._ct = self._ffi["Ciphertext"]()
 
         if isinstance(data, bytes):
             self._set(data)
 
     def __repr__(self) -> str:
-        return f'<ML-KEM-{self._strength} Ciphertext>'
+        return f"<ML-KEM-{self._strength} Ciphertext>"
 
     def __bytes__(self) -> bytes:
         return bytes(self._ct.data)
 
     def _set(self, data: bytes) -> None:
         if len(data) != len(self._ct.data):
-            raise ValueError(f"Expected {len(self._ct.data)} bytes, "
-                             f"got {len(data)}")
+            raise ValueError(
+                f"Expected {len(self._ct.data)} bytes, " f"got {len(data)}"
+            )
         for i in range(len(data)):
             self._ct.data[i] = data[i]
 
 
-class EncapsulationKey():
-    '''ML-KEM Encapsulation Key
+class EncapsulationKey:
+    """ML-KEM Encapsulation Key
 
     Serialize this object by asking for it as `bytes`.
 
     Produce a Ciphertext and a 32-byte shared secret by invoking
     Encaps() on it.
-    '''
+    """
+
     def __init__(self, data: Union[bytes, int]) -> None:
-        '''Create ML-KEM Encapsulation Key from bytes (or strength level).'''
+        """Create ML-KEM Encapsulation Key from bytes (or strength level)."""
         if isinstance(data, bytes):
-            self._strength = _ML_KEM.strength_from_length('EK_SIZE', len(data))
+            self._strength = _ML_KEM.strength_from_length("EK_SIZE", len(data))
         elif isinstance(data, int):
             self._strength = data
         else:
-            raise Exception("Initialize ML-KEM Encapsulation Key with "
-                            f"bytes or a strength level, not {type(data)}")
+            raise Exception(
+                "Initialize ML-KEM Encapsulation Key with "
+                f"bytes or a strength level, not {type(data)}"
+            )
         self._ffi = _ML_KEM.strength(self._strength)
-        self._ek = self._ffi['EncapsKey']()
+        self._ek = self._ffi["EncapsKey"]()
         if isinstance(data, bytes):
             self._set(data)
 
     def __repr__(self) -> str:
-        return f'<ML-KEM-{self._strength} Encapsulation Key>'
+        return f"<ML-KEM-{self._strength} Encapsulation Key>"
 
     def __bytes__(self) -> bytes:
         return bytes(self._ek.data)
 
     def _set(self, data: bytes) -> None:
         if len(data) != len(self._ek.data):
-            raise ValueError(f"Expected {len(self._ek.data)} bytes, "
-                             f"got {len(data)}")
+            raise ValueError(
+                f"Expected {len(self._ek.data)} bytes, " f"got {len(data)}"
+            )
         for i in range(len(data)):
             self._ek.data[i] = data[i]
 
     def encaps(self) -> Tuple[Ciphertext, bytes]:
-        '''Produce a new Ciphertext and corresponding 32-byte shared secret.'''
+        """Produce a new Ciphertext and corresponding 32-byte shared secret."""
         ct = Ciphertext(self._strength)
         ss = _SharedSecret()
-        ret = Err(self._ffi['encaps'](ctypes.byref(self._ek),
-                                      ctypes.byref(ct._ct),
-                                      ctypes.byref(ss)))
+        ret = Err(
+            self._ffi["encaps"](
+                ctypes.byref(self._ek), ctypes.byref(ct._ct), ctypes.byref(ss)
+            )
+        )
         if ret is not Err.OK:
-            raise Exception(f"ml_kem_{self._strength}_encaps() "
-                            f"returned {ret} ({ret.name})")
+            raise Exception(
+                f"ml_kem_{self._strength}_encaps() " f"returned {ret} ({ret.name})"
+            )
         return (ct, bytes(ss.data))
 
 
-class DecapsulationKey():
-    '''ML-KEM Decapsulation Key
+class DecapsulationKey:
+    """ML-KEM Decapsulation Key
 
     Serialize this object by asking for it as `bytes`.
 
     Produce a 32-byte shared secret from a Ciphertext by invoking
     Decaps() on it.
-    '''
+    """
+
     def __init__(self, data: Union[bytes, int]) -> None:
-        '''Create ML-KEM Decapsulation Key from bytes (or strength level).'''
+        """Create ML-KEM Decapsulation Key from bytes (or strength level)."""
         if isinstance(data, bytes):
-            self._strength = _ML_KEM.strength_from_length('DK_SIZE', len(data))
+            self._strength = _ML_KEM.strength_from_length("DK_SIZE", len(data))
         elif isinstance(data, int):
             self._strength = data
         else:
-            raise Exception("Initialize ML-KEM Encapsulation Key with bytes "
-                            f"or a strength level, not {type(data)}")
+            raise Exception(
+                "Initialize ML-KEM Encapsulation Key with bytes "
+                f"or a strength level, not {type(data)}"
+            )
         self._ffi = _ML_KEM.strength(self._strength)
-        self._dk = self._ffi['DecapsKey']()
+        self._dk = self._ffi["DecapsKey"]()
         if isinstance(data, bytes):
             self._set(data)
 
     def __repr__(self) -> str:
-        return f'<ML-KEM-{self._strength} Decapsulation Key>'
+        return f"<ML-KEM-{self._strength} Decapsulation Key>"
 
     def __bytes__(self) -> bytes:
         return bytes(self._dk.data)
 
     def _set(self, data: bytes) -> None:
         if len(data) != len(self._dk.data):
-            raise ValueError(f"Expected {len(self._dk.data)} bytes, "
-                             f"got {len(data)}")
+            raise ValueError(
+                f"Expected {len(self._dk.data)} bytes, " f"got {len(data)}"
+            )
         for i in range(len(data)):
             self._dk.data[i] = data[i]
 
     def decaps(self, ct: Ciphertext) -> bytes:
-        '''Get 32-byte shared secret corresponding to the given Ciphertext.'''
+        """Get 32-byte shared secret corresponding to the given Ciphertext."""
         if self._strength != ct._strength:
             raise Exception(f"Cannot decapsulate {ct} with {self}")
         ss = _SharedSecret()
-        ret = Err(self._ffi['decaps'](ctypes.byref(self._dk),
-                                      ctypes.byref(ct._ct),
-                                      ctypes.byref(ss)))
+        ret = Err(
+            self._ffi["decaps"](
+                ctypes.byref(self._dk), ctypes.byref(ct._ct), ctypes.byref(ss)
+            )
+        )
         if ret is not Err.OK:
-            raise Exception(f"ml_kem_{self._strength}_decaps() "
-                            f"returned {ret} ({ret.name})")
+            raise Exception(
+                f"ml_kem_{self._strength}_decaps() " f"returned {ret} ({ret.name})"
+            )
         return bytes(ss.data)
 
 
-class _ML_KEM():
+class _ML_KEM:
     params: Dict[int, Dict[str, int]] = {
         512: {
-            'EK_SIZE': 800,
-            'DK_SIZE': 1632,
-            'CT_SIZE': 768,
-            },
+            "EK_SIZE": 800,
+            "DK_SIZE": 1632,
+            "CT_SIZE": 768,
+        },
         768: {
-            'EK_SIZE': 1184,
-            'DK_SIZE': 2400,
-            'CT_SIZE': 1088,
-            },
+            "EK_SIZE": 1184,
+            "DK_SIZE": 2400,
+            "CT_SIZE": 1088,
+        },
         1024: {
-            'EK_SIZE': 1568,
-            'DK_SIZE': 3168,
-            'CT_SIZE': 1568,
-            },
-        }
-    testlibpath = environ.get('FIPS203_PYTHON_TESTING_LIBRARY', None)
+            "EK_SIZE": 1568,
+            "DK_SIZE": 3168,
+            "CT_SIZE": 1568,
+        },
+    }
+    testlibpath = environ.get("FIPS203_PYTHON_TESTING_LIBRARY", None)
     if testlibpath:
         lib = ctypes.CDLL(testlibpath)
     else:
-        libname = ctypes.util.find_library('fips203')
+        libname = ctypes.util.find_library("fips203")
         if libname is None:
             raise OSError(
                 "libfips203 shared library not found. Install it, or set "
@@ -339,45 +363,52 @@ class _ML_KEM():
     @classmethod
     def strength(cls, level: int) -> Dict[str, Any]:
         if level not in cls.ffi:
+
             class _EncapsKey(ctypes.Structure):
-                _fields_ = [('data', ctypes.c_uint8 *
-                             cls.params[level]['EK_SIZE'])]
+                _fields_ = [("data", ctypes.c_uint8 * cls.params[level]["EK_SIZE"])]
 
             class _DecapsKey(ctypes.Structure):
-                _fields_ = [('data', ctypes.c_uint8 *
-                             cls.params[level]['DK_SIZE'])]
+                _fields_ = [("data", ctypes.c_uint8 * cls.params[level]["DK_SIZE"])]
 
             class _Ciphertext(ctypes.Structure):
-                _fields_ = [('data', ctypes.c_uint8 *
-                             cls.params[level]['CT_SIZE'])]
+                _fields_ = [("data", ctypes.c_uint8 * cls.params[level]["CT_SIZE"])]
+
             ffi: Dict[str, Any] = {}
 
-            ffi['keygen'] = cls.lib[f'ml_kem_{level}_keygen']
-            ffi['keygen'].argtypes = [ctypes.POINTER(_EncapsKey),
-                                      ctypes.POINTER(_DecapsKey)]
-            ffi['keygen'].restype = ctypes.c_uint8
+            ffi["keygen"] = cls.lib[f"ml_kem_{level}_keygen"]
+            ffi["keygen"].argtypes = [
+                ctypes.POINTER(_EncapsKey),
+                ctypes.POINTER(_DecapsKey),
+            ]
+            ffi["keygen"].restype = ctypes.c_uint8
 
-            ffi['keygen_from_seed'] = cls.lib[f'ml_kem_{level}_keygen_from_seed']
-            ffi['keygen_from_seed'].argtypes = [ctypes.POINTER(_Seed),
-                                                ctypes.POINTER(_EncapsKey),
-                                                ctypes.POINTER(_DecapsKey)]
-            ffi['keygen_from_seed'].restype = ctypes.c_uint8
+            ffi["keygen_from_seed"] = cls.lib[f"ml_kem_{level}_keygen_from_seed"]
+            ffi["keygen_from_seed"].argtypes = [
+                ctypes.POINTER(_Seed),
+                ctypes.POINTER(_EncapsKey),
+                ctypes.POINTER(_DecapsKey),
+            ]
+            ffi["keygen_from_seed"].restype = ctypes.c_uint8
 
-            ffi['encaps'] = cls.lib[f'ml_kem_{level}_encaps']
-            ffi['encaps'].argtypes = [ctypes.POINTER(_EncapsKey),
-                                      ctypes.POINTER(_Ciphertext),
-                                      ctypes.POINTER(_SharedSecret)]
-            ffi['encaps'].restype = ctypes.c_uint8
+            ffi["encaps"] = cls.lib[f"ml_kem_{level}_encaps"]
+            ffi["encaps"].argtypes = [
+                ctypes.POINTER(_EncapsKey),
+                ctypes.POINTER(_Ciphertext),
+                ctypes.POINTER(_SharedSecret),
+            ]
+            ffi["encaps"].restype = ctypes.c_uint8
 
-            ffi['decaps'] = cls.lib[f'ml_kem_{level}_decaps']
-            ffi['decaps'].argtypes = [ctypes.POINTER(_DecapsKey),
-                                      ctypes.POINTER(_Ciphertext),
-                                      ctypes.POINTER(_SharedSecret)]
-            ffi['decaps'].restype = ctypes.c_uint8
+            ffi["decaps"] = cls.lib[f"ml_kem_{level}_decaps"]
+            ffi["decaps"].argtypes = [
+                ctypes.POINTER(_DecapsKey),
+                ctypes.POINTER(_Ciphertext),
+                ctypes.POINTER(_SharedSecret),
+            ]
+            ffi["decaps"].restype = ctypes.c_uint8
 
-            ffi['EncapsKey'] = _EncapsKey
-            ffi['DecapsKey'] = _DecapsKey
-            ffi['Ciphertext'] = _Ciphertext
+            ffi["EncapsKey"] = _EncapsKey
+            ffi["DecapsKey"] = _DecapsKey
+            ffi["Ciphertext"] = _Ciphertext
 
             cls.ffi[level] = ffi
 
@@ -388,41 +419,45 @@ class _ML_KEM():
         for strength in cls.params:
             if cls.params[strength][object_type] == object_len:
                 return strength
-        raise Exception(f"No ML-KEM parameter set has {object_type} "
-                        f"of {object_len} bytes")
+        raise Exception(
+            f"No ML-KEM parameter set has {object_type} " f"of {object_len} bytes"
+        )
 
     @classmethod
-    def _keygen(cls, strength: int) -> Tuple[EncapsulationKey,
-                                             DecapsulationKey]:
+    def _keygen(cls, strength: int) -> Tuple[EncapsulationKey, DecapsulationKey]:
         ek = EncapsulationKey(strength)
         dk = DecapsulationKey(strength)
 
-        ret = Err(cls.strength(strength)['keygen'](ctypes.byref(ek._ek),
-                                                   ctypes.byref(dk._dk)))
+        ret = Err(
+            cls.strength(strength)["keygen"](ctypes.byref(ek._ek), ctypes.byref(dk._dk))
+        )
         if ret is not Err.OK:
-            raise Exception(f"ml_kem_{strength}_keygen() returned "
-                            f"{ret} ({ret.name})")
+            raise Exception(
+                f"ml_kem_{strength}_keygen() returned " f"{ret} ({ret.name})"
+            )
         return (ek, dk)
 
-
     @classmethod
-    def _keygen_from_seed(cls, strength: int, seed: Seed) -> Tuple[EncapsulationKey,
-                                                                   DecapsulationKey]:
+    def _keygen_from_seed(
+        cls, strength: int, seed: Seed
+    ) -> Tuple[EncapsulationKey, DecapsulationKey]:
         ek = EncapsulationKey(strength)
         dk = DecapsulationKey(strength)
 
-        ret = Err(cls.strength(strength)['keygen_from_seed'](
-            ctypes.byref(seed._seed),
-            ctypes.byref(ek._ek),
-            ctypes.byref(dk._dk)
-        ))
+        ret = Err(
+            cls.strength(strength)["keygen_from_seed"](
+                ctypes.byref(seed._seed), ctypes.byref(ek._ek), ctypes.byref(dk._dk)
+            )
+        )
         if ret is not Err.OK:
-            raise Exception(f"ml_kem_{strength}_keygen() returned "
-                            f"{ret} ({ret.name})")
+            raise Exception(
+                f"ml_kem_{strength}_keygen() returned " f"{ret} ({ret.name})"
+            )
         return (ek, dk)
+
 
 class ML_KEM(ABC):
-    '''Abstract base class for all ML-KEM (FIPS 203) parameter sets.'''
+    """Abstract base class for all ML-KEM (FIPS 203) parameter sets."""
 
     _strength: int
     EK_SIZE: int
@@ -432,11 +467,13 @@ class ML_KEM(ABC):
     SEED_SIZE: int = 64
 
     @classmethod
-    def keygen(cls, seed: Optional[Seed] = None) -> Tuple[EncapsulationKey, DecapsulationKey]:
-        '''Generate a pair of Encapsulation and Decapsulation Keys.
+    def keygen(
+        cls, seed: Optional[Seed] = None
+    ) -> Tuple[EncapsulationKey, DecapsulationKey]:
+        """Generate a pair of Encapsulation and Decapsulation Keys.
 
         If a Seed is supplied, do a deterministic generation from the seed.
-        Otherwise, randomly generate the key.'''
+        Otherwise, randomly generate the key."""
         if seed is None:
             return _ML_KEM._keygen(cls._strength)
         else:
@@ -444,7 +481,8 @@ class ML_KEM(ABC):
 
 
 class ML_KEM_512(ML_KEM):
-    '''ML-KEM-512 (FIPS 203) Implementation.'''
+    """ML-KEM-512 (FIPS 203) Implementation."""
+
     _strength: int = 512
     EK_SIZE: int = 800
     DK_SIZE: int = 1632
@@ -452,7 +490,8 @@ class ML_KEM_512(ML_KEM):
 
 
 class ML_KEM_768(ML_KEM):
-    '''ML-KEM-768 (FIPS 203) Implementation.'''
+    """ML-KEM-768 (FIPS 203) Implementation."""
+
     _strength: int = 768
     EK_SIZE: int = 1184
     DK_SIZE: int = 2400
@@ -460,7 +499,8 @@ class ML_KEM_768(ML_KEM):
 
 
 class ML_KEM_1024(ML_KEM):
-    '''ML-KEM-1024 (FIPS 203) Implementation.'''
+    """ML-KEM-1024 (FIPS 203) Implementation."""
+
     _strength: int = 1024
     EK_SIZE: int = 1568
     DK_SIZE: int = 3168
