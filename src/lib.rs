@@ -84,7 +84,7 @@ mod ntt;
 mod sampling;
 mod types;
 
-/// All functionality is covered by traits, such that consumers can utilize trait objects if desired.
+/// All functionality is covered by traits.
 pub mod traits;
 
 // Relevant to all parameter sets

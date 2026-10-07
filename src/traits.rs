@@ -5,7 +5,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use rand_core::OsRng;
 
 
-/// The `KeyGen` trait is defined to allow trait objects.
+/// The `KeyGen` trait defines methods for generating encapsulation and decapsulation key pairs.
 pub trait KeyGen {
     /// The (public) encapsulation key sent from the originator to the remote party.
     type EncapsKey;

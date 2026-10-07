@@ -23,7 +23,10 @@ pub extern "C" fn ml_kem_populate_seed(seed_out: Option<&mut ml_kem_seed>) -> u8
     let Some(seed_out) = seed_out else {
         return ML_KEM_NULL_PTR_ERROR;
     };
-    OsRng.fill_bytes(&mut seed_out.data);
+    if OsRng.try_fill_bytes(&mut seed_out.data).is_err() {
+        seed_out.data = [0u8; 64]; // the OS RNG may have partly filled it
+        return ML_KEM_KEYGEN_ERROR;
+    }
     ML_KEM_OK
 }
 
