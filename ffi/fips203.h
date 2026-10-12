@@ -75,6 +75,8 @@ extern "C" {
 #endif
 
 
+/* Fills seed_out from the OS RNG. Returns ML_KEM_KEYGEN_ERROR, with
+   seed_out zeroed, if the RNG fails. */
 ml_kem_err ml_kem_populate_seed(ml_kem_seed *seed_out);
 
 ml_kem_err ml_kem_512_keygen(ml_kem_512_encaps_key *encaps_out,
