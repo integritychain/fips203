@@ -180,7 +180,7 @@ fuzz_target!(|input: FuzzInput| {
     };
     rng.push(&input.d);
     rng.push(&z);
-    ml_kem_512::KG::validate_keypair_with_rng_vartime(
+    let _ = ml_kem_512::KG::validate_keypair_with_rng_vartime(
         &mut rng,
         &ek1a.into_bytes(),
         &dk1a.into_bytes(),
@@ -194,7 +194,7 @@ fuzz_target!(|input: FuzzInput| {
     };
     rng.push(&input.d);
     rng.push(&z);
-    ml_kem_768::KG::validate_keypair_with_rng_vartime(
+    let _ = ml_kem_768::KG::validate_keypair_with_rng_vartime(
         &mut rng,
         &ek2a.into_bytes(),
         &dk2a.into_bytes(),
@@ -207,7 +207,7 @@ fuzz_target!(|input: FuzzInput| {
     let _ = ek3a.try_encaps();
     rng.push(&input.d);
     rng.push(&z);
-    ml_kem_1024::KG::validate_keypair_with_rng_vartime(
+    let _ = ml_kem_1024::KG::validate_keypair_with_rng_vartime(
         &mut rng,
         &ek3a.into_bytes(),
         &dk3a.into_bytes(),

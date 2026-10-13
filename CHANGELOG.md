@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Checked against the current NIST ACVP ML-KEM vectors, including the July 2026 encap/decap corrections.
 - Security reports go to this repository.
 - `DecapsKey::try_from_bytes` rejects a key whose secret vector has a coefficient of q or more. Such a key used to deserialize, then fail in `try_decaps`.
+- `KeyGen::validate_keypair_with_rng_vartime` is `#[must_use]`, as `verify` and `hash_verify` are in `fips204` and `fips205`. Ignoring the result is now a compiler warning.
 - Secret intermediate values are wiped before each operation returns (FIPS 203 §3.3). This needs `sha3` 0.10.9 or later.
 - The Python module (`ffi/python`) loads `libfips203` from `FIPS203_PYTHON_TESTING_LIBRARY` when that is set, otherwise from the system library path. If neither finds it, import raises an `OSError` that names the library. It no longer falls back to `../../target/debug/libfips203.{so,dylib}`. That path is relative to the current directory, so it only worked from `ffi/python` in a source checkout, and from any other directory it loaded whatever library sat at that path. The `fips204` and `fips205` modules load the same way.
 

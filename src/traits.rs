@@ -163,6 +163,7 @@ pub trait KeyGen {
     /// # }
     /// # Ok(())}
     /// ```
+    #[must_use]
     fn validate_keypair_with_rng_vartime(
         rng: &mut impl CryptoRngCore, ek: &Self::EncapsByteArray, dk: &Self::DecapsByteArray,
     ) -> bool;
