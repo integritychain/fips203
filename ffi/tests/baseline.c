@@ -65,6 +65,11 @@ int main(int argc, const char **argv) {
     printf ("%02x ", ssk_b.data[n]);
   printf("\n");
 
+  if (memcmp(&ssk_a, &ssk_b, sizeof(ssk_a))) {
+    fprintf (stderr, "shared secrets from encaps and decaps did not match\n");
+    return 4;
+  }
+
   if (! MLKEM_keygen (&encaps, NULL)) {
     fprintf (stderr, "keygen should have failed with NULL decaps\n");
     return 1;
