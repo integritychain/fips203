@@ -1,3 +1,13 @@
+// This file applies the C2SP CCTV ML-KEM vectors (CC0 1.0).
+//   from: https://github.com/C2SP/CCTV/tree/fd8cecee5f7746d0c6b8c3f4530c8976d629cbfa/ML-KEM
+//
+// The vectors were made for the FIPS 203 draft. The final standard's K-PKE.KeyGen hashes d with
+// k (G(d || k)), so the intermediate and unlucky keys no longer follow from their seeds. Those
+// tests take ek and dk from the file and check Encaps and Decaps, which did not change; the
+// unlucky rho is in ek, so Encaps still runs the long SampleNTT path. CCTV's accumulated ML-KEM
+// hashes are also for the draft; tests/accumulated.rs applies Go's final-standard ones instead.
+// This harness and its vectors are excluded from the published crate.
+
 use std::fs;
 use std::io::Read;
 
@@ -11,27 +21,12 @@ use fips203::ml_kem_1024;
 use fips203::ml_kem_512;
 #[cfg(feature = "ml-kem-768")]
 use fips203::ml_kem_768;
-use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
+use fips203::traits::{Decaps, Encaps, SerDes};
 
-use super::TestRng;
-
-// Note: test vectors are directly copied across from https://github.com/C2SP/CCTV/tree/fd8cecee5f7746d0c6b8c3f4530c8976d629cbfa
-// This approach may improve in future..
-
-// More work to do here
-//  1. Simplify/refactor code (trait objects?)
-//  2. Implement accumulator loop referenced by https://github.com/C2SP/CCTV/tree/main/ML-KEM#accumulated-pq-crystals-vectors
-//  3. Utilize any/all vectors available across the web
-
+// The keys, message, shared secret and ciphertext of an intermediate or unlucky file
 #[allow(clippy::type_complexity)]
-fn get_intermediate_vec(
-    filename: &str,
-) -> (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>) {
+fn get_intermediate_vec(filename: &str) -> (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>) {
     let data = fs::read_to_string(filename).expect("Unable to read file");
-    let z_regex = Regex::new(r"z = ([0-9a-fA-F]+)").unwrap();
-    let z = decode(z_regex.captures(&data).unwrap().get(1).unwrap().as_str()).unwrap();
-    let d_regex = Regex::new(r"d = ([0-9a-fA-F]+)").unwrap();
-    let d = decode(d_regex.captures(&data).unwrap().get(1).unwrap().as_str()).unwrap();
     let ek_regex = Regex::new(r"ek = ([0-9a-fA-F]+)").unwrap();
     let ek_exp = decode(ek_regex.captures(&data).unwrap().get(1).unwrap().as_str()).unwrap();
     let dk_regex = Regex::new(r"dk = ([0-9a-fA-F]+)").unwrap();
@@ -43,67 +38,38 @@ fn get_intermediate_vec(
     let c_regex = Regex::new(r"c = ([0-9a-fA-F]+)").unwrap();
     let c_exp = decode(c_regex.captures(&data).unwrap().get(1).unwrap().as_str()).unwrap();
 
-    (d, z, ek_exp, dk_exp, m, k_exp, c_exp)
+    (ek_exp, dk_exp, m, k_exp, c_exp)
 }
 
-#[ignore] // TODO: Fix for final FIPS 203
+// The file's keys must encapsulate m to its K and c, and decapsulate c to K
+macro_rules! encaps_decaps {
+    ($pc:ident, $filename:expr) => {{
+        let (ek_exp, dk_exp, m, k_exp, c_exp) = get_intermediate_vec($filename);
+        let ek = $pc::EncapsKey::try_from_bytes(ek_exp.try_into().unwrap()).unwrap();
+        let dk = $pc::DecapsKey::try_from_bytes(dk_exp.try_into().unwrap()).unwrap();
+        let (k_act, c_act) = ek.encaps_from_seed(&m.try_into().unwrap());
+        assert_eq!(k_exp, k_act.clone().into_bytes());
+        assert_eq!(c_exp, c_act.clone().into_bytes());
+        assert_eq!(k_act, dk.try_decaps(&c_act).unwrap());
+    }};
+}
+
 #[test]
 #[cfg(feature = "ml-kem-512")]
 pub fn test_intermediate_512() {
-    let (d, z, ek_exp, dk_exp, m, k_exp, c_exp) =
-        get_intermediate_vec("./tests/cctv_vectors/ML-KEM/intermediate/ML-KEM-512.txt");
-    let mut rnd = TestRng::new();
-    rnd.push(&m);
-    rnd.push(&d);
-    rnd.push(&z);
-    let (ek_act, dk_act) = ml_kem_512::KG::try_keygen_with_rng(&mut rnd).unwrap();
-    assert_eq!(ek_exp, ek_act.clone().into_bytes());
-    assert_eq!(dk_exp, dk_act.clone().into_bytes());
-    let (k1_act, c_act) = ek_act.try_encaps_with_rng(&mut rnd).unwrap();
-    assert_eq!(k_exp, k1_act.clone().into_bytes());
-    assert_eq!(c_exp, c_act.clone().into_bytes());
-    let k2_act = dk_act.try_decaps(&c_act).unwrap();
-    assert_eq!(k1_act, k2_act);
+    encaps_decaps!(ml_kem_512, "./tests/cctv_vectors/ML-KEM/intermediate/ML-KEM-512.txt");
 }
 
-#[ignore] // TODO: Fix for final FIPS 203
 #[test]
 #[cfg(feature = "ml-kem-768")]
 pub fn test_intermediate_768() {
-    let (d, z, ek_exp, dk_exp, m, k_exp, c_exp) =
-        get_intermediate_vec("./tests/cctv_vectors/ML-KEM/intermediate/ML-KEM-768.txt");
-    let mut rnd = TestRng::new();
-    rnd.push(&m);
-    rnd.push(&d);
-    rnd.push(&z);
-    let (ek_act, dk_act) = ml_kem_768::KG::try_keygen_with_rng(&mut rnd).unwrap();
-    assert_eq!(ek_exp, ek_act.clone().into_bytes());
-    assert_eq!(dk_exp, dk_act.clone().into_bytes());
-    let (k1_act, c_act) = ek_act.try_encaps_with_rng(&mut rnd).unwrap();
-    assert_eq!(k_exp, k1_act.clone().into_bytes());
-    assert_eq!(c_exp, c_act.clone().into_bytes());
-    let k2_act = dk_act.try_decaps(&c_act).unwrap();
-    assert_eq!(k1_act, k2_act);
+    encaps_decaps!(ml_kem_768, "./tests/cctv_vectors/ML-KEM/intermediate/ML-KEM-768.txt");
 }
 
-#[ignore] // TODO: Fix for final FIPS 203
 #[test]
 #[cfg(feature = "ml-kem-1024")]
 pub fn test_intermediate_1024() {
-    let (d, z, ek_exp, dk_exp, m, k_exp, c_exp) =
-        get_intermediate_vec("./tests/cctv_vectors/ML-KEM/intermediate/ML-KEM-1024.txt");
-    let mut rnd = TestRng::new();
-    rnd.push(&m);
-    rnd.push(&d);
-    rnd.push(&z);
-    let (ek_act, dk_act) = ml_kem_1024::KG::try_keygen_with_rng(&mut rnd).unwrap();
-    assert_eq!(ek_exp, ek_act.clone().into_bytes());
-    assert_eq!(dk_exp, dk_act.clone().into_bytes());
-    let (k1_act, c_act) = ek_act.try_encaps_with_rng(&mut rnd).unwrap();
-    assert_eq!(k_exp, k1_act.clone().into_bytes());
-    assert_eq!(c_exp, c_act.clone().into_bytes());
-    let k2_act = dk_act.try_decaps(&c_act).unwrap();
-    assert_eq!(k1_act, k2_act);
+    encaps_decaps!(ml_kem_1024, "./tests/cctv_vectors/ML-KEM/intermediate/ML-KEM-1024.txt");
 }
 
 fn get_strcmp_vec(filename: &str) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
@@ -154,64 +120,22 @@ pub fn test_strcmp_1024() {
     assert_eq!(k_exp, k_act.into_bytes());
 }
 
-#[ignore] // TODO: Fix for final FIPS 203
 #[test]
 #[cfg(feature = "ml-kem-512")]
 pub fn test_unlucky_512() {
-    let (d, z, ek_exp, dk_exp, m, k_exp, c_exp) =
-        get_intermediate_vec("./tests/cctv_vectors/ML-KEM/unluckysample/ML-KEM-512.txt");
-    let mut rnd = TestRng::new();
-    rnd.push(&m);
-    rnd.push(&d);
-    rnd.push(&z);
-    let (ek_act, dk_act) = ml_kem_512::KG::try_keygen_with_rng(&mut rnd).unwrap();
-    assert_eq!(ek_exp, ek_act.clone().into_bytes());
-    assert_eq!(dk_exp, dk_act.clone().into_bytes());
-    let (k1_act, c_act) = ek_act.try_encaps_with_rng(&mut rnd).unwrap();
-    assert_eq!(k_exp, k1_act.clone().into_bytes());
-    assert_eq!(c_exp, c_act.clone().into_bytes());
-    let k2_act = dk_act.try_decaps(&c_act).unwrap();
-    assert_eq!(k1_act, k2_act);
+    encaps_decaps!(ml_kem_512, "./tests/cctv_vectors/ML-KEM/unluckysample/ML-KEM-512.txt");
 }
 
-#[ignore] // TODO: Fix for final FIPS 203
 #[test]
 #[cfg(feature = "ml-kem-768")]
 pub fn test_unlucky_768() {
-    let (d, z, ek_exp, dk_exp, m, k_exp, c_exp) =
-        get_intermediate_vec("./tests/cctv_vectors/ML-KEM/unluckysample/ML-KEM-768.txt");
-    let mut rnd = TestRng::new();
-    rnd.push(&m);
-    rnd.push(&d);
-    rnd.push(&z);
-    let (ek_act, dk_act) = ml_kem_768::KG::try_keygen_with_rng(&mut rnd).unwrap();
-    assert_eq!(ek_exp, ek_act.clone().into_bytes());
-    assert_eq!(dk_exp, dk_act.clone().into_bytes());
-    let (k1_act, c_act) = ek_act.try_encaps_with_rng(&mut rnd).unwrap();
-    assert_eq!(k_exp, k1_act.clone().into_bytes());
-    assert_eq!(c_exp, c_act.clone().into_bytes());
-    let k2_act = dk_act.try_decaps(&c_act).unwrap();
-    assert_eq!(k1_act, k2_act);
+    encaps_decaps!(ml_kem_768, "./tests/cctv_vectors/ML-KEM/unluckysample/ML-KEM-768.txt");
 }
 
-#[ignore] // TODO: Fix for final FIPS 203
 #[test]
 #[cfg(feature = "ml-kem-1024")]
 pub fn test_unlucky_1024() {
-    let (d, z, ek_exp, dk_exp, m, k_exp, c_exp) =
-        get_intermediate_vec("./tests/cctv_vectors/ML-KEM/unluckysample/ML-KEM-1024.txt");
-    let mut rnd = TestRng::new();
-    rnd.push(&m);
-    rnd.push(&d);
-    rnd.push(&z);
-    let (ek_act, dk_act) = ml_kem_1024::KG::try_keygen_with_rng(&mut rnd).unwrap();
-    assert_eq!(ek_exp, ek_act.clone().into_bytes());
-    assert_eq!(dk_exp, dk_act.clone().into_bytes());
-    let (k1_act, c_act) = ek_act.try_encaps_with_rng(&mut rnd).unwrap();
-    assert_eq!(k_exp, k1_act.clone().into_bytes());
-    assert_eq!(c_exp, c_act.clone().into_bytes());
-    let k2_act = dk_act.try_decaps(&c_act).unwrap();
-    assert_eq!(k1_act, k2_act);
+    encaps_decaps!(ml_kem_1024, "./tests/cctv_vectors/ML-KEM/unluckysample/ML-KEM-1024.txt");
 }
 
 // CCTV modulus vector: an encapsulation key with any coefficient >= q must be rejected.

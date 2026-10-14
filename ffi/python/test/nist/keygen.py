@@ -10,14 +10,16 @@ FIPS203_PYTHON_TESTING_LIBRARY=../../target/debug/libfips203.so PYTHONPATH=. pyt
 from __future__ import annotations
 
 import fips203
+import gzip
 import json
 import re
 from binascii import a2b_hex, b2a_hex
 
 from typing import Dict, Union, List, TypedDict
 
-with open(
-    "../../tests/nist_vectors/ML-KEM-keyGen-FIPS203/internalProjection.json"
+with gzip.open(
+    "../../tests/nist_vectors/ML-KEM-keyGen-FIPS203/internalProjection.json.gz",
+    "rt",
 ) as f:
     t = json.load(f)
 

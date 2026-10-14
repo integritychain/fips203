@@ -1,4 +1,4 @@
-// This file runs the Wycheproof ML-KEM vectors (Apache-2.0).
+// This file runs the Wycheproof ML-KEM vectors (Apache-2.0), stored gzipped (gzip -9 -n).
 //   from: https://github.com/C2SP/wycheproof/tree/3fa63dd0344abb611f1fb1d77e119938603ea230/testvectors_v1
 //   files: mlkem_{512,768,1024}_{keygen_seed_test,encaps_test,test,semi_expanded_decaps_test}.json
 //
@@ -9,10 +9,12 @@
 // field, result or flag fails the test. The vectors are excluded from the published crate.
 
 use fips203::traits::{Decaps, Encaps, KeyGen, SerDes};
+use flate2::read::GzDecoder;
 use hex::decode;
 use rand_chacha::rand_core::SeedableRng;
 use serde_json::Value;
-use std::fs;
+use std::fs::File;
+use std::io::Read;
 
 #[cfg(feature = "ml-kem-1024")]
 use fips203::ml_kem_1024;
@@ -92,8 +94,11 @@ macro_rules! dispatch {
 }
 
 fn load(name: &str) -> Value {
-    let path = format!("./tests/wycheproof/{name}");
-    let vectors = fs::read_to_string(&path).expect("Unable to read file");
+    let path = format!("./tests/wycheproof/{name}.gz");
+    let mut vectors = String::new();
+    GzDecoder::new(File::open(&path).unwrap_or_else(|e| panic!("open {path}: {e}")))
+        .read_to_string(&mut vectors)
+        .unwrap_or_else(|e| panic!("gunzip {path}: {e}"));
     serde_json::from_str(&vectors).unwrap()
 }
 

@@ -1,16 +1,22 @@
-// This file implements the NIST ACVP vectors.
+// This file implements the NIST ACVP vectors, stored gzipped (gzip -9 -n).
 //   from: https://github.com/usnistgov/ACVP-Server/blob/ad33b3d9504491767f1aa76382464f3b3fa2359e/gen-val/json-files/ML-KEM-keyGen-FIPS203/internalProjection.json
 //   from: https://github.com/usnistgov/ACVP-Server/blob/ad33b3d9504491767f1aa76382464f3b3fa2359e/gen-val/json-files/ML-KEM-encapDecap-FIPS203/internalProjection.json
+//   from: https://github.com/usnistgov/ACVP-Server/blob/975de31eb83d87039ec88934fdc47d8c312b892d/gen-val/json-files/ML-KEM-encapDecap-FIPS203-tr1/internalProjection.json
 //
 // Every vector in each file is applied, through the public API. Each test counts the cases in
 // its file and fails unless every one ran, apart from parameter sets whose feature is off. A
 // group field or function that this harness does not know fails the test, so a new kind of
-// NIST group is never skipped.
+// NIST group is never skipped. The encapDecap-tr1 file adds `keyFormat`: its decapsulation
+// groups give the key as the seed (d, z), which must expand to the case's dk, or expanded.
+// This harness and its vectors are excluded from the published crate.
 
 use hex::decode;
 use rand_core::{CryptoRng, RngCore};
 use serde_json::Value;
-use std::fs;
+use std::fs::File;
+use std::io::Read;
+
+use flate2::read::GzDecoder;
 
 #[cfg(feature = "ml-kem-1024")]
 use fips203::ml_kem_1024;
@@ -137,8 +143,11 @@ fn function_of(group: &Value) -> Function {
 }
 
 fn load(name: &str) -> Value {
-    let path = format!("./tests/nist_vectors/{name}/internalProjection.json");
-    let vectors = fs::read_to_string(&path).expect("Unable to read file");
+    let path = format!("./tests/nist_vectors/{name}/internalProjection.json.gz");
+    let mut vectors = String::new();
+    GzDecoder::new(File::open(&path).unwrap_or_else(|e| panic!("open {path}: {e}")))
+        .read_to_string(&mut vectors)
+        .unwrap_or_else(|e| panic!("gunzip {path}: {e}"));
     serde_json::from_str(&vectors).unwrap()
 }
 
@@ -196,14 +205,27 @@ fn test_keygen() {
 
 
 #[test]
-fn test_encap_decap() {
-    let v = load("ML-KEM-encapDecap-FIPS203");
+fn test_encap_decap() { encap_decap("ML-KEM-encapDecap-FIPS203", "encapDecap"); }
+
+#[test]
+fn test_encap_decap_tr1() { encap_decap("ML-KEM-encapDecap-FIPS203-tr1", "encapDecap-tr1"); }
+
+fn encap_decap(name: &str, which: &str) {
+    let v = load(name);
     let mut tally = Tally::new(&v);
 
     for test_group in groups(&v) {
-        check_group(test_group, &["function", "parameterSet", "testType", "tests", "tgId"]);
+        check_group(test_group, &[
+            "function", "keyFormat", "parameterSet", "testType", "tests", "tgId",
+        ]);
         let set = test_group["parameterSet"].as_str().expect("parameterSet");
         let function = function_of(test_group);
+        // Only the tr1 file has `keyFormat`; elsewhere a decapsulation key is the expanded `dk`
+        let seed_format = match test_group.get("keyFormat").map(Value::as_str) {
+            None | Some(Some("none" | "expanded")) => false,
+            Some(Some("seed")) => true,
+            other => panic!("tgId {}: unknown keyFormat {other:?}", test_group["tgId"]),
+        };
         for test in cases(test_group) {
             let loc = format!("{set} tgId={} tcId={}", test_group["tgId"], test["tcId"]);
 
@@ -222,10 +244,24 @@ fn test_encap_decap() {
                             assert_eq!(hex(test, "c", &loc), ct_act.into_bytes(), "{loc}");
                         }
                         Function::Decaps => {
-                            let dk = $pc::DecapsKey::try_from_bytes(
-                                hex(test, "dk", &loc).try_into().unwrap(),
-                            )
-                            .unwrap();
+                            let dk = if seed_format {
+                                let (_ek, dk) = $pc::KG::keygen_from_seed(
+                                    hex(test, "d", &loc).try_into().unwrap(),
+                                    hex(test, "z", &loc).try_into().unwrap(),
+                                );
+                                let dk_exp = hex(test, "dk", &loc);
+                                assert_eq!(
+                                    dk_exp,
+                                    dk.clone().into_bytes(),
+                                    "{loc} seed expands to dk"
+                                );
+                                dk
+                            } else {
+                                $pc::DecapsKey::try_from_bytes(
+                                    hex(test, "dk", &loc).try_into().unwrap(),
+                                )
+                                .unwrap()
+                            };
                             let c = $pc::CipherText::try_from_bytes(
                                 hex(test, "c", &loc).try_into().unwrap(),
                             )
@@ -266,5 +302,5 @@ fn test_encap_decap() {
             tally.count(dispatch!(set, runtest));
         }
     }
-    tally.finish("encapDecap");
+    tally.finish(which);
 }
