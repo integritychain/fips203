@@ -1,31 +1,35 @@
-An example constant-time workbench. It can be sensitive to config/defaults, so is
-not entirely definitive. A work in progress.
-
-See <https://docs.rs/dudect-bencher/latest/dudect_bencher/>
+Constant-time measurement of `fips203` key generation, encapsulation and decapsulation with
+[dudect-bencher](https://docs.rs/dudect-bencher/latest/dudect_bencher/). Each sample derives an
+ML-KEM-512 key pair from seeds, encapsulates to it and decapsulates the result, five times. The seed
+`d` is the same in both classes: it drives rho, which is expanded in variable time but sent in the
+clear in the encapsulation key. The two classes use different seeds `z` and encapsulation randomness
+(every byte 0x55, or every byte 0xAA) and alternate sample by sample, so a timing difference between
+them shows up as a large t-value. Results depend on the machine and configuration; they are
+evidence, not proof.
 
 > t-values greater than 5 are generally considered a good indication that the function is not constant time. t-values less than 5 does not necessarily imply that the function is constant-time, since there may be other input distributions under which the function behaves significantly differently.
 
 ~~~
-October 13, 2024
-Intel® Core™ i7-7700K CPU @ 4.20GHz × 8 Circa 2017 w/ Rust 1.81
+October 14, 2026
+13th Gen Intel® Core™ i7-13700K × 24  Circa 2022  Rust 1.98.1  fips203 v0.5.0
 
 $ cd dudect  # this directory
-$ cargo clean
-$ time RUSTFLAGS="-C target-cpu=native" cargo run --release
+$ cargo +stable clean
+     Removed 0 files
+$ time RUSTFLAGS="-C target-cpu=native" taskset -c 12 cargo +stable run --release  # A ~42 minute run on one P-core
 
 ...
-   Compiling fips203 v0.4.1 (/home/eric/work/fips203)
-   Compiling fips203-dudect v0.4.1 (/home/eric/work/fips203/dudect)
-    Finished `release` profile [optimized + debuginfo] target(s) in 19.22s
+    Finished `release` profile [optimized + debuginfo] target(s) in 18.60s
      Running `target/release/fips203-dudect`
 
 running 1 bench
-bench full_flow seeded with 0x247c7db23373903d
-bench full_flow ... : n == +8.342M, max t = -1.36340, max tau = -0.00047, (5/tau)^2 = 112196681
+bench full_flow seeded with 0x41cdcaf1bba52d0d
+bench full_flow ... : n == +0.561M, max t = +1.49425, max tau = +0.00199, (5/tau)^2 = 6283744
 
 dudect benches complete
 
 
-real	66m16.357s
-user	66m29.427s
+real	41m57.672s
+user	41m56.036s
+sys	0m1.461s
 ~~~
