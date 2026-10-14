@@ -69,12 +69,23 @@ impl Tally {
     }
 
     fn count(&mut self, handled: bool) {
-        if handled { self.ran += 1 } else { self.feature_skipped += 1 }
+        if handled {
+            self.ran += 1
+        } else {
+            self.feature_skipped += 1
+        }
     }
 
     fn finish(&self, which: &str) {
-        println!("NIST {which}: ran {}, feature-skipped {}, of {}", self.ran, self.feature_skipped, self.total);
-        assert_eq!(self.ran + self.feature_skipped, self.total, "NIST {which}: some cases did not run");
+        println!(
+            "NIST {which}: ran {}, feature-skipped {}, of {}",
+            self.ran, self.feature_skipped, self.total
+        );
+        assert_eq!(
+            self.ran + self.feature_skipped,
+            self.total,
+            "NIST {which}: some cases did not run"
+        );
         assert!(self.ran > 0, "NIST {which}: no cases ran");
     }
 }
@@ -85,11 +96,20 @@ macro_rules! dispatch {
     ($set:expr, $run:ident) => {
         match $set {
             #[cfg(feature = "ml-kem-512")]
-            "ML-KEM-512" => { $run!(ml_kem_512); true }
+            "ML-KEM-512" => {
+                $run!(ml_kem_512);
+                true
+            }
             #[cfg(feature = "ml-kem-768")]
-            "ML-KEM-768" => { $run!(ml_kem_768); true }
+            "ML-KEM-768" => {
+                $run!(ml_kem_768);
+                true
+            }
             #[cfg(feature = "ml-kem-1024")]
-            "ML-KEM-1024" => { $run!(ml_kem_1024); true }
+            "ML-KEM-1024" => {
+                $run!(ml_kem_1024);
+                true
+            }
             #[allow(unreachable_patterns)]
             "ML-KEM-512" | "ML-KEM-768" | "ML-KEM-1024" => false,
             other => panic!("unknown parameter set {other}"),
@@ -129,7 +149,11 @@ fn cases(group: &Value) -> &Vec<Value> { group["tests"].as_array().expect("tests
 /// Fails on a group field that this harness does not know.
 fn check_group(group: &Value, known: &[&str]) {
     for key in group.as_object().expect("group").keys() {
-        assert!(known.contains(&key.as_str()), "tgId {}: unknown group field {key}", group["tgId"]);
+        assert!(
+            known.contains(&key.as_str()),
+            "tgId {}: unknown group field {key}",
+            group["tgId"]
+        );
     }
 }
 
@@ -187,8 +211,10 @@ fn test_encap_decap() {
                 ($pc:ident) => {{
                     match function {
                         Function::Encaps => {
-                            let ek = $pc::EncapsKey::try_from_bytes(hex(test, "ek", &loc).try_into().unwrap())
-                                .unwrap();
+                            let ek = $pc::EncapsKey::try_from_bytes(
+                                hex(test, "ek", &loc).try_into().unwrap(),
+                            )
+                            .unwrap();
                             let mut rnd = TestRng::new();
                             rnd.push(&hex(test, "m", &loc));
                             let (ssk_act, ct_act) = ek.try_encaps_with_rng(&mut rnd).unwrap();
@@ -196,22 +222,43 @@ fn test_encap_decap() {
                             assert_eq!(hex(test, "c", &loc), ct_act.into_bytes(), "{loc}");
                         }
                         Function::Decaps => {
-                            let dk = $pc::DecapsKey::try_from_bytes(hex(test, "dk", &loc).try_into().unwrap())
-                                .unwrap();
-                            let c = $pc::CipherText::try_from_bytes(hex(test, "c", &loc).try_into().unwrap())
-                                .unwrap();
+                            let dk = $pc::DecapsKey::try_from_bytes(
+                                hex(test, "dk", &loc).try_into().unwrap(),
+                            )
+                            .unwrap();
+                            let c = $pc::CipherText::try_from_bytes(
+                                hex(test, "c", &loc).try_into().unwrap(),
+                            )
+                            .unwrap();
                             let k_act = dk.try_decaps(&c).unwrap();
-                            assert_eq!(hex(test, "k", &loc), k_act.into_bytes(), "{loc} ({})", test["reason"]);
+                            assert_eq!(
+                                hex(test, "k", &loc),
+                                k_act.into_bytes(),
+                                "{loc} ({})",
+                                test["reason"]
+                            );
                         }
                         Function::EncapsKeyCheck => {
                             let ek = hex(test, "ek", &loc);
-                            let passed_act = $pc::EncapsKey::try_from_bytes(ek.try_into().unwrap()).is_ok();
-                            assert_eq!(test["testPassed"].as_bool().unwrap(), passed_act, "{loc} ({})", test["reason"]);
+                            let passed_act =
+                                $pc::EncapsKey::try_from_bytes(ek.try_into().unwrap()).is_ok();
+                            assert_eq!(
+                                test["testPassed"].as_bool().unwrap(),
+                                passed_act,
+                                "{loc} ({})",
+                                test["reason"]
+                            );
                         }
                         Function::DecapsKeyCheck => {
                             let dk = hex(test, "dk", &loc);
-                            let passed_act = $pc::DecapsKey::try_from_bytes(dk.try_into().unwrap()).is_ok();
-                            assert_eq!(test["testPassed"].as_bool().unwrap(), passed_act, "{loc} ({})", test["reason"]);
+                            let passed_act =
+                                $pc::DecapsKey::try_from_bytes(dk.try_into().unwrap()).is_ok();
+                            assert_eq!(
+                                test["testPassed"].as_bool().unwrap(),
+                                passed_act,
+                                "{loc} ({})",
+                                test["reason"]
+                            );
                         }
                     }
                 }};

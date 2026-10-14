@@ -2,7 +2,7 @@
 use fips203::{
     ml_kem_1024, ml_kem_512, ml_kem_768,
     traits::{Decaps, Encaps, KeyGen, SerDes},
-    RngCore, CryptoRng
+    CryptoRng, RngCore,
 };
 use libfuzzer_sys::fuzz_target;
 
