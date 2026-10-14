@@ -19,8 +19,9 @@ pub trait KeyGen {
 
     /// Generates an encapsulation and decapsulation key pair specific to this security parameter set.
     ///
-    /// This function uses the OS default random number generator and operates in constant time,
-    /// except for the `rho` operation which crosses the trust boundary in the clear.
+    /// This function uses the OS default random number generator. Key generation does not branch on
+    /// secret data, except for `SampleNTT`'s rejection sampling, which depends only on the public
+    /// seed ρ in the encapsulation key. The random number generator is not part of this claim.
     ///
     /// # Errors
     /// Returns an error if the random number generator fails.
@@ -59,8 +60,9 @@ pub trait KeyGen {
 
     /// Generates an encapsulation and decapsulation key pair using a provided random number generator.
     ///
-    /// This function operates in constant time, except for the `rho` operation which crosses
-    /// the trust boundary in the clear.
+    /// Key generation does not branch on secret data, except for `SampleNTT`'s rejection sampling,
+    /// which depends only on the public seed ρ in the encapsulation key. The random number
+    /// generator is not part of this claim.
     ///
     /// # Arguments
     /// * `rng` - A cryptographically secure random number generator implementing `CryptoRngCore`
@@ -102,8 +104,8 @@ pub trait KeyGen {
 
     /// Generates an encapsulation and decapsulation key pair specific to this security parameter set
     /// based on a provided seed. <br>
-    /// This function is intended to operate in constant time outside of `rho` which crosses the trust
-    /// boundary in the clear.
+    /// Key generation does not branch on secret data, except for `SampleNTT`'s rejection sampling,
+    /// which depends only on the public seed ρ in the encapsulation key.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -180,8 +182,10 @@ pub trait Encaps {
 
 
     /// Generates a shared secret and ciphertext from an encapsulation key specific to this security parameter set. <br>
-    /// This function utilizes the OS default random number generator and is intended to operate in constant
-    /// time outside of `rho` which crosses the trust boundary in the clear.
+    /// This function utilizes the OS default random number generator. Encapsulation does not branch
+    /// on secret data, except for `SampleNTT`'s rejection sampling, which depends only on the
+    /// public seed ρ in the encapsulation key. The random number generator is not part of this
+    /// claim.
     /// # Errors
     /// Returns an error when the random number generator fails or an internal error condition arises.
     /// # Examples
@@ -218,8 +222,9 @@ pub trait Encaps {
 
 
     /// Generates a shared secret and ciphertext from an encapsulation key specific to this security parameter set. <br>
-    /// This function utilizes a provided random number generator and is intended to operate in constant
-    /// time.
+    /// This function utilizes a provided random number generator. Encapsulation does not branch on
+    /// secret data, except for `SampleNTT`'s rejection sampling, which depends only on the public
+    /// seed ρ in the encapsulation key. The random number generator is not part of this claim.
     /// # Errors
     /// Returns an error when the random number generator fails or an internal error condition arises.
     /// # Examples
@@ -255,8 +260,9 @@ pub trait Encaps {
 
 
     /// Generates a shared secret and ciphertext from an encapsulation key specific to this security parameter set. <br>
-    /// This function utilizes a provided **seed** (rather than a random number generator) and is intended to operate in constant
-    /// time.
+    /// This function utilizes a provided **seed** (rather than a random number generator).
+    /// Encapsulation does not branch on secret data, except for `SampleNTT`'s rejection sampling,
+    /// which depends only on the public seed ρ in the encapsulation key.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -322,7 +328,9 @@ pub trait Decaps {
 
 
     /// Generates a shared secret from a decapsulation key and ciphertext specific to this security parameter set. <br>
-    /// This function is intended to operate in constant-time.
+    /// Decapsulation does not branch on secret data, except for `SampleNTT`'s rejection sampling
+    /// when it re-encrypts, which depends only on the public seed ρ in the encapsulation key that
+    /// the decapsulation key holds.
     /// # Errors
     /// None for any decapsulation key this crate can construct. `DecapsKey::try_from_bytes` rejects a key whose
     /// secret vector holds a coefficient outside `[0, q − 1]`, and key generation never produces one.

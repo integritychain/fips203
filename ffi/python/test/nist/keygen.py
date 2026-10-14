@@ -96,5 +96,12 @@ groups: List[TestGroup] = []
 for g in t["testGroups"]:
     groups.append(TestGroup(g))
 
+ran = 0
 for g in groups:
     g.run()
+    ran += len(g.tests)
+
+total = sum(len(g["tests"]) for g in t["testGroups"])
+print(f"{ran} keyGen tests passed in {len(groups)} groups")
+assert ran == total, f"keyGen: {ran} ran, of {total}"
+assert ran > 0, "keyGen: no tests ran"

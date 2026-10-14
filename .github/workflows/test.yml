@@ -197,3 +197,5 @@ jobs:
           cd ffi/python
           FIPS203_PYTHON_TESTING_LIBRARY=../../target/debug/libfips203.so \
             PYTHONPATH=. python3 test/nist/keygen.py
+          FIPS203_PYTHON_TESTING_LIBRARY=../../target/debug/libfips203.so \
+            PYTHONPATH=. python3 test/nist/encapdecap.py
