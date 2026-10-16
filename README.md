@@ -69,12 +69,12 @@ The Rust [Documentation][docs-link] lives under each **Module** corresponding to
 * FIPS 203 places specific requirements on randomness (section 3.3), hence the exposed `RNG`. RNG
   integration uses **`rand_core` 0.6**: custom generators implement `CryptoRngCore` (`CryptoRng` +
   `RngCore`), which this crate re-exports along with `RngError`. Key generation and encapsulation
-  call `try_fill_bytes`, so handle its error or use the seed-based functions.
+  call `try_fill_bytes`, so handle its error. `encaps_from_seed` is for testing only.
 * The default features enable `default-rng` plus all three parameter sets. That OS RNG path is for
   hosted environments; it will **not** compile on bare-metal targets that lack a `getrandom`
   backend (for example `thumbv7em-none-eabi`). Embedded builds use `default-features = false`,
-  the parameter-set feature they need, and the seed-based functions or `*_with_rng`, as in
-  [`ct_cm4/`](ct_cm4/):
+  the parameter-set feature they need, and `*_with_rng`, or `keygen_from_seed` for a stored seed,
+  as in [`ct_cm4/`](ct_cm4/):
   `fips203 = { version = "0.5", default-features = false, features = ["ml-kem-512"] }`.
 * Test vectors: the NIST ACVP keyGen and encapDecap vectors (including decapsulation keys given as
   seeds), the C2SP Wycheproof and CCTV ML-KEM vectors, and Go's accumulated ML-KEM-768 test run in

@@ -106,6 +106,8 @@ pub trait KeyGen {
     /// based on a provided seed. <br>
     /// Key generation does not branch on secret data, except for `SampleNTT`'s rejection sampling,
     /// which depends only on the public seed ρ in the encapsulation key.
+    /// The seed (d, z) determines the decapsulation key, so protect it as you would that key
+    /// (FIPS 203 §3.3).
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
@@ -263,12 +265,18 @@ pub trait Encaps {
     /// This function utilizes a provided **seed** (rather than a random number generator).
     /// Encapsulation does not branch on secret data, except for `SampleNTT`'s rejection sampling,
     /// which depends only on the public seed ρ in the encapsulation key.
+    ///
+    /// **For testing only (FIPS 203 §3.3).** The seed is the m of ML-KEM.Encaps_internal: anyone
+    /// who knows it and the encapsulation key can compute the shared secret. It must be 32 fresh
+    /// bytes from an approved random bit generator, kept secret and used once. Otherwise use
+    /// `try_encaps` or `try_encaps_with_rng`.
     /// # Examples
     /// ```rust
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// # #[cfg(feature = "ml-kem-512")] {
     /// use rand_core::OsRng;
+    /// use fips203::RngCore;
     /// use fips203::ml_kem_512;  // Could also be ml_kem_768 or ml_kem_1024.
     /// use fips203::traits::{KeyGen, SerDes, Decaps, Encaps};
     ///
@@ -278,7 +286,9 @@ pub trait Encaps {
     /// let ek2_bytes = ek1_bytes;  // Party 1 sends encaps bytes to party 2
     ///
     /// let ek2 = ml_kem_512::EncapsKey::try_from_bytes(ek2_bytes)?;  // Party 2 deserializes the encaps key
-    /// let (ssk2, ct2) = ek2.encaps_from_seed(&[1u8; 32]);  // Party 2 generates shared secret and ciphertext
+    /// let mut m = [0u8; 32];
+    /// OsRng.fill_bytes(&mut m);  // Party 2 draws a fresh seed, to be used once
+    /// let (ssk2, ct2) = ek2.encaps_from_seed(&m);  // Party 2 generates shared secret and ciphertext
     /// let ct2_bytes = ct2.into_bytes();  // Party 2 serializes the ciphertext
     ///
     /// let ct1_bytes = ct2_bytes;  // Party 2 sends the ciphertext to party 1
