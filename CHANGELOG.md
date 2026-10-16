@@ -5,27 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.5.0 (in progress)
+## 0.5.0 (unreleased)
 
 ### Migration from 0.4.x
-- Public API is unchanged. Depend on `fips203 = "0.5"`. The bump is the MSRV break.
-- MSRV is **1.85**.
-- RNG stays `rand_core` 0.6. `CryptoRng`, `RngCore`, and `RngError` are re-exported.
-- Default features enable the OS RNG and all three parameter sets. That does not build on bare metal. Use `default-features = false`, one `ml-kem-*` feature, and seeds or `*_with_rng`.
+- MSRV is 1.85 (was 1.70). The public API is unchanged.
 
 ### Changed
-- Checked against the current NIST ACVP ML-KEM vectors, including the July 2026 encap/decap corrections.
-- Security reports go to this repository.
-- `DecapsKey::try_from_bytes` rejects a key whose secret vector has a coefficient of q or more. Such a key used to deserialize, then fail in `try_decaps`.
-- `KeyGen::validate_keypair_with_rng_vartime` is `#[must_use]`, as `verify` and `hash_verify` are in `fips204` and `fips205`. Ignoring the result is now a compiler warning.
-- Secret intermediate values are wiped before each operation returns (FIPS 203 §3.3). This needs `sha3` 0.10.9 or later.
-- The Python module (`ffi/python`) loads `libfips203` from `FIPS203_PYTHON_TESTING_LIBRARY` when that is set, otherwise from the system library path. If neither finds it, import raises an `OSError` that names the library. It no longer falls back to `../../target/debug/libfips203.{so,dylib}`. That path is relative to the current directory, so it only worked from `ffi/python` in a source checkout, and from any other directory it loaded whatever library sat at that path. The `fips204` and `fips205` modules load the same way.
+- `DecapsKey::try_from_bytes` rejects a key with a secret coefficient of q or more. Such a key used to deserialize, then fail in `try_decaps`.
+- `KeyGen::validate_keypair_with_rng_vartime` is `#[must_use]`.
+- Secret intermediate values are zeroized before each operation returns.
+- Python: `libfips203` loads from `FIPS203_PYTHON_TESTING_LIBRARY` if set, otherwise from the system library path. It no longer loads `../../target/debug/libfips203` relative to the current directory.
 
 ### Fixed
-- `ml_kem_populate_seed` (FFI) returns `ML_KEM_KEYGEN_ERROR` if the OS random number generator fails. It used to abort the process.
-- `ffi/fips203.h` declares its `ML_KEM_*` error codes `static const`. Before, two C files that included the header failed to link with duplicate symbols.
-- The Python module reports `__version__` 0.5.0. It said 0.4.3, and `pyproject.toml` takes the package version from it.
-- The Python README and module docstring examples run as written. The serialization example imports `Seed`. The deserialization example opens its file `'rb'` (not `'b'`) and calls `encaps()` (not `Encaps()`). The docstring copy had a missing parenthesis. The specification link points at final FIPS 203, not the draft.
+- FFI: `ml_kem_populate_seed` returns `ML_KEM_KEYGEN_ERROR` when the OS RNG fails, instead of aborting.
+- FFI: `fips203.h` can be included in more than one C file without duplicate-symbol link errors.
+- Python: `__version__` is 0.5.0 (was 0.4.3).
 
 ## 0.4.3 (2025-02-25)
 

@@ -13,8 +13,18 @@ repository = "https://github.com/integritychain/fips203"
 keywords = ["kem", "FIPS203", "lattice", "kyber", "encapsulation"]
 # MSRV set at 1.85 for Debian stable (trixie), e.g. https://packages.debian.org/trixie/rustc
 rust-version = "1.85"
-# The NIST, CCTV and Wycheproof vectors (6 MB gzipped) stay in the repository; the crate omits them
-exclude = ["tests/cctv_vectors/", "tests/nist_vectors/", "tests/wycheproof.rs", "tests/wycheproof/"]
+# The NIST, CCTV and Wycheproof vectors (6 MB gzipped) stay in the repository; the crate omits them,
+# except the CCTV intermediate files (212 kB), which the `k_pke` unit tests `include_str!`
+exclude = [
+    "tests/cctv_vectors/main.rs",
+    "tests/cctv_vectors/ML-KEM/README.md",
+    "tests/cctv_vectors/ML-KEM/modulus/",
+    "tests/cctv_vectors/ML-KEM/strcmp/",
+    "tests/cctv_vectors/ML-KEM/unluckysample/",
+    "tests/nist_vectors/",
+    "tests/wycheproof.rs",
+    "tests/wycheproof/",
+]
 
 
 [features]
