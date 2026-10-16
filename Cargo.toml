@@ -5,12 +5,12 @@ name = "fips203"
 version = "0.5.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-description = "FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism"
+description = "FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism Standard"
 authors = ["Eric Schorn <eschorn@integritychain.com>"]
 documentation = "https://docs.rs/fips203"
 categories = ["cryptography", "no-std"]
 repository = "https://github.com/integritychain/fips203"
-keywords = ["kem", "FIPS203", "lattice", "kyber", "encapsulation"]
+keywords = ["FIPS203", "ml-kem", "kyber", "post-quantum", "kem"]
 # MSRV set at 1.85 for Debian stable (trixie), e.g. https://packages.debian.org/trixie/rustc
 rust-version = "1.85"
 # The NIST, CCTV and Wycheproof vectors (6 MB gzipped) stay in the repository; the crate omits them,
@@ -67,7 +67,7 @@ debug = true
 
 [profile.release]
 lto = true
-opt-level = "s"
+opt-level = 3
 codegen-units = 1
 
 

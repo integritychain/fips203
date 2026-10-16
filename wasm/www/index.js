@@ -11,7 +11,7 @@ wasmForm.addEventListener("submit", (e) => {
     if (seed.value) {
         result = wasm.run(seed.value);
         seed.value = "";
-        document.getElementById("wasm-canvas").innerHTML = result;
+        document.getElementById("wasm-canvas").textContent = result;
     } else {
         alert("Please enter a non-empty seed u64 decimal number");
     }

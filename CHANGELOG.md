@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `DecapsKey::try_from_bytes` rejects a key with a secret coefficient of q or more. Such a key used to deserialize, then fail in `try_decaps`.
-- `KeyGen::validate_keypair_with_rng_vartime` is `#[must_use]`.
+- `KeyGen::validate_keypair_with_rng_vartime` and `Encaps::encaps_from_seed` are `#[must_use]`.
 - Secret intermediate values are zeroized before each operation returns.
 - Python: `libfips203` loads from `FIPS203_PYTHON_TESTING_LIBRARY` if set, otherwise from the system library path. It no longer loads `../../target/debug/libfips203` relative to the current directory.
 

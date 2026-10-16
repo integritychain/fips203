@@ -145,7 +145,7 @@ macro_rules! functionality {
         /// Correctly sized ciphertext specific to the target security parameter set.
         pub type CipherText = crate::types::CipherText<CT_LEN>;
 
-        /// Supports the `KeyGen` trait, allowing for keypair generation
+        /// Empty struct that implements the [`crate::traits::KeyGen`] trait, for keypair generation.
         pub struct KG();
 
 

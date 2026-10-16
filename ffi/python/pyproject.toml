@@ -20,6 +20,7 @@ keywords = [
 # README.md duplicates the module docstring.
 # I do not know how to keep them automatically in sync
 readme = "README.md"
+requires-python = ">=3.9"
 # only dependencies are having the libfips203 shared object available
 # everything else is from the stdlib
 dependencies = []
@@ -40,6 +41,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 
 [project.urls]

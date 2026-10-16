@@ -300,6 +300,7 @@ pub trait Encaps {
     /// # }
     /// # Ok(())}
     /// ```
+    #[must_use]
     fn encaps_from_seed(&self, seed: &[u8; 32]) -> (Self::SharedSecretKey, Self::CipherText) {
         self.try_encaps_with_rng(&mut DummyRng { data: *seed }).expect("rng will not fail")
     }

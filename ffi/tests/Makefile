@@ -24,7 +24,9 @@ endif
 
 all: check
 
-# adjustments for testing the local debug or release build:
+# adjustments for testing the local debug or release build. target/release is used
+# when it has the library, else target/debug; to choose, pass e.g.
+# SO_LOCATION=../../target/debug/ (with the trailing slash).
 ifneq ($(AS_INSTALLED),true)
 SO_LOCATIONS = $(foreach w,.. ../..,$(foreach x,release debug,$w/target/$x $w/target/*/$x))
 SO_LOCATION = $(dir $(firstword $(foreach d,$(SO_LOCATIONS),$(wildcard $d/$(LINK_LIB)))))

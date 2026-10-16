@@ -3,12 +3,12 @@ name = "fips203-ffi"
 version = "0.5.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-description = "C shared library exposing FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism"
+description = "C shared library exposing FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism Standard"
 authors = ["Daniel Kahn Gillmor <dkg@fifthhorseman.net>"]
 documentation = "https://docs.rs/fips203"
 categories = ["cryptography"]
 repository = "https://github.com/integritychain/fips203"
-keywords = ["FIPS", "FIPS203", "lattice", "kem", "ml"]
+keywords = ["FIPS203", "ml-kem", "post-quantum", "kem", "ffi"]
 rust-version = "1.85"
 
 [lib]
