@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - FFI: `ml_kem_populate_seed` returns `ML_KEM_KEYGEN_ERROR` when the OS RNG fails, instead of aborting.
 - FFI: `fips203.h` can be included in more than one C file without duplicate-symbol link errors.
+- FFI: `libfips203` gets its linker flags for the target, not the build machine. Cross builds (for example macOS to Linux, or Linux to iOS) no longer fail, Windows builds no longer warn (LNK4044), and Android builds get an unversioned SONAME, `libfips203.so`.
 - Python: `__version__` is 0.5.0 (was 0.4.3).
 
 ## 0.4.3 (2025-02-25)
