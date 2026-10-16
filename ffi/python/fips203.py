@@ -351,9 +351,9 @@ class _ML_KEM:
         libname = ctypes.util.find_library("fips203")
         if libname is None:
             raise OSError(
-                "libfips203 shared library not found. Install it, or set "
-                "FIPS203_PYTHON_TESTING_LIBRARY to the path of libfips203.so "
-                "for in-tree tests."
+                "libfips203 shared library not found. Install it where the system "
+                "loader looks, or set FIPS203_PYTHON_TESTING_LIBRARY to its full "
+                "path (libfips203.so, or libfips203.dylib on macOS)."
             )
         lib = ctypes.CDLL(libname)
 

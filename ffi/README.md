@@ -44,6 +44,8 @@ $ FIPS203_PYTHON_TESTING_LIBRARY=../../target/debug/libfips203.so python3
 >>> assert(shared_secret_1 == shared_secret_2)
 ~~~
 
+On macOS the library is `libfips203.dylib`.
+
 
 # Header
 
