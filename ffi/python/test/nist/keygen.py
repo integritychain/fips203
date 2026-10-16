@@ -12,13 +12,17 @@ from __future__ import annotations
 import fips203
 import gzip
 import json
+import os
 import re
 from binascii import a2b_hex, b2a_hex
 
 from typing import Dict, Union, List, TypedDict
 
+# The published fips203 crate ships these vectors; FIPS203_NIST_VECTORS can point at its copy.
+VECTORS = os.environ.get("FIPS203_NIST_VECTORS") or "../../tests/nist_vectors"
+
 with gzip.open(
-    "../../tests/nist_vectors/ML-KEM-keyGen-FIPS203/internalProjection.json.gz",
+    os.path.join(VECTORS, "ML-KEM-keyGen-FIPS203", "internalProjection.json.gz"),
     "rt",
 ) as f:
     t = json.load(f)

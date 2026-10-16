@@ -79,7 +79,8 @@ The Rust [Documentation][docs-link] lives under each **Module** corresponding to
 * Test vectors: the NIST ACVP keyGen and encapDecap vectors (including decapsulation keys given as
   seeds), the C2SP Wycheproof and CCTV ML-KEM vectors, and Go's accumulated ML-KEM-768 test run in
   the test suite, and the Python bindings apply the ACVP files through the C ABI. The vector files
-  stay in the repository; the published crate omits them.
+  stay in the repository; the published crate has only the keyGen file, which the bindings' tests
+  can use through `FIPS203_NIST_VECTORS`.
 * A C shared library (`libfips203`, published as `fips203-ffi`) with Python bindings, and a WASM
   browser demo, are described in [`ffi/README.md`][ffi-readme] and
   [`wasm/README.md`][wasm-readme].

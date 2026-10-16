@@ -15,16 +15,18 @@ from __future__ import annotations
 import fips203
 import gzip
 import json
+import os
 from binascii import a2b_hex
 
 from typing import Any, Callable, Dict
 
 STRENGTH = {"ML-KEM-512": 512, "ML-KEM-768": 768, "ML-KEM-1024": 1024}
+VECTORS = os.environ.get("FIPS203_NIST_VECTORS") or "../../tests/nist_vectors"
 
 
 def load(name: str, revision: str) -> Dict[str, Any]:
     with gzip.open(
-        f"../../tests/nist_vectors/{name}/internalProjection.json.gz",
+        os.path.join(VECTORS, name, "internalProjection.json.gz"),
         "rt",
     ) as f:
         t: Dict[str, Any] = json.load(f)

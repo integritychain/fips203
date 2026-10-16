@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `KeyGen::validate_keypair_with_rng_vartime` and `Encaps::encaps_from_seed` are `#[must_use]`.
 - Secret intermediate values are zeroized before each operation returns.
 - Python: `libfips203` loads from `FIPS203_PYTHON_TESTING_LIBRARY` if set, otherwise from the system library path. It no longer loads `../../target/debug/libfips203` relative to the current directory.
+- New compiler warnings no longer fail the build (CI still treats warnings as errors), and a build without any parameter-set feature, such as `--no-default-features`, compiles cleanly.
 
 ### Fixed
 - FFI: `ml_kem_populate_seed` returns `ML_KEM_KEYGEN_ERROR` when the OS RNG fails, instead of aborting.
