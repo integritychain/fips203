@@ -367,7 +367,7 @@ pub mod ml_kem_512 {
     pub const EK_LEN: usize = 800;
     /// Serialized Decapsulation Key Length (in bytes)
     pub const DK_LEN: usize = 1632;
-    /// Serialized Ciphertext Key Length (in bytes)
+    /// Serialized Ciphertext Length (in bytes)
     pub const CT_LEN: usize = 768;
 
     functionality!();
@@ -403,7 +403,7 @@ pub mod ml_kem_768 {
     pub const EK_LEN: usize = 1184;
     /// Serialized Decapsulation Key Length (in bytes)
     pub const DK_LEN: usize = 2400;
-    /// Serialized Ciphertext Key Length (in bytes)
+    /// Serialized Ciphertext Length (in bytes)
     pub const CT_LEN: usize = 1088;
 
     functionality!();
@@ -438,7 +438,7 @@ pub mod ml_kem_1024 {
     pub const EK_LEN: usize = 1568;
     /// Serialized Decapsulation Key Length (in bytes)
     pub const DK_LEN: usize = 3168;
-    /// Serialized Ciphertext Key Length (in bytes)
+    /// Serialized Ciphertext Length (in bytes)
     pub const CT_LEN: usize = 1568;
 
     functionality!();
