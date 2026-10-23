@@ -11,17 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MSRV is 1.85 (was 1.70). The public API is unchanged.
 
 ### Changed
-- `DecapsKey::try_from_bytes` rejects a key with a secret coefficient of q or more. Such a key used to deserialize, then fail in `try_decaps`.
+- `DecapsKey::try_from_bytes` rejects a key with a secret coefficient of q or more. For such a key, `ml_kem_*_decaps` in the C library returns `ML_KEM_DESERIALIZATION_ERROR` (was `ML_KEM_DECAPSULATION_ERROR`).
 - `KeyGen::validate_keypair_with_rng_vartime` and `Encaps::encaps_from_seed` are `#[must_use]`.
-- Secret intermediate values are zeroized before each operation returns.
-- Python: `libfips203` loads from `FIPS203_PYTHON_TESTING_LIBRARY` if set, otherwise from the system library path. It no longer loads `../../target/debug/libfips203` relative to the current directory.
-- New compiler warnings no longer fail the build (CI still treats warnings as errors), and a build without any parameter-set feature, such as `--no-default-features`, compiles cleanly.
+- Secret intermediate values are zeroized, best effort: copies of keys that are moved or passed by value can remain on the stack.
+- Python: `libfips203` is loaded from `FIPS203_PYTHON_TESTING_LIBRARY` if set, else from the system library path (no longer from `../../target/debug`).
+- Building the crate itself, as distributions do, no longer fails on new compiler warnings or with no parameter-set feature.
 
 ### Fixed
+- Decapsulation rounds Decompress to the nearest integer, as FIPS 203 eq. 4.8 requires. 0.4.x rounded up, so with a crafted key pair a correctly encapsulated ciphertext could decapsulate to the implicit-rejection key.
 - FFI: `ml_kem_populate_seed` returns `ML_KEM_KEYGEN_ERROR` when the OS RNG fails, instead of aborting.
-- FFI: `fips203.h` can be included in more than one C file without duplicate-symbol link errors.
-- FFI: `libfips203` gets its linker flags for the target, not the build machine. Cross builds (for example macOS to Linux, or Linux to iOS) no longer fail, Windows builds no longer warn (LNK4044), and Android builds get an unversioned SONAME, `libfips203.so`.
-- Python: `__version__` is 0.5.0 (was 0.4.3).
+- FFI: `fips203.h` can be included in more than one C file.
+- FFI: linker flags follow the target, not the build machine, so cross builds work and Android gets an unversioned SONAME.
 
 ## 0.4.3 (2025-02-25)
 
